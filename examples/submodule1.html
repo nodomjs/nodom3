@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nodom test</title>
+</head>
+<body>
+    <div></div>
+</body>
+<script type='module'>
+    import {nodom,Module} from '../dist/nodom.js'
+    
+    class ModuleA extends Module{
+        template(props){
+            return `
+                <div class='modulea'>
+                    <slot/>
+                </div>
+            `
+        }
+        data(){
+            return{
+                name:'yang',
+                x1:0,
+                x2:0,
+                rows:[{name:'nodom1'},{name:'nodom2'},{name:'nodom3'}]
+            }
+        }
+    }
+
+    class ModuleB extends Module{
+        template(props){
+            return `
+                <div>
+                    <div>id is:{{id}},name is:<span style='color:red;font-weight:bold;padding-left:10px'>{{name}}</span></div>
+                </div>
+            `
+        }
+        data(){
+            return{
+                rows:[{name:'nodom'},{name:'noomi'},{name:'relaen'}]
+            }
+        }
+    }
+
+    class Module1 extends Module{
+        modules=[ModuleA,ModuleB];
+
+        template(props){
+            return `
+                <div>
+                    <button e-click='add'>add</button>
+                    <button e-click='change1'>change1</button>
+                    <div>name is:{{o2.name}}</div>
+                    <!--useDomModel表示用当前dom对应的model直接覆盖子模块的model-->
+                    <modulea>
+                        <for cond={{rows}}>
+                            <ModuleB style='font-size:18px;' useDomModel/>
+                        </for>
+                    </modulea>
+                </div>
+            `;
+        }
+        data(){
+            return {
+                xxx:1,
+                rows:[
+                    {id:1,name:'nodom'},
+                    {id:2,name:'noomi'},
+                    {id:3,name:'relaen'}
+                ]
+            }
+        }
+        add(model){
+            model.rows.push({id:4,name:'weblab'});
+            console.log(model.rows);
+        }
+
+        change1(model){
+            model.xxx = 2;
+        }
+    }
+    nodom(Module1,'div');
+</script>
+</html>
