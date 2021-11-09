@@ -3,10 +3,6 @@
   "version": "3.0.0",
   "private": true,
   "main": "index.ts",
-  "directories": {
-    "example": "examples",
-    "test": "test"
-  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rollup -c"
