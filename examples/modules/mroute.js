@@ -1,4 +1,4 @@
-import {Module,Router} from '../../dist/nodom.js'
+import {Module,Router} from '../../dist/nodom.esm.js'
 export class MRoute extends Module{
     template(){
         return `

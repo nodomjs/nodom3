@@ -1,6 +1,9 @@
 import { NError } from "./error";
 import { NEvent } from "./event";
+import { Module } from "./module";
+import { ModuleFactory } from "./modulefactory";
 import { NodomMessage } from "./nodom";
+import { IRenderedDom } from "./types";
 import { VirtualDom } from "./virtualdom";
 /**
  * 基础服务库
@@ -68,6 +71,7 @@ export class Util {
         this.keyWordMap.set('with',true);
         this.keyWordMap.set('Array',true);
         this.keyWordMap.set('Date',true);
+        this.keyWordMap.set('JSON',true);
         this.keyWordMap.set('Set',true);
         this.keyWordMap.set('Map',true);
         this.keyWordMap.set('eval',true);
@@ -529,6 +533,32 @@ export class Util {
                 Util.setNodeKey(c,id,deep);
             }
         }
+    }
+
+    /**
+     * 设置dom asset
+     * @param dom       渲染后的dom节点
+     * @param name      asset name    
+     * @param value     asset value
+     */
+    public static setDomAsset(dom:IRenderedDom,name:string,value:any){
+        if(!dom.assets){
+            dom.assets = {};
+        }
+        dom.assets[name] = value;
+    }
+
+    /**
+     * 删除dom asset
+     * @param dom   渲染后的dom节点
+     * @param name  asset name
+     * @returns 
+     */
+    public static delDomAsset(dom:IRenderedDom,name:string){
+        if(!dom.assets){
+            return;
+        }
+        delete dom.assets[name];
     }
 }
 

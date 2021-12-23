@@ -27,11 +27,13 @@ export class Model {
                     return true;
                 }
                 const excArr = ["$key"];
+                let ov = src[key];
+                let r = Reflect.set(src, key, value, receiver); 
                 //非对象，null，非model更新渲染
                 if(typeof value !== 'function' && excArr.indexOf(key) === -1){
-                    ModelManager.update(proxy, key, src[key], value);
+                    ModelManager.update(proxy, key, ov, value);
                 }
-                return Reflect.set(src, key, value, receiver);
+                return r;
             },
             get: (src: any, key: string | symbol, receiver) => {
                 let res = Reflect.get(src, key, receiver);

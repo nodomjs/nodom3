@@ -13,14 +13,16 @@
 		</div>
 	</body>
 	<script type='module'>
-		import{nodom,Module,Util} from '../dist/nodom.js'
+		import{nodom,Module,Util} from '../dist/nodom.esm.js'
 		class Module1 extends Module{
 			template(){
 				return `
 					<div>
-						<div>多级数据：{{ac.age.as}}</div>
+						{{20*((price+2)*discount)}}
+						<!--<div>多级数据：{{ac.age.as}}</div>-->
 						<h2>数据计算</h2>
-						<div>价格：{{Math.round(price * discount) + 'hello'}}</div>
+						<!--<div>价格：{{Math.round(price * discount) + 'hello'}}</div>-->
+						<!--
 						<div>折扣：{{cacDis(price*discount)}}</div>
 						<div>描述：{{30 + addStr('hello' + desc) + 20}}</div>
 						<div>随机折扣:{{(Math.random()*price).toFixed(1)}}</div>
@@ -52,7 +54,7 @@
 						<div>对象判断：{{{x:1,yyy:2}.constructor.name === 'Object'}}</div>
 						<div>数组方法：{{arr.join(',')}}</div>
 						{{desc + ' ' + this.state}}
-						<div>扩展运算-数组求和：{{sum(...arr)}}</div>
+						<div>扩展运算-数组求和：{{sum(...arr)}}</div> -->
 					</div>
 				`
 			}
@@ -136,5 +138,7 @@
 		}
 		
 		nodom(Module1,'div');
+
+
 	</script>
 </html>

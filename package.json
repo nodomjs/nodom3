@@ -1,31 +1,35 @@
 {
-  "name": "nodom",
-  "version": "3.0.0",
-  "private": true,
+  "name": "nodom3",
+  "version": "0.0.2",
+  "private": false,
   "main": "index.ts",
+  "directories": {
+    "core": "core",
+    "extend": "extend"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rollup -c"
   },
-  "unpkg": "dist/nodom.js",
-  "author": "",
+  "author": "weblabsw",
   "license": "MIT",
-  "browser": "dist/nodom.js",
+  "unpkg": "dist/nodom.global.js",
+  "jsdelivr": "dist/nodom.global.js",
+  "module": "dist/nodom.esm.js",
+  "types": "dist/index.d.ts",
+  "browser": "dist/nodom.global.js",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^18.1.0",
     "@rollup/plugin-node-resolve": "^13.0.0",
     "rollup": "^2.47.0",
     "rollup-plugin-terser": "^7.0.2",
     "rollup-plugin-typescript2": "^0.30.0",
+    "terser": "^5.10.0",
     "typescript": "^4.2.4"
   },
   "repository": {
-    "type": "git",
-    "url": "git+https://github.com/fieldyang/nodom3.2.git"
+    "type": "git"
   },
-  "bugs": {
-    "url": "https://github.com/fieldyang/nodom3.2/issues"
-  },
-  "homepage": "https://github.com/fieldyang/nodom3.2#readme",
-  "description": ""
+  "description": "nodom是一款基于数据驱动的web mvvm框架。 用于搭建单页应用(SPA)",
+  "dependencies": {}
 }

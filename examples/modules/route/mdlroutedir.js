@@ -1,4 +1,4 @@
-import {Module} from '../../../dist/nodom.js'
+import {Module} from '../../../dist/nodom.esm.js'
 export class MdlRouteDir extends Module {
     template(){
         return `
@@ -6,7 +6,7 @@ export class MdlRouteDir extends Module {
         <p class='title'>路由用法例子</p>
         <div style='background:#f0f0f0'>
             <div style='border-bottom: 1px solid #999' test='router'>
-                <a x-repeat={{routes}} x-route='{{path}}'  class={{active?'colorimp':''}} active='active' style='margin:10px'>{{title}}</a>
+                <a x-repeat={{routes}} x-route={{path}}  class={{active?'colorimp':''}} active='active' style='margin:10px'>{{title}}</a>
             </div>
             <div x-router test='routerview'></div>
         </div>

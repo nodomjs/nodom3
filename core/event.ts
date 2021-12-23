@@ -1,7 +1,6 @@
-import { VirtualDom } from "./virtualdom";
-import { GlobalCache } from "./globalcache";
 import { Module } from "./module";
 import { Util } from "./util";
+import { IRenderedDom } from "./types";
 
 /**
  * 事件类
@@ -11,7 +10,14 @@ import { Util } from "./util";
  * @since       1.0
  */
 export class NEvent {
+    /**
+     * 事件id
+     */
     public id: number;
+    /**
+     * 事件所属模块
+     */
+    public module:Module;
     /**
      * 事件名
      */
@@ -51,11 +57,11 @@ export class NEvent {
      *                      如果为函数，则替代第三个参数
      * @param handler       事件执行函数，如果方法不在module methods中定义，则可以直接申明，eventStr第一个参数失效，即eventStr可以是":delg:nopopo..."
      */
-    constructor(eventName: string, eventStr?: string | Function, handler?: Function) {
+    constructor(module:Module,eventName: string, eventStr?: string | Function, handler?: Function) {
         this.id = Util.genId();
+        this.module = module;
         this.name = eventName;
-        
-        GlobalCache.saveEvent(this);
+        // GlobalCache.saveEvent(this);
         //如果事件串不为空，则不需要处理
         if (eventStr) {
             let tp = typeof eventStr;
@@ -132,7 +138,7 @@ export class NEvent {
      * @param name      参数名
      * @param value     参数值
      */
-    public setParam(module:Module,dom:VirtualDom,name: string, value: any) {
+    public setParam(module:Module,dom:IRenderedDom,name: string, value: any) {
         module.objectManager.setEventParam(this.id,dom.key,name,value);
     }
 
@@ -143,7 +149,7 @@ export class NEvent {
      * @param name      参数名
      * @returns         参数值
      */
-    public getParam(module:Module,dom:VirtualDom,name: string) {
+    public getParam(module:Module,dom:IRenderedDom,name: string) {
         return module.objectManager.getEventParam(this.id,dom.key,name);
     }
 
@@ -153,7 +159,7 @@ export class NEvent {
      * @param dom       虚拟dom
      * @param name      参数名
      */
-    public removeParam(module:Module,dom:VirtualDom,name: string) {
+    public removeParam(module:Module,dom:IRenderedDom,name: string) {
         return module.objectManager.removeEventParam(this.id,dom.key,name);
     }
     /**
@@ -161,7 +167,7 @@ export class NEvent {
      * @param module    模块
      * @param dom       虚拟dom
      */
-    public clearParam(module:Module,dom:VirtualDom){
+    public clearParam(module:Module,dom:IRenderedDom){
         module.objectManager.clearEventParam(this.id,dom.key);
     }
 }

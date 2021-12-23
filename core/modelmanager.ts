@@ -113,8 +113,17 @@ export class ModelManager {
         if (!watchers[key]) {
             watchers[key] = [foo];
         }else{
-            //把处理函数加入观察器数组
-            watchers[key].push(foo);
+            //把处理函数加入观察器数组，先进行重复添加判断
+            if(typeof foo === 'string'){  //字符串
+                if(!watchers[key].find(item=>item === foo)){
+                    watchers[key].push(foo);
+                }
+            }else{ //函数
+                let foos = foo.toString();
+                if(!watchers[key].find(item=>item.toString() === foos)){
+                    watchers[key].push(foo);
+                }
+            }
         }
     }
 
@@ -178,7 +187,7 @@ export class ModelManager {
         }
         //级联设置
         Object.getOwnPropertyNames(model).forEach(item=>{
-            if(typeof model[item] === 'object' && model[item].$key){
+            if(model[item] && typeof model[item] === 'object' && model[item].$key){
                 ModelManager.bindToModule(model[item],module);
             }
         });
@@ -271,25 +280,32 @@ export class ModelManager {
         
         let mids = obj.modules;
         let modules = [];
-        for(let mid of mids){
-            let m = ModuleFactory.get(mid);
-            modules.push(m);
-            //增加修改标志
-            m.changedModelMap.set(model.$key,true);
+        if(mids){
+            for(let mid of mids){
+                let m = ModuleFactory.get(mid);
+                modules.push(m);
+                //增加修改标志
+                m.changedModelMap.set(model.$key,true);
+            }
         }
+        //watcher 处理
         let watcher = this.getWatcher(model,key);
         if (watcher) {
             for (let foo of watcher) {
-                for(let m of modules){
-                    //方法名
-                    if (typeof foo === 'string') {
-                        foo = m.getMethod(foo);
-                        if (foo) {
+                if(modules){
+                    for(let m of modules){
+                        //方法名
+                        if (typeof foo === 'string') {
+                            foo = m.getMethod(foo);
+                            if (foo) {
+                                foo.call(m,model, oldValue, newValue);
+                            }
+                        } else {
                             foo.call(m,model, oldValue, newValue);
                         }
-                    } else {
-                        foo.call(m,model, oldValue, newValue);
                     }
+                }else{
+                    foo.call(model,key,newValue,oldValue);
                 }
             }
         }

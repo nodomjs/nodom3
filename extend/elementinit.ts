@@ -1,5 +1,5 @@
-import { DirectiveElement } from "../core/directiveelement";
-import { DirectiveElementManager } from "../core/directiveelementmanager";
+import { DefineElement } from "../core/defineelement";
+import { DefineElementManager } from "../core/defineelementmanager";
 import { NError } from "../core/error";
 import { NodomMessage } from "../core/nodom";
 import { VirtualDom } from "../core/virtualdom";
@@ -10,7 +10,7 @@ import { GlobalCache } from "../core/globalcache";
 /**
  * module 元素
  */
-class MODULE extends DirectiveElement{
+class MODULE extends DefineElement{
     constructor(node: VirtualDom,module:Module){
         super(node,module);
         //类名
@@ -26,7 +26,7 @@ class MODULE extends DirectiveElement{
 /**
  * for 元素
  */
-class FOR extends DirectiveElement{
+class FOR extends DefineElement{
     constructor(node: VirtualDom,module:Module){
         super(node,module);
         //条件
@@ -35,10 +35,9 @@ class FOR extends DirectiveElement{
             throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'FOR', 'cond');
         }
         node.delProp('cond');
-        if(typeof cond === 'number'){ //表达式
-            cond = GlobalCache.getExpression(cond);
-        }
-        
+        // if(typeof cond === 'number'){ //表达式
+        //     cond = GlobalCache.getExpression(cond);
+        // }
         node.addDirective(new Directive('repeat',cond));
     }
 }
@@ -46,15 +45,15 @@ class FOR extends DirectiveElement{
 /**
  * 递归元素
  */
-class RECUR extends DirectiveElement{
+class RECUR extends DefineElement{
     constructor(node: VirtualDom,module:Module){
         super(node,module);
         //条件
         let cond = node.getProp('cond');
         node.delProp('cond');
-        if(typeof cond === 'number'){ //表达式
-            cond = GlobalCache.getExpression(cond);
-        }
+        // if(typeof cond === 'number'){ //表达式
+        //     cond = GlobalCache.getExpression(cond);
+        // }
         node.addDirective(new Directive('recur',cond));
     }
 }
@@ -62,7 +61,7 @@ class RECUR extends DirectiveElement{
 /**
  * IF 元素
  */
-class IF extends DirectiveElement{
+class IF extends DefineElement{
     constructor(node: VirtualDom,module:Module){
         super(node,module);
         //条件
@@ -71,14 +70,14 @@ class IF extends DirectiveElement{
             throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'IF', 'cond');
         }
         node.delProp('cond');
-        if(typeof cond === 'number'){ //表达式
-            cond = GlobalCache.getExpression(cond);
-        }
+        // if(typeof cond === 'number'){ //表达式
+        //     cond = GlobalCache.getExpression(cond);
+        // }
         node.addDirective(new Directive('if',cond));
     }
 }
 
-class ELSE extends DirectiveElement{
+class ELSE extends DefineElement{
     constructor(node: VirtualDom,module:Module){
         super(node,module);
         node.addDirective(new Directive('else',null));
@@ -87,7 +86,7 @@ class ELSE extends DirectiveElement{
 /**
  * ELSEIF 元素
  */
-class ELSEIF extends DirectiveElement{
+class ELSEIF extends DefineElement{
     constructor(node: VirtualDom,module:Module){
         super(node,module);
         //条件
@@ -96,16 +95,16 @@ class ELSEIF extends DirectiveElement{
             throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ELSEIF', 'cond');
         }
         node.delProp('cond');
-        if(typeof cond === 'number'){ //表达式
-            cond = GlobalCache.getExpression(cond);
-        }
+        // if(typeof cond === 'number'){ //表达式
+        //     cond = GlobalCache.getExpression(cond);
+        // }
         node.addDirective(new Directive('elseif',cond));
     }
 }
 /**
  * ENDIF 元素
  */
-class ENDIF extends DirectiveElement{
+class ENDIF extends DefineElement{
     constructor(node: VirtualDom,module:Module){
         super(node,module);
         node.addDirective(new Directive('endif',null));
@@ -115,7 +114,7 @@ class ENDIF extends DirectiveElement{
 /**
  * 替代器
  */
-class SLOT extends DirectiveElement{
+class SLOT extends DefineElement{
     constructor(node: VirtualDom,module:Module){
         super(node,module);
         //条件
@@ -125,4 +124,4 @@ class SLOT extends DirectiveElement{
     }
 }
 
-DirectiveElementManager.add([MODULE,FOR,IF,RECUR,ELSE,ELSEIF,ENDIF,SLOT]);
+DefineElementManager.add([MODULE,FOR,IF,RECUR,ELSE,ELSEIF,ENDIF,SLOT]);

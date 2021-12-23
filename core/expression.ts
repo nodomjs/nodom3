@@ -124,16 +124,14 @@ export class Expression {
 
     /**
      * 表达式计算
-     * @param model 	模型 或 fieldObj对象 
+     * @param module    模块
+     * @param model 	模型
      * @returns 		计算结果
      */
     public val(module:Module,model: Model) {
-        if (!model){
-            model = module.model;
-        } 
         let v;
         try {
-            v = this.execFunc.apply(module,[model,module]);
+            v = this.execFunc.apply(module,[model]);
         } catch (e) {
             // console.error(e);
         }

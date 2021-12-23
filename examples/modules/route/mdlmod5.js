@@ -1,5 +1,5 @@
 
-import {Module} from '../../../dist/nodom.js'
+import {Module} from '../../../dist/nodom.esm.js'
 
 export class MdlMod5 extends Module {
     template(){

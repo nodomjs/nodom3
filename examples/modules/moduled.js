@@ -1,4 +1,4 @@
-import {Module,registModule} from '../../dist/nodom.js'
+import {Module,registModule} from '../../dist/nodom.esm.js'
 
 export class ModuleD extends Module{
     template(props){

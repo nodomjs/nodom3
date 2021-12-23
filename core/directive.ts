@@ -6,6 +6,7 @@ import { Util } from "./util";
 import { Expression } from "./expression";
 import { NError } from "./error";
 import { NodomMessage } from "./nodom";
+import { IRenderedDom } from "./types";
 
 /**
  * 指令类
@@ -65,7 +66,7 @@ export  class Directive {
      * @param src       源节点
      * @returns         true/false
      */
-    public exec(module:Module,dom:any,src:VirtualDom):boolean {
+    public exec(module:Module,dom:IRenderedDom,src:VirtualDom):boolean {
         //禁用，不执行
         if(this.disabled){
             return true;
@@ -74,38 +75,6 @@ export  class Directive {
             this.value = this.expression.val(module,dom.model);
         }
         return this.type.handle.apply(this,[module,dom,src]);
-    }
-
-    /**
-     * 设置参数
-     * @param module    模块
-     * @param dom       指令对应的虚拟dom
-     * @param name      参数名
-     * @param value     参数值
-     */
-    public setParam(module:Module,dom:VirtualDom,name:string,value:any){
-        module.objectManager.setDirectiveParam(this.id,dom.key,name,value);
-    }
-
-    /**
-     * 获取参数值
-     * @param module    模块 
-     * @param dom       指令对应的虚拟dom
-     * @param name      参数名
-     * @returns         参数值
-     */
-    public getParam(module:Module,dom:VirtualDom,name:string){
-        return module.objectManager.getDirectiveParam(this.id,dom.key,name);
-    }
-
-    /**
-     * 移除参数
-     * @param module    模块
-     * @param dom       指令对应的虚拟dom
-     * @param name      参数名
-     */
-    public removeParam(module:Module,dom:VirtualDom,name:string){
-        module.objectManager.removeDirectiveParam(this.id,dom.key,name);
     }
 
     /**

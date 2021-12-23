@@ -1,4 +1,4 @@
-import {Module,Router} from '../../../dist/nodom.js'
+import {Module,Router} from '../../../dist/nodom.esm.js'
 export class MdlPMod1 extends Module {
     template(){
         return `
@@ -8,7 +8,7 @@ export class MdlPMod1 extends Module {
                 <a x-route='/router/route1/list'  class={{list?'colorimp':''}} active='list'>列表</a>
                 <a x-route='/router/route1/data'  class={{data?'colorimp':''}} active='data'>数据</a>
             </div>
-            <a x-route='/router/route2/rparam/home/1'>to router2</a>
+            <a x-route={{route2}}>to router2</a>
             <button e-click='redirect'>to router3</button>
             <div x-router test='1'></div>
         </div>	
@@ -18,10 +18,17 @@ export class MdlPMod1 extends Module {
         return{
             home: true,
             list: false,
-            data: false
+            data: false,
+            // route2:'/router/route2/rparam/home/1'
         }
     }
     
+    onBeforeFirstRender(model){
+        setTimeout(()=>{
+            model.route2 = '/router/route2/rparam/home/1';
+        },0)
+    }
+
     onFirstRender () {
         // console.log(this);
     }

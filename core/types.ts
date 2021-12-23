@@ -1,5 +1,7 @@
+import { Model } from "./model";
 import { Module } from "./module";
 import { Route } from "./route";
+import { VirtualDom } from "./virtualdom";
 
 /**
  * 应用初始化配置类型
@@ -43,51 +45,85 @@ export interface IRouteCfg {
 }
 
 /**
- * 提示消息接口
+ * 模块状态类型
  */
-export interface ITipMessage {
-    TipWords: Object;
-    ErrorMsgs: Object;
-    FormMsgs: Object;
-    WeekDays: Object;
+export enum EModuleState {
+    INITED = 1,
+    UNACTIVE=2,
+    RENDERED=4
 }
 
-
 /**
- *  AST类
+ * 渲染后的节点接口
  */
-export interface IASTObj {
+export interface IRenderedDom{
     /**
-     * 节点类型，如果是原生节点，如div则是div，如果是文本节点则是text。如果是注释则为comment
+     * 元素名，如div
      */
-    tagName: string;
+    tagName?: string;
 
     /**
-     * 属性map，里面为属性对象如{name:**,...}
+     * key，整颗虚拟dom树唯一
      */
-    attrs?: Map<string, any>;
+    key: string;
+ 
     /**
-     * 事件数组，里面为事件对象{eventName:'click',eventHandler:'change'}
+      * 绑定模型
      */
-    events?: Array<{ eventName: string, exec: any }>;
+    model?: Model;
 
     /**
-     * 子节点数组，与textContent互斥
+     * 直接属性 不是来自于attribute，而是直接作用于html element，如el.checked,el.value等
      */
-    children?: Array<IASTObj>;
+    assets?: Object;
 
     /**
-     * 表达式数组
+     * 静态属性(attribute)集合
+     * {prop1:value1,...}
      */
-    expressions?: any[]
-
+    props?: Object;
+ 
     /**
-     * textContent 节点为text的时候才有的属性，与children属性互斥
+     * element为textnode时有效
      */
     textContent?: string;
 
     /**
-     * 是否闭合
+     * 子节点数组[]
      */
-    isClosed?: boolean;
+    children?: Array<IRenderedDom>;
+
+    /**
+     * 父虚拟dom
+     */
+    parent?: IRenderedDom;
+
+     /**
+      * staticNum 静态标识数
+      *  0 表示静态，不进行比较
+      *  > 0 每次比较后-1
+      *  < 0 不处理
+      */
+    staticNum?: number;
+ 
+    /**
+     * 不添加到树
+     */
+    dontAddToTree?: boolean;
+
+    /**
+     * 子模块id，模块容器时有效
+     */
+    subModuleId?: number;
+
+    /**
+     * 未改变标志，本次不渲染
+     */
+    notChange?: boolean;
+
+    /**
+     * 源虚拟dom
+     */
+    vdom?: VirtualDom;
 }
+

@@ -1,4 +1,4 @@
-import {Module} from '../../dist/nodom.js'
+import {Module} from '../../dist/nodom.esm.js'
 import {ModuleA} from './modulea.js'
 import {ModuleB} from './moduleb.js'
 import {ModuleC} from './modulec.js'
@@ -13,7 +13,7 @@ export class ModuleMain extends Module{
                 <div>x.y is {{x.y}}</div>
                 <h2>默认slot</h2>
                 <p>第一个子模块</p>
-                <mod-a xxx='111' class='m1' style='font-weight:bold;' p1='true'>
+                <mod-a xxx='111' class='m1' style='font-weight:bold;' p1='true' x-show={{show}}>
                     <mod-b p2='false' xxx='222'>
                         <modc>
                             <div>name is:{{name}}</div>
@@ -21,7 +21,7 @@ export class ModuleMain extends Module{
                     </mod-b>
                     <slot name='s2'><p  style='color:red'>替换的第二个slot  {{name}}</p></slot>
                 </mod-a>
-                
+            
                 <hr/>
                 <p>第二个子模块</p>
                 <h2>替换plug</h2>
@@ -78,7 +78,7 @@ export class ModuleMain extends Module{
         }
     }
     change(model){
-        model.show = false;
+        model.show = !model.show;
         model.y = 'aaaa';
         // console.log(this);
     }

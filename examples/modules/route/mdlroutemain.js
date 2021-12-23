@@ -1,4 +1,4 @@
-import {Module, Router, Util} from '../../../dist/nodom.js'
+import {Module, Router, Util} from '../../../dist/nodom.esm.js'
 export class MdlRouteMain extends Module {
     template(){
         return `

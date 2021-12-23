@@ -1,4 +1,5 @@
 import {Module} from "./module";
+import { IRenderedDom } from "./types";
 import {VirtualDom} from "./virtualdom";
 /**
  * css 管理器
@@ -36,7 +37,7 @@ export class CssManager{
      * @param add       是否添加
      * @returns         如果是styledom，则返回true，否则返回false
      */
-    public static handleStyleDom(module:Module,dom:VirtualDom,root:VirtualDom,add?:boolean):boolean{
+    public static handleStyleDom(module:Module,dom:IRenderedDom,root:VirtualDom,add?:boolean):boolean{
         if(dom.tagName.toLowerCase() !== 'style'){
             return false;
         }
@@ -54,12 +55,12 @@ export class CssManager{
      * @param dom       style text element
      * @returns         true:style text节点,false:非style text节点
      */
-    public static handleStyleTextDom(module:Module,dom:any):boolean{
+    public static handleStyleTextDom(module:Module,dom:IRenderedDom):boolean{
         if(dom.parent.tagName.toLowerCase() !== 'style'){
             return false;
         }
         //scope=this，在模块根节点添加 限定 class
-        CssManager.addRules(module,dom.textContent,dom.parent.getProp('scope') === 'this'?'.' + this.cssPreName + module.id:undefined);
+        CssManager.addRules(module,dom.textContent,dom.parent.props['scope'] === 'this'?'.' + this.cssPreName + module.id:undefined);
         return true;
     }
 

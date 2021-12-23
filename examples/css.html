@@ -10,7 +10,7 @@
 		<div class="view">hahaha</div> 
 	</body>
 	<script type='module'>
-		import{nodom,Module} from '../dist/nodom.js'
+		import{nodom,Module} from '../dist/nodom.esm.js'
 		class Module1 extends Module{
 			template(){
 				let s = `
@@ -21,6 +21,7 @@
 						
 						<style>
 							{{genCls(imp,this.model.age)}}
+                            <!--@import url(./css/a.css)-->
 						</style>
 						
                         <button e-click='change1'>changeCls1</button>

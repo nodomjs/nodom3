@@ -1,16 +1,16 @@
-import { VirtualDom } from "./virtualdom";
+import { IRenderedDom } from "./types";
 /**
  * 比较器
  */
 export class DiffTool{
     /**
      * 比较节点
-     * @param src           待比较节点（渲染后节点）
-     * @param dst 	        被比较节点
+     * @param src           待比较节点（新树节点）
+     * @param dst 	        被比较节点 (旧树节点)
      * @param changeArr     增删改的节点数组
      * @returns	            [[type(add 1, upd 2,del 3,move 4 ,rep 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),loc(位置)]]
      */
-    public static compare(src:any,dst:any,changeArr:Array<any>) {
+    public static compare(src:IRenderedDom,dst:IRenderedDom,changeArr:Array<any>) {
         if (!src.tagName) { //文本节点
             if (!dst.tagName) {
                 if ((src.staticNum || dst.staticNum) && src.textContent !== dst.textContent) {
@@ -19,7 +19,12 @@ export class DiffTool{
             } else { //节点类型不同
                 addChange(5,src,null, dst.parent);
             }
-        } else { //element节点
+        } else { 
+            //相同子模块节点不比较
+            if(src.subModuleId && src.subModuleId === dst.subModuleId){
+                return;
+            }
+            //element节点
             if (src.tagName !== dst.tagName) { //节点类型不同
                 addChange(5,src,null, dst.parent);
             }else if(src.staticNum || dst.staticNum){ //节点类型相同，但有一个不是静态节点，进行属性和asset比较
@@ -29,20 +34,22 @@ export class DiffTool{
                     if(!src[p] && dst[p] || src[p] && !dst[p]){
                         change = true;
                     }else if(src[p] && dst[p]){
-                        if(src[p].size !== dst[p].size){
+                        let keys = Object.keys(src[p]);
+                        let keys1 = Object.keys(dst[p]);
+                        if(keys.length !== keys1.length){
                             change = true;
                         }else{
-                            for(let k of src[p]){
-                                if(k[1] !== dst[p].get(k[0])){
+                            for(let k of keys){
+                                if(src[p][k] !== dst[p][k]){
                                     change = true;
                                     break;
                                 }
                             }
                         }
                     }
-                    if(change){
-                        addChange(2,src,null,dst.parent);    
-                    }
+                }
+                if(change){
+                    addChange(2,src,null,dst.parent);    
                 }
             }
         }
@@ -145,7 +152,7 @@ export class DiffTool{
          * @param dst   目标节点
          * @returns     相同key为true，否则为false
          */
-        function sameKey(src:VirtualDom, dst:VirtualDom):boolean {
+        function sameKey(src:IRenderedDom, dst:IRenderedDom):boolean {
             return src.key === dst.key;
         }
         
@@ -157,7 +164,7 @@ export class DiffTool{
         * @param parent     父节点
         * @param extra      move时 0:相对节点前，1:相对节点后
         */
-        function addChange(type:number,dom: VirtualDom, dom1?: VirtualDom|number,parent?:VirtualDom,loc?:number) {
+        function addChange(type:number,dom: IRenderedDom, dom1?: IRenderedDom|number,parent?:IRenderedDom,loc?:number) {
             return changeArr.push([type,dom,dom1,parent,loc]);
         }
     }

@@ -1,4 +1,4 @@
-import {createRoute} from "../../../dist/nodom.js";
+import {createRoute} from "../../../dist/nodom.esm.js";
 import {MdlRouteDir} from "./mdlroutedir.js";
 import {MdlPMod1} from "./mdlpmod1.js";
 import {MdlPMod2} from "./mdlpmod2.js";

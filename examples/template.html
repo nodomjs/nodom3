@@ -10,7 +10,7 @@
     <div></div>
 </body>
 <script type='module'>
-    import {nodom,Module} from '../dist/nodom.js'
+    import {nodom,Module} from '../dist/nodom.esm.js'
     
     class ModuleA extends Module{
         template(props){
@@ -63,7 +63,7 @@
                                 <moduleb>
                                     <template>
                                         <h3>moduleb name is:{{name}}</h3>
-                                    </template>    
+                                    </template>
                                 </moduleb>
                             </div>
                         </template>

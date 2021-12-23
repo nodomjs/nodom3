@@ -46,12 +46,11 @@
 	<body>
 		<h2>递归指令</h2>
 		<div class="view">
-			<button e-click="show">show</button>
 			
 		</div>
 	</body>
 	<script type='module'>
-		import{nodom,Module} from '../dist/nodom.js'
+		import{nodom,Module} from '../dist/nodom.esm.js'
 		class Module1 extends Module{
 			template(){
 				return `
@@ -59,7 +58,7 @@
 						<button e-click='change'>change</button>
 						<h3>简单使用</h3>
 						<div x-recur='ritem'>
-							<span class="{{cls}}">{{title}}</span>
+							<span class={{cls}}>{{title}}</span>
 							<recur ref/>
 						</div>
 						<h3>递归带repeat</h3>

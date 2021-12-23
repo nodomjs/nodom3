@@ -1,4 +1,4 @@
-import {Module} from '../../dist/nodom.js'
+import {Module} from '../../dist/nodom.esm.js'
 export class MRepeat extends Module{
     template(){
         return `
@@ -12,11 +12,11 @@ export class MRepeat extends Module{
             <div class="tip">基本使用</div>
             <div class="code">
                 菜单：
-                <for cond="{{foods}}" $index='idx' }}>
+                <for cond={{foods}} $index='idx'>
                     <span>菜名：{{name}}，价格：{{price}}</span>
                 </for>
             </div>
-            <div class=tip>索引号的使用（编号从0开始）</div> 
+            <!--<div class=tip>索引号的使用（编号从0开始）</div> 
             <p> 如果使用索引号，需要在带有repeat的指令中配置$index属性，该属性指定索引名。</p>
             <div class=code>
                 菜单：
@@ -52,7 +52,7 @@ export class MRepeat extends Module{
                 .blue{
                     color:blue;
                 }
-            </style>
+            </style>-->
         </div>
         `
     }

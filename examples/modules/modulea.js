@@ -1,4 +1,4 @@
-import {Module,registModule} from '../../dist/nodom.js'
+import {Module,registModule} from '../../dist/nodom.esm.js'
 import {ModuleB} from './moduleb.js'
 export class ModuleA extends Module{
     template(props){
@@ -17,7 +17,6 @@ export class ModuleA extends Module{
                     ${props.temp}
                 </div>
             `
-            
         }else{
             return `
                 <div class='modulea'>
