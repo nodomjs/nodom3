@@ -1,6 +1,6 @@
 {
   "name": "nodom3",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "private": false,
   "main": "index.ts",
   "directories": {
@@ -20,7 +20,7 @@
   "browser": "dist/nodom.global.js",
   "repository": {
     "type": "git",
-    "url": "git+https://gitee.com/weblabsw/nodom3"
+    "url": "https://gitee.com/weblabsw/nodom3"
   },
   "keywords": [
     "nodom",
