@@ -44,6 +44,7 @@ export class EventFactory{
         if(!eobj.has(event.name)){
             eobj.set(event.name,{});
         }
+        console.log(key,event);
                 
         let obj = eobj.get(event.name);
 

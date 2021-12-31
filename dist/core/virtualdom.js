@@ -1,116 +1,35 @@
-import { Directive } from "./directive";
 import { DirectiveManager } from "./directivemanager";
-import { NEvent } from "./event";
-import { Expression } from "./expression";
-import { Model } from "./model";
-import { Module } from "./module";
 import { Util } from "./util";
-
 /**
  * 虚拟dom
  */
 export class VirtualDom {
     /**
-     * 元素名，如div
-     */
-    public tagName: string;
-
-    /**
-     * key，整颗虚拟dom树唯一
-     */
-    public key: string;
-
-    /**
-     * 绑定模型
-     */
-    public model: Model;
-
-    /**
-     * element为textnode时有效
-     */
-    public textContent: string;
-
-    /**
-     * 表达式+字符串数组，用于textnode
-     */
-    public expressions: Array<Expression | string>;
-
-    /**
-     * 指令集
-     */
-    public directives: Directive[];
-
-    /**
-     * 直接属性 不是来自于attribute，而是直接作用于html element，如el.checked,el.value等
-     */
-    public assets: Map<string, any>;
-
-    /**
-     * 静态属性(attribute)集合
-     * {prop1:value1,...}
-     */
-    public props: Map<string, any>;
-
-
-    /**
-     * 事件数组
-     */
-    public events: Array<NEvent>;
-
-    /**
-     * 子节点数组[]
-     */
-    public children: Array<VirtualDom>;
-
-    /**
-     * 样式map
-     */
-    private styleMap: Map<string, string>;
-
-    /**
-     * class 数组
-     */
-    private classArr: Array<string>;
-
-    /**
-     * 父虚拟dom
-     */
-    public parent: VirtualDom;
-
-    /**
-     * staticNum 静态标识数
-     *  0 表示静态，不进行比较
-     *  > 0 每次比较后-1
-     *  < 0 不处理
-     */
-    public staticNum: number = 0;
-
-    /**
-     * 对应的所有表达式的字段都属于dom model内
-     */
-    public allModelField: boolean = true;
-
-    /**
-     * 未改变标志，本次不渲染
-     */
-    public notChange: boolean;
-
-    /**
      * @param tag       标签名
      * @param key       key
      */
-    constructor(tag?: string, key?: string, module?: Module) {
+    constructor(tag, key, module) {
+        /**
+         * staticNum 静态标识数
+         *  0 表示静态，不进行比较
+         *  > 0 每次比较后-1
+         *  < 0 不处理
+         */
+        this.staticNum = 0;
+        /**
+         * 对应的所有表达式的字段都属于dom model内
+         */
+        this.allModelField = true;
         this.key = key || ((module ? module.getDomKeyId() : Util.genId()) + '');
         if (tag) {
             this.tagName = tag;
         }
     }
-
     /**
      * 移除多个指令
      * @param directives 	待删除的指令类型数组或指令类型
      */
-    public removeDirectives(directives: string[]) {
+    removeDirectives(directives) {
         if (!this.directives) {
             return;
         }
@@ -119,16 +38,14 @@ export class VirtualDom {
             this.removeDirective(d);
         });
     }
-
     /**
      * 移除指令
      * @param directive 	待删除的指令类型名
      */
-    public removeDirective(directive: string) {
+    removeDirective(directive) {
         if (!this.directives) {
             return;
         }
-
         let ind;
         if ((ind = this.directives.findIndex(item => item.type.name === directive)) !== -1) {
             this.directives.splice(ind, 1);
@@ -137,16 +54,16 @@ export class VirtualDom {
             delete this.directives;
         }
     }
-
     /**
      * 添加指令
      * @param directive     指令对象
      * @param sort          是否排序
      */
-    public addDirective(directive: Directive, sort?: boolean) {
+    addDirective(directive, sort) {
         if (!this.directives) {
             this.directives = [];
-        } else if (this.directives.find(item => item.type.name === directive.type.name)) {
+        }
+        else if (this.directives.find(item => item.type.name === directive.type.name)) {
             return;
         }
         this.directives.push(directive);
@@ -155,11 +72,10 @@ export class VirtualDom {
             this.sortDirective();
         }
     }
-
     /**
      * 指令排序
      */
-    public sortDirective() {
+    sortDirective() {
         if (!this.directives) {
             return;
         }
@@ -169,33 +85,30 @@ export class VirtualDom {
             });
         }
     }
-
     /**
      * 是否有某个类型的指令
      * @param typeName 	    指令类型名
      * @returns             true/false
      */
-    public hasDirective(typeName: string): boolean {
+    hasDirective(typeName) {
         return this.directives && this.directives.findIndex(item => item.type.name === typeName) !== -1;
     }
-
     /**
      * 获取某个类型的指令
      * @param module            模块
      * @param directiveType 	指令类型名
      * @returns                 指令对象
      */
-    public getDirective(directiveType: string): Directive {
+    getDirective(directiveType) {
         if (!this.directives) {
             return;
         }
         return this.directives.find(item => item.type.name === directiveType);
     }
-
     /**
      * 添加子节点
      */
-    public add(dom: VirtualDom) {
+    add(dom) {
         if (!this.children) {
             this.children = [];
         }
@@ -206,18 +119,17 @@ export class VirtualDom {
      * @param cls   class name
      * @return      true/false
      */
-    public hasClass(module, cls: string): boolean {
+    hasClass(module, cls) {
         let classes = this.getParam(module, '$classes');
         if (!classes) {
             return false;
         }
         return classes.includes(cls);
     }
-
     /**
      * 初始化class数组
      */
-    private initClassArr() {
+    initClassArr() {
         let classes = this.classArr;
         if (classes) {
             return;
@@ -233,7 +145,7 @@ export class VirtualDom {
      * 添加css class
      * @param cls class名,可以多个，以“空格”分割
      */
-    public addClass(cls: string) {
+    addClass(cls) {
         this.initClassArr();
         let classes = this.classArr;
         let arr = cls.trim().split(/\s+/);
@@ -249,12 +161,11 @@ export class VirtualDom {
             this.setStaticOnce();
         }
     }
-
     /**
      * 删除css class
      * @param cls class名,可以多个，以“空格”分割
      */
-    public removeClass(cls: string) {
+    removeClass(cls) {
         let classes = this.classArr;
         if (!classes) {
             return;
@@ -271,26 +182,25 @@ export class VirtualDom {
         if (change) {
             if (classes.length === 0) {
                 this.delProp('class');
-            } else {
+            }
+            else {
                 this.setProp('class', classes.join(' '));
             }
             this.setStaticOnce();
         }
     }
-
     /**
      * 初始化style map
      */
-    private initStyleMap() {
+    initStyleMap() {
         if (this.styleMap) {
             return;
         }
         this.styleMap = new Map();
-
         let styles = this.styleMap;
         let oriStyle = this.getProp('style');
         if (oriStyle) {
-            let sa: any[] = oriStyle.trim().split(/\s*;\s*/);
+            let sa = oriStyle.trim().split(/\s*;\s*/);
             for (let s of sa) {
                 let sa1 = s.split(/\s*:\s*/);
                 styles.set(sa1[0], sa[1]);
@@ -301,11 +211,11 @@ export class VirtualDom {
      * 添加style
      *  @param styleStr style字符串
      */
-    public addStyle(styleStr: string) {
+    addStyle(styleStr) {
         this.initStyleMap();
         let change = false;
         let sa = styleStr.trim().split(/\s*;\s*/);
-        let styles = this.styleMap
+        let styles = this.styleMap;
         for (let s of sa) {
             if (s === '') {
                 continue;
@@ -321,12 +231,11 @@ export class VirtualDom {
             this.setStaticOnce();
         }
     }
-
     /**
      * 删除style
      * @param styleStr style字符串，可以是stylename:stylevalue[;...]或stylename1;stylename2
      */
-    public removeStyle(styleStr: string) {
+    removeStyle(styleStr) {
         let styles = this.styleMap;
         if (!styles) {
             return;
@@ -343,104 +252,98 @@ export class VirtualDom {
         if (change) {
             if (styles.size === 0) {
                 this.delProp('style');
-            } else {
+            }
+            else {
                 this.setProp('style', [...styles].map(item => item.join(':')).join(';'));
             }
             this.setStaticOnce();
         }
     }
-
     /**
      * 是否拥有属性
      * @param propName  属性名
      * @param isExpr    是否只检查表达式属性
      */
-    public hasProp(propName: string) {
+    hasProp(propName) {
         if (this.props) {
             return this.props.has(propName);
         }
     }
-
     /**
      * 获取属性值
      * @param propName  属性名
      * @param isExpr    是否只获取表达式属性
      */
-    public getProp(propName: string, isExpr?: boolean) {
+    getProp(propName, isExpr) {
         if (this.props) {
             return this.props.get(propName);
         }
     }
-
     /**
      * 设置属性值
      * @param propName  属性名
      * @param v         属性值
      */
-    public setProp(propName: string, v: any) {
+    setProp(propName, v) {
         if (!this.props) {
             this.props = new Map();
         }
         this.props.set(propName, v);
     }
-
     /**
      * 删除属性
-     * @param props     属性名或属性名数组 
+     * @param props     属性名或属性名数组
      */
-    public delProp(props: string | string[]) {
+    delProp(props) {
         if (!this.props) {
             return;
         }
         if (Util.isArray(props)) {
-            for (let p of <string[]>props) {
+            for (let p of props) {
                 this.props.delete(p);
             }
-        } else {
-            this.props.delete(<string>props);
+        }
+        else {
+            this.props.delete(props);
         }
         //设置静态标志，至少要比较一次
         this.setStaticOnce();
     }
-
     /**
      * 设置asset
      * @param assetName     asset name
      * @param value         asset value
      */
-    public setAsset(assetName: string, value: any) {
+    setAsset(assetName, value) {
         if (!this.assets) {
             this.assets = new Map();
         }
         this.assets.set(assetName, value);
     }
-
     /**
      * 删除asset
      * @param assetName     asset name
      */
-    public delAsset(assetName: string) {
+    delAsset(assetName) {
         if (!this.assets) {
             return;
         }
         this.assets.delete(assetName);
     }
-
     /**
      * 获取html dom
-     * @param module    模块 
+     * @param module    模块
      * @returns         对应的html dom
      */
-    public getEl(module: Module): Node {
+    getEl(module) {
         return module.getNode(this.key);
     }
-
     /**
      * 查找子孙节点
      * @param key 	element key
      * @returns		虚拟dom/undefined
      */
-    public query(key: string) {
+    query(key) {
         if (this.key === key) {
             return this;
         }
@@ -453,50 +356,46 @@ export class VirtualDom {
             }
         }
     }
-
     /**
      * 设置cache参数
      * @param module    模块
      * @param name      参数名
      * @param value     参数值
      */
-    public setParam(module: Module, name: string, value: any) {
+    setParam(module, name, value) {
         module.objectManager.setDomParam(this.key, name, value);
     }
-
     /**
      * 获取参数值
-     * @param module    模块 
+     * @param module    模块
      * @param name      参数名
      * @returns         参数值
      */
-    public getParam(module: Module, name: string) {
+    getParam(module, name) {
         return module.objectManager.getDomParam(this.key, name);
     }
-
     /**
      * 移除参数
      * @param module    模块
      * @param name      参数名
      */
-    public removeParam(module: Module, name: string) {
+    removeParam(module, name) {
         module.objectManager.removeDomParam(this.key, name);
     }
-
     /**
      * 设置单次静态标志
      */
-    private setStaticOnce() {
+    setStaticOnce() {
         if (this.staticNum !== -1) {
             this.staticNum = 1;
         }
     }
-
     /**
      * 克隆
+     * @param changeKey     是否更改key，如果为true，则生成的节点用新的key
      */
-    public clone(): VirtualDom {
-        let dst: VirtualDom = new VirtualDom(this.tagName, this.key);
+    clone(module) {
+        let dst = new VirtualDom(this.tagName, this.key);
         if (this.tagName) {
             //属性
             if (this.props && this.props.size > 0) {
@@ -504,45 +403,41 @@ export class VirtualDom {
                     dst.setProp(p[0], p[1]);
                 }
             }
-
             if (this.assets && this.assets.size > 0) {
                 for (let p of this.assets) {
                     dst.setAsset(p[0], p[1]);
                 }
             }
-
             if (this.directives && this.directives.length > 0) {
                 dst.directives = [];
                 for (let d of this.directives) {
                     dst.directives.push(d.clone());
                 }
             }
-            //复制事件
-            dst.events = this.events;
-
             //子节点clone
             if (this.children) {
                 for (let c of this.children) {
-                    dst.add(c.clone());
+                    dst.add(c.clone(module));
                 }
             }
-        } else {
+        }
+        else {
             dst.expressions = this.expressions;
             dst.textContent = this.textContent;
         }
         dst.staticNum = this.staticNum;
         return dst;
     }
-
     /**
      * 保存事件
-     * @param key       dom key 
+     * @param key       dom key
      * @param event     事件对象
      */
-    public addEvent(event: NEvent) {
+    addEvent(event) {
         if (!this.events) {
             this.events = [];
         }
         this.events.push(event);
     }
 }
+//# sourceMappingURL=virtualdom.js.map
