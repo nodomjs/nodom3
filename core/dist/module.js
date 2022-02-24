@@ -426,8 +426,12 @@ var Module = /** @class */ (function () {
     */
     Module.prototype.mergeProps = function (dom, props) {
         var change = false;
+        var excludes = ['template'];
         for (var _i = 0, _a = Object.keys(props); _i < _a.length; _i++) {
             var k = _a[_i];
+            if (excludes.includes(k)) {
+                continue;
+            }
             var c = dom.addProp(k, props[k]);
             if (!change) {
                 change = c;

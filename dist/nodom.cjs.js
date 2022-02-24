@@ -1071,7 +1071,7 @@ class CssManager {
      * @returns         如果是styleTextdom返回true，否则返回false
      */
     static handleStyleTextDom(module, dom) {
-        if (dom.parent.tagName.toLowerCase() !== 'style') {
+        if (!dom.parent || dom.parent.tagName.toLowerCase() !== 'style') {
             return false;
         }
         //scope=this，在模块根节点添加 限定 class
@@ -1787,7 +1787,6 @@ class Renderer {
             if (dom.props['key']) {
                 module.saveElement(dom.props['key'], el);
             }
-            dom.props['key'] = dom.key;
             //子模块容器的处理由子模块处理
             if (!dom.subModuleId) {
                 //设置属性
@@ -5140,7 +5139,7 @@ class Module {
                 if (this.originTree) {
                     propChanged = this.mergeProps(this.originTree, props);
                 }
-                const tmp = this.template(this.props);
+                const tmp = this.template(props);
                 if (tmp !== this.oldTemplate || propChanged) {
                     this.active();
                 }
@@ -5189,7 +5188,11 @@ class Module {
     */
     mergeProps(dom, props) {
         let change = false;
+        const excludes = ['template'];
         for (let k of Object.keys(props)) {
+            if (excludes.includes(k)) {
+                continue;
+            }
             let c = dom.addProp(k, props[k]);
             if (!change) {
                 change = c;
@@ -5725,11 +5728,6 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                         temp[field] = v;
                     }
                 }
-                //修改value值，该节点不重新渲染
-                // if (type !== 'radio') {
-                //     dom.props['value'] = v;
-                //     el.value = v;
-                // }
             });
             GlobalCache.set('$fieldChangeEvent', event);
         }

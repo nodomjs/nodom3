@@ -417,7 +417,11 @@ export class Module {
     */
     mergeProps(dom, props) {
         let change = false;
+        const excludes = ['template'];
         for (let k of Object.keys(props)) {
+            if (excludes.includes(k)) {
+                continue;
+            }
             let c = dom.addProp(k, props[k]);
             if (!change) {
                 change = c;
