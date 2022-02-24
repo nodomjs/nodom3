@@ -108,7 +108,6 @@ export class EventFactory {
         }
         else if (toDelg && obj.toDelg) {
             let index = obj.toDelg.findIndex(item => item === event);
-            console.log(index);
             if (index !== -1) {
                 obj.toDelg.splice(index, 1);
                 if (obj.toDelg.length === 0) {

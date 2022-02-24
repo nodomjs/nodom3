@@ -48,7 +48,7 @@ export class ModuleFactory {
         }
         this.classes.set(name, clazz);
         if (alias) {
-            this.classes.set(alias, clazz);
+            this.classes.set(alias.toLowerCase(), clazz);
         }
     }
     /**

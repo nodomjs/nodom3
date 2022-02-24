@@ -1,4 +1,4 @@
-import {Module} from '../../dist/nodom.esm.js'
+import {Module} from '../../dist/nodom.esm.min.js'
 export class MRepeat extends Module{
     template(){
         return `
@@ -31,7 +31,7 @@ export class MRepeat extends Module{
                 <for cond={{getOdd(foods)}}>
                     菜名：{{name}}，价格：{{price}}
                 </for>
-            </div>
+            </div>-->
             <div class=tip>repeat 嵌套</div>
             <div class=code>
                 菜单：
@@ -52,7 +52,7 @@ export class MRepeat extends Module{
                 .blue{
                     color:blue;
                 }
-            </style>-->
+            </style>
         </div>
         `
     }
@@ -139,6 +139,8 @@ export class MRepeat extends Module{
     }
     clear(model){
         delete model.foods;
+        //清空后再push,pop会报错
+        model.foods=[];
         console.log(model);
     }
 

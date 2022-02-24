@@ -1,11 +1,10 @@
 import { Module } from "./module";
 import { IRenderedDom } from "./types";
-import { VirtualDom } from "./virtualdom";
 /**
  * css 管理器
  * 针对不同的rule，处理方式不同
- * CSSStyleRule 进行保存和替换，同时 scopeInModule(模块作用域)有效
- * CSSImportRule 路径不重复添加，因为必须加在stylerule前面，所以需要记录最后的import索引号
+ * CssStyleRule 进行保存和替换，同时 scopeInModule(模块作用域)有效
+ * CssImportRule 路径不重复添加，因为必须加在stylerule前面，所以需要记录最后的import索引号
  */
 export declare class CssManager {
     /**
@@ -13,7 +12,7 @@ export declare class CssManager {
      */
     private static sheet;
     /**
-     * import url map，用于存储import的href路径
+     * import url map，用于存储import的url路径
      */
     private static importMap;
     /**
@@ -27,17 +26,17 @@ export declare class CssManager {
     /**
      * 处理style 元素
      * @param module    模块
-     * @param dom       虚拟都没
+     * @param dom       虚拟dom
      * @param root      模块root dom
-     * @param add       是否添加
+     * @param add       是否添加根模块类名
      * @returns         如果是styledom，则返回true，否则返回false
      */
-    static handleStyleDom(module: Module, dom: IRenderedDom, root: VirtualDom, add?: boolean): boolean;
+    static handleStyleDom(module: Module, dom: IRenderedDom, root: IRenderedDom, add?: boolean): boolean;
     /**
      * 处理 style 下的文本元素
      * @param module    模块
      * @param dom       style text element
-     * @returns         true:style text节点,false:非style text节点
+     * @returns         如果是styleTextdom返回true，否则返回false
      */
     static handleStyleTextDom(module: Module, dom: IRenderedDom): boolean;
     /**
@@ -48,8 +47,9 @@ export declare class CssManager {
      */
     static addRules(module: Module, cssText: string, scopeName?: string): void;
     /**
-     * 清除模块 css rules
-     * @param module    模块
+     * 清除模块css rules
+     * @param module  模块
+     * @returns       如果模块不存在css rules，则返回void
      */
     static clearModuleRules(module: Module): void;
 }

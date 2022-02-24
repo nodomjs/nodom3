@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+   <div id="app"></div>
+</body>
+
+<script type='module' >
+
+    import {Module,nodom,registModule} from '../dist/nodom.esm.js'
+    
+    class Hello extends Module {
+       data() {
+         return {
+          title:"child"
+         }
+       }
+       template(props) {
+           return `
+            <div>
+               <slot innerRender></slot>
+            </div>
+           `
+       }
+    }
+    registModule(Hello,'User')
+   class Main extends Module {
+       data() {
+         return {
+          title:"parent"
+         }
+       }
+       template(props) {
+           return `
+            <div>
+               <User>
+                   {{title}}
+               </User>
+            </div>
+           `
+       }
+    }
+    nodom(Main,'#app')
+</script>
+</html>

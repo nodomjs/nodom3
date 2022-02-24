@@ -10,7 +10,7 @@ import { Module } from "./module";
  */
 export declare class ObjectManager {
     /**
-     * cache
+     * NCache
      */
     cache: NCache;
     /**
@@ -24,19 +24,19 @@ export declare class ObjectManager {
     constructor(module: Module);
     /**
      * 保存到cache
-     * @param key       键，支持"."
+     * @param key       键，支持"."（多级数据分割）
      * @param value     值
      */
     set(key: string, value: any): void;
     /**
      * 从cache读取
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      * @returns     缓存的值或undefined
      */
     get(key: any): any;
     /**
      * 从cache移除
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      */
     remove(key: any): void;
     /**
@@ -71,7 +71,7 @@ export declare class ObjectManager {
     /**
      * 设置dom参数值
      * @param key       dom key
-     * @param name       参数名
+     * @param name      参数名
      * @param value     参数值
      */
     setDomParam(key: string, name: string, value: any): void;
@@ -83,7 +83,7 @@ export declare class ObjectManager {
      */
     getDomParam(key: string, name: string): any;
     /**
-     * 移除dom参数
+     * 移除dom参数值
      * @param key       dom key
      * @param name      参数名
      */
@@ -94,7 +94,7 @@ export declare class ObjectManager {
      */
     clearDomParams(key: string): void;
     /**
-     * 清除缓存dom对象
+     * 清除缓存dom对象集
      */
     clearAllDomParams(): void;
 }

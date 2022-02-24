@@ -12,61 +12,51 @@ export class Model {
     constructor(data, module) {
         //模型管理器
         let proxy = new Proxy(data, {
-            set: (src, key, value, receiver) => {
+            set(src, key, value, receiver) {
                 //值未变,proxy 不处理
                 if (src[key] === value) {
                     return true;
                 }
-                //不处理原型属性和构造器 
-                if (['__proto__', 'constructor'].includes(key)) {
+                //不处理原型属性
+                if (['__proto__'].includes(key)) {
                     return true;
                 }
-                const excArr = ["$key"];
                 let ov = src[key];
                 let r = Reflect.set(src, key, value, receiver);
                 //非对象，null，非model更新渲染
-                if (typeof value !== 'function' && excArr.indexOf(key) === -1) {
-                    ModelManager.update(proxy, key, ov, value);
+                if (value && !value.$key && typeof value === 'object') {
+                    value = new Model(value, module);
                 }
+                ModelManager.update(proxy, key, ov, value);
                 return r;
             },
-            get: (src, key, receiver) => {
+            get(src, key, receiver) {
                 let res = Reflect.get(src, key, receiver);
-                //数组的sort和fill触发强行渲染
-                if (Array.isArray(src) && ['sort', 'fill'].indexOf(key) !== -1) { //强制渲染
-                    ModelManager.update(proxy, null, null, null, true);
-                }
-                let data = ModelManager.getFromDataMap(src[key]);
-                if (data) {
-                    return data;
-                }
-                if (res !== null && typeof res === 'object') {
-                    //如果是对象，则返回代理，便于后续激活get set方法                   
-                    //判断是否已经代理，如果未代理，则增加代理
-                    if (!src[key].$key) {
-                        let p = new Model(res, module);
-                        return p;
+                if (res) {
+                    if (res.$key) {
+                        return ModelManager.getModel(res.$key);
+                    }
+                    else if (typeof res === 'object' && src.hasOwnProperty(key)) { //未代理对象，需要创建模型
+                        return new Model(res, module);
                     }
                 }
                 return res;
             },
-            deleteProperty: function (src, key) {
-                //如果删除对象，从mm中同步删除
+            deleteProperty(src, key) {
+                //如果删除对象，从modelmanager中同步删除
                 if (src[key] !== null && typeof src[key] === 'object') {
-                    ModelManager.delFromDataMap(src[key]);
-                    ModelManager.delModel(src[key]);
+                    ModelManager.delFromMap(src[key].$key);
                 }
                 delete src[key];
-                ModelManager.update(proxy, key, null, null, true);
+                ModelManager.update(src, key, null, null, true);
                 return true;
             }
         });
-        proxy.$watch = this.$watch;
-        proxy.$get = this.$get;
-        proxy.$set = this.$set;
+        for (let k of ['$watch', '$unwatch', '$get', '$set']) {
+            proxy[k] = this[k];
+        }
         proxy.$key = Util.genId();
-        ModelManager.addToDataMap(data, proxy);
-        ModelManager.addModel(proxy, data);
+        ModelManager.addToMap(data, proxy);
         //绑定到模块
         if (module) {
             ModelManager.bindToModule(proxy, module);
@@ -75,26 +65,78 @@ export class Model {
     }
     /**
      * 观察(取消观察)某个数据项
-     * @param key       数据项名
+     * @param key       数据项名或数组
      * @param operate   数据项变化时执行方法名(在module的methods中定义)
-     * @param cancel    取消观察
      */
-    $watch(key, operate, cancel) {
-        let model = this;
-        let index = -1;
-        //如果带'.'，则只取最里面那个对象
-        if ((index = key.lastIndexOf('.')) !== -1) {
-            model = this.$get(key.substr(0, index));
-            key = key.substr(index + 1);
-        }
-        if (!model) {
-            return;
-        }
-        if (cancel) {
-            ModelManager.removeWatcher(model, key, operate);
+    $watch(key, operate) {
+        let mids = ModelManager.getModuleIds(this);
+        let arr = [];
+        if (Array.isArray(key)) {
+            for (let k of key) {
+                watchOne(this, k, operate);
+            }
         }
         else {
-            ModelManager.addWatcher(model, key, operate);
+            watchOne(this, key, operate);
+        }
+        //返回取消watch函数
+        return () => {
+            for (let f of arr) {
+                const foos = f.m.$watchers[f.k];
+                if (foos) {
+                    for (let i = 0; i < foos.length; i++) {
+                        //方法相同则撤销watch
+                        if (foos[i].f === f.f) {
+                            foos.splice(i, 1);
+                            if (foos.length === 0) {
+                                delete f.m.$watchers[f.k];
+                            }
+                        }
+                    }
+                }
+            }
+            //释放arr
+            arr = null;
+        };
+        function watchOne(model, key, operate) {
+            let index = -1;
+            //如果带'.'，则只取最里面那个对象
+            if ((index = key.lastIndexOf('.')) !== -1) {
+                model = this.$get(key.substr(0, index));
+                key = key.substr(index + 1);
+            }
+            if (!model) {
+                return;
+            }
+            const listener = { modules: mids, f: operate };
+            //对象，监听整个对象
+            if (typeof model[key] === 'object') {
+                model = model[key];
+                if (!model.$watchers) {
+                    model.$watchers = {};
+                }
+                if (!model.$watchers.$this) {
+                    model.$watchers.$this = [listener];
+                }
+                else {
+                    model.$watchers.$this.push(listener);
+                }
+                //保存用于撤销watch
+                arr.push({ m: model, k: '$this', f: operate });
+            }
+            else { //否则监听属性
+                if (!model.$watchers) {
+                    model.$watchers = {};
+                }
+                if (!model.$watchers[key]) {
+                    model.$watchers[key] = [listener];
+                }
+                else {
+                    model.$watchers[key].push(listener);
+                }
+                //保存用于撤销watch
+                arr.push({ m: model, k: key, f: operate });
+            }
         }
     }
     /**
@@ -137,6 +179,7 @@ export class Model {
                     ModelManager.bindToModules(m, mids);
                     model[arr[i]] = m;
                 }
+                model = model[arr[i]];
             }
             key = arr[arr.length - 1];
         }

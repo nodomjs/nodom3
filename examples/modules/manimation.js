@@ -53,9 +53,9 @@ export class MAnimation extends Module {
                 <h2>fade</h2>
                 <div class="container">
                     <div class='div2' x-animation={{transition7}}></div>
-                </div> 
+                </div>  -->
                 
-                <p>对于进入离开过渡，你可以分别配置，你也可以控制延时时间和播放时间以及timingFunction</p>
+                <!-- <p>对于进入离开过渡，你可以分别配置，你也可以控制延时时间和播放时间以及timingFunction</p>
                 <button e-click='tigger6'>点我触发过渡</button>
                 <h2>进入/离开分开配置</h2>
                 <div class="container">
@@ -175,7 +175,7 @@ export class MAnimation extends Module {
 			},
 			animaiton: {
 				tigger: true, // 必填
-				isAppear: false,
+				isAppear: true,
 				type: "animation",
 				name: "myfade", // 必填
 				hooks: {

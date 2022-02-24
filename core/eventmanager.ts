@@ -1,10 +1,10 @@
-import { Module } from "./module";
 import { NEvent } from "./event";
+import { Module } from "./module";
 import { IRenderedDom } from "./types";
 /**
  * 事件管理器
  */
-export class EventManager{
+export class EventManager {
     /**
      * 外部事件集
      */
@@ -48,7 +48,7 @@ export class EventManager{
          * 事件handler
          * @param e  Event
          */
-        function handler(e){
+        function handler(e) {
             //从事件element获取事件
             let el = e.currentTarget;
             const dom = module.getVirtualDom(el['vdom']);
@@ -149,14 +149,13 @@ export class EventManager{
     
     /**
      * 处理外部事件
-     * @param module    模块 
      * @param dom       dom节点
      * @param event     事件对象
      * @returns         如果有是外部事件，则返回true，否则返回false
      */
     private static handleExtendEvent(module:Module,dom:IRenderedDom,event:NEvent):boolean{
         let evts = this.get(event.name);
-        if(!evts){
+        if (!evts) {
             return false;
         }
         for(let key of Object.keys(evts)){

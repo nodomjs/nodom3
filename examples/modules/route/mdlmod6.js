@@ -1,8 +1,15 @@
 import {Module,request} from '../../../dist/nodom.esm.js'
+
+class Module61 extends Module{
+    template(props){
+        return '<p style="background:#f00">{{name}}</p>'
+    }
+}
 /**
  * 路由主模块
  */
 export class MdlMod6 extends Module {
+    modules = [Module61]
     // template() {
     //     return '<span>路由r2加载的模块</span>'
     // }
@@ -10,6 +17,7 @@ export class MdlMod6 extends Module {
         return `
             <div>
                 vip is:{{d1.vip}}
+                <Module61 x-repeat = {{d1.foods}} useDomModel />
                 <ul>
                     <li x-repeat={{d1.foods}}>
                         {{name}}

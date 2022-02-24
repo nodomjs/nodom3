@@ -44,10 +44,7 @@ export class EventFactory{
         if(!eobj.has(event.name)){
             eobj.set(event.name,{});
         }
-        console.log(key,event);
-                
         let obj = eobj.get(event.name);
-
         if(key1){ //代理事件
             if(!obj.delg){
                 obj.delg = [{key:key1,event:event}];
@@ -125,7 +122,6 @@ export class EventFactory{
             }
         }else if(toDelg && obj.toDelg){
             let index = obj.toDelg.findIndex(item=>item===event);
-            console.log(index);
             if(index !== -1){
                 obj.toDelg.splice(index,1);
                 if(obj.toDelg.length === 0){

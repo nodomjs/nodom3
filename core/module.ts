@@ -93,7 +93,7 @@ export class Module {
     /**
      * 更改model的map，用于记录增量渲染时更改的model
      */
-    public changedModelMap:Map<string,boolean>;
+    public changedModelMap:Map<number,boolean>;
 
     /**
      * 用于保存每个key对应的html node
@@ -298,6 +298,7 @@ export class Module {
         if (ModuleFactory.getMain() === this) {
             return;
         }
+        delete this.srcDom;
         this.doModuleEvent('beforeUnActive');
         //设置状态
         this.state = EModuleState.UNACTIVE;
@@ -442,7 +443,6 @@ export class Module {
                 this.model[d] = o;
             }
         }
-        this.props = props;
         this.srcDom = dom;
         if(this.state === EModuleState.INITED || this.state === EModuleState.UNACTIVE){
             this.active();
@@ -473,12 +473,13 @@ export class Module {
                 if(this.originTree){
                     propChanged = this.mergeProps(this.originTree,props);
                 }
-                const tmp = this.template(this.props);
+                const tmp = this.template(props);
                 if(tmp !== this.oldTemplate || propChanged){
                     this.active();
                 }
-            }    
+            } 
         }
+        this.props = props;
     }
 
     /**
@@ -498,7 +499,6 @@ export class Module {
             return;
         }
         this.originTree = new Compiler(this).compile(this.oldTemplate);
-        
         if(this.props){
             this.mergeProps(this.originTree,this.props);
         }
@@ -526,20 +526,14 @@ export class Module {
     * @returns         是否改变
     */
     private mergeProps(dom:VirtualDom,props:any):boolean{
-       let change = false;
-       for(let k of Object.keys(props)){
-           if(props[k] !== dom.getProp(k)){
-               change = true;
-               if(k === 'style'){
-                   dom.addStyle(props[k]);
-               }else if(k === 'class'){
-                   dom.addClass(props[k]);
-               }else{
-                   dom.setProp(k,props[k]);
-               }
-           }
-       }
-       return change;
+        let change = false;
+        for(let k of Object.keys(props)){
+            let c = dom.addProp(k,props[k]);
+            if(!change){
+                change = c;
+            }
+        }
+        return change;
     }
 
     /**

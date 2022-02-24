@@ -4,6 +4,7 @@ import { NodomMessage_en } from "./locales/msg_en";
 import { ModuleFactory } from "./modulefactory";
 import { Renderer } from "./renderer";
 import { Route } from "./route";
+import { Router } from "./router";
 import { Scheduler } from "./scheduler";
 import { IRouteCfg } from "./types";
 import { Util } from "./util";
@@ -35,14 +36,17 @@ export function nodom(clazz:any,el:string){
  * 暴露的创建路由方法
  * @param config  数组或单个配置
  */
-export function createRoute(config: IRouteCfg | Array<IRouteCfg>): Route {
+export function createRoute(config: IRouteCfg | Array<IRouteCfg>,parent?:Route): Route {
+    let route:Route;
+    parent = parent || Router.root;
     if (Util.isArray(config)) {
         for (let item of <Array<IRouteCfg>>config) {
-            new Route(item);
+            route = new Route(item,parent);
         }
     } else {
-        return new Route(<IRouteCfg>config);
+        route = new Route(<IRouteCfg>config,parent);
     }
+    return route;
 }
 
 /**

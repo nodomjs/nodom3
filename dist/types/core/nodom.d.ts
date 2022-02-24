@@ -17,7 +17,7 @@ export declare function nodom(clazz: any, el: string): void;
  * 暴露的创建路由方法
  * @param config  数组或单个配置
  */
-export declare function createRoute(config: IRouteCfg | Array<IRouteCfg>): Route;
+export declare function createRoute(config: IRouteCfg | Array<IRouteCfg>, parent?: Route): Route;
 /**
  * 创建指令
  * @param name      指令名

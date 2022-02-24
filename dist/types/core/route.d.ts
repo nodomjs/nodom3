@@ -28,10 +28,6 @@ export declare class Route {
      */
     onLeave: Function;
     /**
-     * 是否使用父路由路径
-     */
-    useParentPath: boolean;
-    /**
      * 路由路径
      */
     path: string;
@@ -55,12 +51,16 @@ export declare class Route {
      *
      * @param config 路由配置项
      */
-    constructor(config?: IRouteCfg);
+    constructor(config?: IRouteCfg, parent?: Route);
     /**
      * 添加子路由
      * @param child
      */
     addChild(child: Route): void;
+    /**
+     * 通过路径解析路由对象
+     */
+    private parse;
     /**
      * 克隆
      * @returns 克隆对象

@@ -5,14 +5,14 @@ import { Module } from "./module";
 export declare class GlobalCache {
     private static cache;
     /**
-         * 保存到cache
-         * @param key       键，支持"."
-         * @param value     值
-         */
+     * 保存到cache
+     * @param key       键，支持"."（多级数据分割）
+     * @param value     值
+     */
     static set(key: string, value: any): void;
     /**
      * 从cache读取
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      * @returns     缓存的值或undefined
      */
     static get(key: any): any;
@@ -25,7 +25,7 @@ export declare class GlobalCache {
     static subscribe(module: Module, key: string, handler: Function): void;
     /**
      * 从cache移除
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      */
     static remove(key: any): void;
 }

@@ -1,11 +1,11 @@
 import {Module} from "./module";
 import { IRenderedDom } from "./types";
-import {VirtualDom} from "./virtualdom";
+import { VirtualDom } from "./virtualdom";
 /**
  * css 管理器
  * 针对不同的rule，处理方式不同
- * CSSStyleRule 进行保存和替换，同时 scopeInModule(模块作用域)有效
- * CSSImportRule 路径不重复添加，因为必须加在stylerule前面，所以需要记录最后的import索引号
+ * CssStyleRule 进行保存和替换，同时 scopeInModule(模块作用域)有效
+ * CssImportRule 路径不重复添加，因为必须加在stylerule前面，所以需要记录最后的import索引号
  */
 export class CssManager{
 
@@ -15,7 +15,7 @@ export class CssManager{
     private static sheet:any;
 
     /**
-     * import url map，用于存储import的href路径
+     * import url map，用于存储import的url路径
      */
     private static importMap = new Map();
 
@@ -32,19 +32,22 @@ export class CssManager{
     /**
      * 处理style 元素
      * @param module    模块
-     * @param dom       虚拟都没
+     * @param dom       虚拟dom
      * @param root      模块root dom
-     * @param add       是否添加
+     * @param add       是否添加根模块类名
      * @returns         如果是styledom，则返回true，否则返回false
      */
-    public static handleStyleDom(module:Module,dom:IRenderedDom,root:VirtualDom,add?:boolean):boolean{
+    public static handleStyleDom(module:Module,dom:IRenderedDom,root:IRenderedDom,add?:boolean):boolean{
         if(dom.tagName.toLowerCase() !== 'style'){
             return false;
         }
         if(add){
-            root.addClass(this.cssPreName + module.id);
-        }else{
-            root.removeClass(this.cssPreName + module.id);
+            let cls = this.cssPreName + module.id;
+            if(root.props['class']){
+                root.props['class'] = dom.props['class'] + ' ' + cls;
+            }else{
+                root.props['class'] = cls;
+            }
         }
         return true;
     }
@@ -53,10 +56,10 @@ export class CssManager{
      * 处理 style 下的文本元素
      * @param module    模块
      * @param dom       style text element
-     * @returns         true:style text节点,false:非style text节点
+     * @returns         如果是styleTextdom返回true，否则返回false
      */
     public static handleStyleTextDom(module:Module,dom:IRenderedDom):boolean{
-        if(dom.parent.tagName.toLowerCase() !== 'style'){
+        if(!dom.parent || dom.parent.tagName.toLowerCase() !== 'style'){
             return false;
         }
         //scope=this，在模块根节点添加 限定 class
@@ -85,7 +88,7 @@ export class CssManager{
         }
 
         //是否限定在模块内
-        //cssRule 获取正则式  @impot
+        //cssRule 获取正则式  @import
         const reg = /(@[a-zA-Z]+\s+url\(.+?\))|([.#@a-zA-Z]\S*(\s*\S*\s*?)?{)|\}/g;
 
         //import support url正则式
@@ -122,17 +125,18 @@ export class CssManager{
         
         /**
          * 处理style rule
-         * @param module            模块
-         * @param cssText           css 文本
-         * @param scopeName         作用域名(前置选择器)
+         * @param module         模块
+         * @param cssText        css 文本
+         * @param scopeName      作用域名(前置选择器)
+         * @returns              如果css文本最后一个"{"前没有字符串，则返回void   
          */
         function handleStyle(module:Module,cssText:string,scopeName?:string){
-            const reg = /.+(?=\{)/;
+            const reg = /.+(?=\{)/; //匹配字符"{"前出现的所有字符
             let r = reg.exec(cssText);
             if(!r){
                 return;
             }
-            // 保存样式名，在模块 object manager中以数组存储
+            // 保存样式名，在模块 object manager 中以数组存储
             if(scopeName){
                 let arr = module.objectManager.get('$cssRules');
                 if(!arr){
@@ -150,24 +154,29 @@ export class CssManager{
         /**
          * 处理import rule
          * @param cssText   css文本
+         * @returns         如果cssText中"()"内有字符串且importMap中存在键值为"()"内字符串的第一个字符，则返回void
          */
         function handleImport(cssText:string){
-            const reg = /(?<=\()\S+(?=\))/;
-            let r;
-            if((r = reg.exec(cssText))!==null){
-                if(CssManager.importMap.has(r[0])){
-                    return;
-                }
-                //插入import rule
-                CssManager.sheet.insertRule(cssText,CssManager.importIndex++);
-                CssManager.importMap.set(r[0],true);
+            let ind = cssText.indexOf('(');
+            let ind1 = cssText.lastIndexOf(')');
+            if(ind === -1 || ind1 === -1 || ind>=ind1){
+                return;
             }
+            let css = cssText.substring(ind,ind1);
+            if(CssManager.importMap.has(css)){
+                return;
+            }
+            //插入import rule
+            CssManager.sheet.insertRule(cssText,CssManager.importIndex++);
+            CssManager.importMap.set(css,true);
         }
+        
     }
 
     /**
-     * 清除模块 css rules
-     * @param module    模块
+     * 清除模块css rules
+     * @param module  模块
+     * @returns       如果模块不存在css rules，则返回void 
      */
     public static clearModuleRules(module:Module){
         let rules = module.objectManager.get('$cssRules');

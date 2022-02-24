@@ -71,7 +71,7 @@ export declare class Module {
     /**
      * 更改model的map，用于记录增量渲染时更改的model
      */
-    changedModelMap: Map<string, boolean>;
+    changedModelMap: Map<number, boolean>;
     /**
      * 用于保存每个key对应的html node
      */

@@ -61,66 +61,42 @@ class DirectiveType {
  */
 class DirectiveManager {
     /**
-     * 创建指令类型
-     * @param name 		    指令类型名
-     * @param config 	    配置对象{order:优先级,init:初始化函数,handler:渲染处理函数}
+     * 增加指令映射
+     * @param name      指令类型名
+     * @param handle    渲染处理函数
+     * @param prio      类型优先级
      */
     static addType(name, handle, prio) {
         this.directiveTypes.set(name, new DirectiveType(name, handle, prio));
     }
     /**
-     * 移除过滤器类型
-     * @param name  过滤器类型名
+     * 移除指令映射
+     * @param name  指令类型名
      */
     static removeType(name) {
         this.directiveTypes.delete(name);
     }
     /**
-     * 获取类型
+     * 获取指令
      * @param name  指令类型名
-     * @returns     指令或undefined
+     * @returns     指令类型或undefined
      */
     static getType(name) {
         return this.directiveTypes.get(name);
     }
     /**
-     * 是否有某个过滤器类型
-     * @param type 		过滤器类型名
-     * @returns 		true/false
+     * 是否含有某个指令
+     * @param name  指令类型名
+     * @returns     true/false
      */
     static hasType(name) {
         return this.directiveTypes.has(name);
     }
 }
 /**
- * 指令类型集合
+ * 指令映射
  */
 DirectiveManager.directiveTypes = new Map();
-
-/*! *****************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-
-function __awaiter(thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-}
 
 /*
  * 消息js文件 中文文件
@@ -200,110 +176,586 @@ const NodomMessage_en = {
 };
 
 /**
- * 过滤器工厂，存储模块过滤器
+ * 异常处理类
+ * @since       1.0.0
  */
-class ModuleFactory {
-    /**
-     * 添加模块到工厂
-     * @param item  模块对象
-     */
-    static add(item) {
-        // //第一个为主模块
-        if (this.modules.size === 0) {
-            this.mainModule = item;
+class NError extends Error {
+    constructor(errorName, p1, p2, p3, p4) {
+        super(errorName);
+        let msg = NodomMessage_en.ErrorMsgs[errorName];
+        if (msg === undefined) {
+            this.message = "未知错误";
+            return;
         }
-        this.modules.set(item.id, item);
-        //添加模块类
-        this.addClass(item.constructor);
+        //复制请求参数
+        let params = [msg];
+        for (let i = 1; i < arguments.length; i++) {
+            params.push(arguments[i]);
+        }
+        this.message = this.compile.apply(null, params);
     }
     /**
-     * 获得模块
-     * @param name  类、类名或实例id
+     * 编译字符串，把{n}替换成带入值
+     * @param src   待编译的字符串
+     * @returns     转换后的消息
      */
-    static get(name) {
-        if (typeof name === 'number') {
-            return this.modules.get(name);
+    compile(src, p1, p2, p3, p4, p5) {
+        let reg;
+        let args = arguments;
+        let index = 0;
+        for (;;) {
+            if (src.indexOf('\{' + index + '\}') !== -1) {
+                reg = new RegExp('\\{' + index + '\\}', 'g');
+                src = src.replace(reg, args[index + 1]);
+                index++;
+            }
+            else {
+                break;
+            }
+        }
+        return src;
+    }
+}
+
+/**
+ * 基础服务库
+ * @since       1.0.0
+ */
+class Util {
+    /**
+     * 唯一主键
+     */
+    static genId() {
+        return this.generatedId++;
+    }
+    /**
+     * 初始化保留字map
+     */
+    static initKeyMap() {
+        this.keyWordMap.set('arguments', true);
+        this.keyWordMap.set('boolean', true);
+        this.keyWordMap.set('break', true);
+        this.keyWordMap.set('byte', true);
+        this.keyWordMap.set('catch', true);
+        this.keyWordMap.set('char', true);
+        this.keyWordMap.set('const', true);
+        this.keyWordMap.set('default', true);
+        this.keyWordMap.set('delete', true);
+        this.keyWordMap.set('do', true);
+        this.keyWordMap.set('double', true);
+        this.keyWordMap.set('else', true);
+        this.keyWordMap.set('enum', true);
+        this.keyWordMap.set('eval', true);
+        this.keyWordMap.set('false', true);
+        this.keyWordMap.set('float', true);
+        this.keyWordMap.set('for', true);
+        this.keyWordMap.set('function', true);
+        this.keyWordMap.set('goto', true);
+        this.keyWordMap.set('if', true);
+        this.keyWordMap.set('in', true);
+        this.keyWordMap.set('instanceof', true);
+        this.keyWordMap.set('int', true);
+        this.keyWordMap.set('let', true);
+        this.keyWordMap.set('long', true);
+        this.keyWordMap.set('new', true);
+        this.keyWordMap.set('null', true);
+        this.keyWordMap.set('return', true);
+        this.keyWordMap.set('short', true);
+        this.keyWordMap.set('switch', true);
+        this.keyWordMap.set('this', true);
+        this.keyWordMap.set('throw', true);
+        this.keyWordMap.set('true', true);
+        this.keyWordMap.set('try', true);
+        this.keyWordMap.set('this', true);
+        this.keyWordMap.set('throw', true);
+        this.keyWordMap.set('typeof', true);
+        this.keyWordMap.set('var', true);
+        this.keyWordMap.set('while', true);
+        this.keyWordMap.set('with', true);
+        this.keyWordMap.set('Array', true);
+        this.keyWordMap.set('Date', true);
+        this.keyWordMap.set('JSON', true);
+        this.keyWordMap.set('Set', true);
+        this.keyWordMap.set('Map', true);
+        this.keyWordMap.set('eval', true);
+        this.keyWordMap.set('function', true);
+        this.keyWordMap.set('Infinity', true);
+        this.keyWordMap.set('isFinite', true);
+        this.keyWordMap.set('isNaN', true);
+        this.keyWordMap.set('isPrototypeOf', true);
+        this.keyWordMap.set('Math', true);
+        this.keyWordMap.set('NaN', true);
+        this.keyWordMap.set('Number', true);
+        this.keyWordMap.set('Object', true);
+        this.keyWordMap.set('prototype', true);
+        this.keyWordMap.set('String', true);
+        this.keyWordMap.set('isPrototypeOf', true);
+        this.keyWordMap.set('undefined', true);
+        this.keyWordMap.set('valueOf', true);
+    }
+    /**
+     * 是否为 js 保留关键字
+     * @param name  名字
+     * @returns     如果为保留字，则返回true，否则返回false
+     */
+    static isKeyWord(name) {
+        return this.keyWordMap.has(name);
+    }
+    /******对象相关******/
+    /**
+     * 对象复制
+     * @param srcObj    源对象
+     * @param expKey    不复制的键正则表达式或名
+     * @param extra     clone附加参数
+     * @returns         复制的对象
+     */
+    static clone(srcObj, expKey, extra) {
+        let me = this;
+        let map = new WeakMap();
+        return clone(srcObj, expKey, extra);
+        /**
+         * clone对象
+         * @param src      待clone对象
+         * @param expKey   不克隆的键
+         * @param extra    clone附加参数
+         * @returns        克隆后的对象
+         */
+        function clone(src, expKey, extra) {
+            //非对象或函数，直接返回            
+            if (!src || typeof src !== 'object' || Util.isFunction(src)) {
+                return src;
+            }
+            let dst;
+            //带有clone方法，则直接返回clone值
+            if (src.clone && Util.isFunction(src.clone)) {
+                return src.clone(extra);
+            }
+            else if (me.isObject(src)) {
+                dst = new Object();
+                //把对象加入map，如果后面有新克隆对象，则用新克隆对象进行覆盖
+                map.set(src, dst);
+                Object.getOwnPropertyNames(src).forEach((prop) => {
+                    //不克隆的键
+                    if (expKey) {
+                        if (expKey.constructor === RegExp && expKey.test(prop) //正则表达式匹配的键不复制
+                            || Util.isArray(expKey) && expKey.includes(prop) //被排除的键不复制
+                        ) {
+                            return;
+                        }
+                    }
+                    dst[prop] = getCloneObj(src[prop], expKey, extra);
+                });
+            }
+            else if (me.isMap(src)) {
+                dst = new Map();
+                //把对象加入map，如果后面有新克隆对象，则用新克隆对象进行覆盖
+                src.forEach((value, key) => {
+                    //不克隆的键
+                    if (expKey) {
+                        if (expKey.constructor === RegExp && expKey.test(key) //正则表达式匹配的键不复制
+                            || expKey.includes(key)) { //被排除的键不复制
+                            return;
+                        }
+                    }
+                    dst.set(key, getCloneObj(value, expKey, extra));
+                });
+            }
+            else if (me.isArray(src)) {
+                dst = new Array();
+                //把对象加入map，如果后面有新克隆对象，则用新克隆对象进行覆盖
+                src.forEach(function (item, i) {
+                    dst[i] = getCloneObj(item, expKey, extra);
+                });
+            }
+            return dst;
+        }
+        /**
+         * 获取clone对象
+         * @param value     待clone值
+         * @param expKey    排除键
+         * @param extra     附加参数
+         */
+        function getCloneObj(value, expKey, extra) {
+            if (typeof value === 'object' && !Util.isFunction(value)) {
+                let co = null;
+                if (!map.has(value)) { //clone新对象
+                    co = clone(value, expKey, extra);
+                }
+                else { //从map中获取对象
+                    co = map.get(value);
+                }
+                return co;
+            }
+            return value;
+        }
+    }
+    /**
+     * 合并多个对象并返回
+     * @param   参数数组
+     * @returns 返回对象
+     */
+    static merge(o1, o2, o3, o4, o5, o6) {
+        let me = this;
+        for (let i = 0; i < arguments.length; i++) {
+            if (!this.isObject(arguments[i])) {
+                throw new NError('invoke', 'Util.merge', i + '', 'object');
+            }
+        }
+        let retObj = Object.assign.apply(null, arguments);
+        subObj(retObj);
+        return retObj;
+        //处理子对象
+        function subObj(obj) {
+            for (let o in obj) {
+                if (me.isObject(obj[o]) || me.isArray(obj[o])) { //对象或数组
+                    retObj[o] = me.clone(retObj[o]);
+                }
+            }
+        }
+    }
+    /**
+     * 把obj2对象所有属性赋值给obj1
+     * @returns 返回对象obj1
+     */
+    static assign(obj1, obj2) {
+        if (Object.assign) {
+            Object.assign(obj1, obj2);
         }
         else {
-            return this.getInstance(name);
+            this.getOwnProps(obj2).forEach(function (p) {
+                obj1[p] = obj2[p];
+            });
         }
+        return obj1;
     }
     /**
-     * 是否存在模块类
-     * @param clazzName     模块类名
+     * 比较两个对象值是否相同(只比较object和array)
+     * @param src   源对象
+     * @param dst   目标对象
+     * @returns     值相同则返回true，否则返回false
+     */
+    static compare(src, dst, deep) {
+        if (!src && !dst) {
+            return true;
+        }
+        if (typeof src !== 'object' || typeof dst !== 'object') {
+            return false;
+        }
+        const keys = Object.getOwnPropertyNames(src);
+        if (keys.length !== Object.getOwnPropertyNames(dst).length) {
+            return false;
+        }
+        for (let k of keys) {
+            if (src[k] !== dst[k]) {
+                return false;
+            }
+        }
+        //深度比较
+        if (deep) {
+            for (let k of keys) {
+                let r = this.compare(src[k], dst[k]);
+                if (!r) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    /**
+     * 获取对象自有属性
+     * @param obj   需要获取属性的对象
+     * @returns     返回属性数组
+     */
+    static getOwnProps(obj) {
+        if (!obj) {
+            return [];
+        }
+        return Object.getOwnPropertyNames(obj);
+    }
+    /**************对象判断相关************/
+    /**
+     * 判断是否为函数
+     * @param foo   检查的对象
      * @returns     true/false
      */
-    static hasClass(clazzName) {
-        return this.classes.has(clazzName.toLowerCase());
+    static isFunction(foo) {
+        return foo !== undefined && foo !== null && foo.constructor === Function;
     }
     /**
-     * 添加模块类
-     * @param clazz     模块类
-     * @param alias     注册别名
+     * 判断是否为数组
+     * @param obj   检查的对象
+     * @returns     true/false
      */
-    static addClass(clazz, alias) {
-        //转换成小写
-        let name = clazz.name.toLowerCase();
-        if (this.classes.has(name)) {
+    static isArray(obj) {
+        return Array.isArray(obj);
+    }
+    /**
+     * 判断是否为map
+     * @param obj   检查的对象
+     */
+    static isMap(obj) {
+        return obj !== null && obj !== undefined && obj.constructor === Map;
+    }
+    /**
+     * 判断是否为对象
+     * @param obj   检查的对象
+     * @returns     true/false
+     */
+    static isObject(obj) {
+        return obj !== null && obj !== undefined && obj.constructor === Object;
+    }
+    /**
+     * 判断是否为整数
+     * @param v     检查的值
+     * @returns     true/false
+     */
+    static isInt(v) {
+        return Number.isInteger(v);
+    }
+    /**
+     * 判断是否为number
+     * @param v     检查的值
+     * @returns     true/false
+     */
+    static isNumber(v) {
+        return typeof v === 'number';
+    }
+    /**
+     * 判断是否为boolean
+     * @param v     检查的值
+     * @returns     true/false
+     */
+    static isBoolean(v) {
+        return typeof v === 'boolean';
+    }
+    /**
+     * 判断是否为字符串
+     * @param v     检查的值
+     * @returns     true/false
+     */
+    static isString(v) {
+        return typeof v === 'string';
+    }
+    /**
+     * 判断是否为数字串
+     * @param v     检查的值
+     * @returns     true/false
+     */
+    static isNumberString(v) {
+        return /^\d+\.?\d*$/.test(v);
+    }
+    /**
+     * 判断对象/字符串是否为空
+     * @param obj   检查的对象
+     * @returns     true/false
+     */
+    static isEmpty(obj) {
+        if (obj === null || obj === undefined)
+            return true;
+        let tp = typeof obj;
+        if (this.isObject(obj)) {
+            let keys = Object.keys(obj);
+            if (keys !== undefined) {
+                return keys.length === 0;
+            }
+        }
+        else if (tp === 'string') {
+            return obj === '';
+        }
+        return false;
+    }
+    /**
+     * 把srcNode替换为nodes
+     * @param srcNode       源dom
+     * @param nodes         替换的dom或dom数组
+     */
+    static replaceNode(srcNode, nodes) {
+        // if (!this.isNode(srcNode)) {
+        //     throw new NError('invoke', 'this.replaceNode', '0', 'Node');
+        // }
+        // if (!this.isNode(nodes) && !this.isArray(nodes)) {
+        //     throw new NError('invoke1', 'this.replaceNode', '1', 'Node', 'Node Array');
+        // }
+        let pnode = srcNode.parentNode;
+        let bnode = srcNode.nextSibling;
+        if (pnode === null) {
             return;
         }
-        this.classes.set(name, clazz);
-        if (alias) {
-            this.classes.set(alias, clazz);
-        }
+        pnode.removeChild(srcNode);
+        const nodeArr = this.isArray(nodes) ? nodes : [nodes];
+        nodeArr.forEach(function (node) {
+            if (bnode === undefined || bnode === null) {
+                pnode.appendChild(node);
+            }
+            else {
+                pnode.insertBefore(node, bnode);
+            }
+        });
     }
     /**
-     * 获取模块实例（通过类名）
-     * @param className     模块类或类名
-     * @param props         模块外部属性
+     * 清空子节点
+     * @param el   需要清空的节点
      */
-    static getInstance(clazz) {
-        let className = (typeof clazz === 'string') ? clazz : clazz.name.toLowerCase();
-        let cls;
-        // 初始化模块
-        if (!this.classes.has(className) && typeof clazz === 'function') {
-            cls = clazz;
+    static empty(el) {
+        let nodes = el.childNodes;
+        for (let i = nodes.length - 1; i >= 0; i--) {
+            el.removeChild(nodes[i]);
+        }
+    }
+    /******日期相关******/
+    /**
+     * 日期格式化
+     * @param srcDate    时间戳串
+     * @param format     日期格式
+     * @returns          日期串
+     */
+    static formatDate(srcDate, format) {
+        //时间戳
+        let timeStamp;
+        if (this.isString(srcDate)) {
+            //排除日期格式串,只处理时间戳
+            let reg = /^\d+$/;
+            if (reg.test(srcDate) === true) {
+                timeStamp = parseInt(srcDate);
+            }
+        }
+        else if (this.isNumber(srcDate)) {
+            timeStamp = srcDate;
         }
         else {
-            cls = this.classes.get(className);
+            throw new NError('invoke', 'this.formatDate', '0', 'date string', 'date');
         }
-        if (!cls) {
+        //得到日期
+        let date = new Date(timeStamp);
+        // invalid date
+        if (isNaN(date.getDay())) {
+            return '';
+        }
+        let o = {
+            "M+": date.getMonth() + 1,
+            "d+": date.getDate(),
+            "h+": date.getHours() % 12 === 0 ? 12 : date.getHours() % 12,
+            "H+": date.getHours(),
+            "m+": date.getMinutes(),
+            "s+": date.getSeconds(),
+            "q+": Math.floor((date.getMonth() + 3) / 3),
+            "S": date.getMilliseconds() //毫秒
+        };
+        //年
+        if (/(y+)/.test(format)) {
+            format = format.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
+        }
+        //月日
+        this.getOwnProps(o).forEach(function (k) {
+            if (new RegExp("(" + k + ")").test(format)) {
+                format = format.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+            }
+        });
+        //星期
+        if (/(E+)/.test(format)) {
+            format = format.replace(RegExp.$1, ((RegExp.$1.length > 1) ? (RegExp.$1.length > 2 ? "/u661f/u671f" : "/u5468") : "") + NodomMessage_en.WeekDays[date.getDay() + ""]);
+        }
+        return format;
+    }
+    /******字符串相关*****/
+    /**
+     * 编译字符串，把{n}替换成带入值
+     * @param src   待编译的字符串
+     * @returns     转换后的消息
+     */
+    static compileStr(src, p1, p2, p3, p4, p5) {
+        let reg;
+        let args = arguments;
+        let index = 0;
+        for (;;) {
+            if (src.indexOf('\{' + index + '\}') !== -1) {
+                reg = new RegExp('\\{' + index + '\\}', 'g');
+                src = src.replace(reg, args[index + 1]);
+                index++;
+            }
+            else {
+                break;
+            }
+        }
+        return src;
+    }
+    /**
+     * 函数调用
+     * @param foo   函数
+     * @param obj   this指向
+     * @param args  参数数组
+     */
+    static apply(foo, obj, args) {
+        if (!foo) {
             return;
         }
-        let m = Reflect.construct(cls, []);
-        m.init();
-        return m;
+        return Reflect.apply(foo, obj || null, args);
     }
     /**
-     * 从工厂移除模块
-     * @param id    模块id
+     * 合并并修正路径，即路径中出现'//','///','\/'的情况，统一置换为'/'
+     * @param paths     待合并路径数组
+     * @returns         返回路径
      */
-    static remove(id) {
-        this.modules.delete(id);
+    static mergePath(paths) {
+        return paths.join('/').replace(/(\/{2,})|\\\//g, '\/');
     }
     /**
-     * 设置主模块
-     * @param m 	模块
+     * eval
+     * @param evalStr   eval串
+     * @returns         eval值
      */
-    static setMain(m) {
-        this.mainModule = m;
+    static eval(evalStr) {
+        return new Function(`return(${evalStr})`)();
     }
     /**
-     * 获取主模块
-     * @returns 	应用的主模块
+     * 改造 dom key，避免克隆时重复，格式为：key_id
+     * @param node    节点
+     * @param id      附加id
+     * @param deep    是否深度处理
      */
-    static getMain() {
-        return this.mainModule;
+    static setNodeKey(node, id, deep) {
+        node.key += '_' + (id || Util.genId());
+        if (deep && node.children) {
+            for (let c of node.children) {
+                Util.setNodeKey(c, id, deep);
+            }
+        }
+    }
+    /**
+     * 设置dom asset
+     * @param dom       渲染后的dom节点
+     * @param name      asset name
+     * @param value     asset value
+     */
+    static setDomAsset(dom, name, value) {
+        if (!dom.assets) {
+            dom.assets = {};
+        }
+        dom.assets[name] = value;
+    }
+    /**
+     * 删除dom asset
+     * @param dom   渲染后的dom节点
+     * @param name  asset name
+     * @returns
+     */
+    static delDomAsset(dom, name) {
+        if (!dom.assets) {
+            return;
+        }
+        delete dom.assets[name];
     }
 }
 /**
- * 模块对象工厂 {moduleId:{key:容器key,className:模块类名,instance:模块实例}}
+ * 全局id
  */
-ModuleFactory.modules = new Map();
+Util.generatedId = 1;
 /**
- * 模块类集合 {className:class}
+ * js 保留字 map
  */
-ModuleFactory.classes = new Map();
+Util.keyWordMap = new Map();
+//初始化keymap
+Util.initKeyMap();
 
 /**
  * 表达式类
@@ -429,19 +881,150 @@ class Expression {
     }
 }
 
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+function __awaiter(thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+}
+
+/**
+ * 过滤器工厂，存储模块过滤器
+ */
+class ModuleFactory {
+    /**
+     * 添加模块到工厂
+     * @param item  模块对象
+     */
+    static add(item) {
+        // //第一个为主模块
+        if (this.modules.size === 0) {
+            this.mainModule = item;
+        }
+        this.modules.set(item.id, item);
+        //添加模块类
+        this.addClass(item.constructor);
+    }
+    /**
+     * 获得模块
+     * @param name  类、类名或实例id
+     */
+    static get(name) {
+        if (typeof name === 'number') {
+            return this.modules.get(name);
+        }
+        else {
+            return this.getInstance(name);
+        }
+    }
+    /**
+     * 是否存在模块类
+     * @param clazzName     模块类名
+     * @returns     true/false
+     */
+    static hasClass(clazzName) {
+        return this.classes.has(clazzName.toLowerCase());
+    }
+    /**
+     * 添加模块类
+     * @param clazz     模块类
+     * @param alias     注册别名
+     */
+    static addClass(clazz, alias) {
+        //转换成小写
+        let name = clazz.name.toLowerCase();
+        if (this.classes.has(name)) {
+            return;
+        }
+        this.classes.set(name, clazz);
+        if (alias) {
+            this.classes.set(alias.toLowerCase(), clazz);
+        }
+    }
+    /**
+     * 获取模块实例（通过类名）
+     * @param className     模块类或类名
+     * @param props         模块外部属性
+     */
+    static getInstance(clazz) {
+        let className = (typeof clazz === 'string') ? clazz : clazz.name.toLowerCase();
+        let cls;
+        // 初始化模块
+        if (!this.classes.has(className) && typeof clazz === 'function') {
+            cls = clazz;
+        }
+        else {
+            cls = this.classes.get(className);
+        }
+        if (!cls) {
+            return;
+        }
+        let m = Reflect.construct(cls, []);
+        m.init();
+        return m;
+    }
+    /**
+     * 从工厂移除模块
+     * @param id    模块id
+     */
+    static remove(id) {
+        this.modules.delete(id);
+    }
+    /**
+     * 设置主模块
+     * @param m 	模块
+     */
+    static setMain(m) {
+        this.mainModule = m;
+    }
+    /**
+     * 获取主模块
+     * @returns 	应用的主模块
+     */
+    static getMain() {
+        return this.mainModule;
+    }
+}
+/**
+ * 模块对象工厂 {moduleId:{key:容器key,className:模块类名,instance:模块实例}}
+ */
+ModuleFactory.modules = new Map();
+/**
+ * 模块类集合 {className:class}
+ */
+ModuleFactory.classes = new Map();
+
 /**
  * css 管理器
  * 针对不同的rule，处理方式不同
- * CSSStyleRule 进行保存和替换，同时 scopeInModule(模块作用域)有效
- * CSSImportRule 路径不重复添加，因为必须加在stylerule前面，所以需要记录最后的import索引号
+ * CssStyleRule 进行保存和替换，同时 scopeInModule(模块作用域)有效
+ * CssImportRule 路径不重复添加，因为必须加在stylerule前面，所以需要记录最后的import索引号
  */
 class CssManager {
     /**
      * 处理style 元素
      * @param module    模块
-     * @param dom       虚拟都没
+     * @param dom       虚拟dom
      * @param root      模块root dom
-     * @param add       是否添加
+     * @param add       是否添加根模块类名
      * @returns         如果是styledom，则返回true，否则返回false
      */
     static handleStyleDom(module, dom, root, add) {
@@ -449,10 +1032,13 @@ class CssManager {
             return false;
         }
         if (add) {
-            root.addClass(this.cssPreName + module.id);
-        }
-        else {
-            root.removeClass(this.cssPreName + module.id);
+            let cls = this.cssPreName + module.id;
+            if (root.props['class']) {
+                root.props['class'] = dom.props['class'] + ' ' + cls;
+            }
+            else {
+                root.props['class'] = cls;
+            }
         }
         return true;
     }
@@ -460,7 +1046,7 @@ class CssManager {
      * 处理 style 下的文本元素
      * @param module    模块
      * @param dom       style text element
-     * @returns         true:style text节点,false:非style text节点
+     * @returns         如果是styleTextdom返回true，否则返回false
      */
     static handleStyleTextDom(module, dom) {
         if (dom.parent.tagName.toLowerCase() !== 'style') {
@@ -489,7 +1075,7 @@ class CssManager {
             this.clearModuleRules(module);
         }
         //是否限定在模块内
-        //cssRule 获取正则式  @impot
+        //cssRule 获取正则式  @import
         const reg = /(@[a-zA-Z]+\s+url\(.+?\))|([.#@a-zA-Z]\S*(\s*\S*\s*?)?{)|\}/g;
         //import support url正则式
         const regImp = /@[a-zA-Z]+\s+url/;
@@ -527,17 +1113,18 @@ class CssManager {
         }
         /**
          * 处理style rule
-         * @param module            模块
-         * @param cssText           css 文本
-         * @param scopeName         作用域名(前置选择器)
+         * @param module         模块
+         * @param cssText        css 文本
+         * @param scopeName      作用域名(前置选择器)
+         * @returns              如果css文本最后一个"{"前没有字符串，则返回void
          */
         function handleStyle(module, cssText, scopeName) {
-            const reg = /.+(?=\{)/;
+            const reg = /.+(?=\{)/; //匹配字符"{"前出现的所有字符
             let r = reg.exec(cssText);
             if (!r) {
                 return;
             }
-            // 保存样式名，在模块 object manager中以数组存储
+            // 保存样式名，在模块 object manager 中以数组存储
             if (scopeName) {
                 let arr = module.objectManager.get('$cssRules');
                 if (!arr) {
@@ -554,23 +1141,27 @@ class CssManager {
         /**
          * 处理import rule
          * @param cssText   css文本
+         * @returns         如果cssText中"()"内有字符串且importMap中存在键值为"()"内字符串的第一个字符，则返回void
          */
         function handleImport(cssText) {
-            const reg = /(?<=\()\S+(?=\))/;
-            let r;
-            if ((r = reg.exec(cssText)) !== null) {
-                if (CssManager.importMap.has(r[0])) {
-                    return;
-                }
-                //插入import rule
-                CssManager.sheet.insertRule(cssText, CssManager.importIndex++);
-                CssManager.importMap.set(r[0], true);
+            let ind = cssText.indexOf('(');
+            let ind1 = cssText.lastIndexOf(')');
+            if (ind === -1 || ind1 === -1 || ind >= ind1) {
+                return;
             }
+            let css = cssText.substring(ind, ind1);
+            if (CssManager.importMap.has(css)) {
+                return;
+            }
+            //插入import rule
+            CssManager.sheet.insertRule(cssText, CssManager.importIndex++);
+            CssManager.importMap.set(css, true);
         }
     }
     /**
-     * 清除模块 css rules
-     * @param module    模块
+     * 清除模块css rules
+     * @param module  模块
+     * @returns       如果模块不存在css rules，则返回void
      */
     static clearModuleRules(module) {
         let rules = module.objectManager.get('$cssRules');
@@ -589,7 +1180,7 @@ class CssManager {
     }
 }
 /**
- * import url map，用于存储import的href路径
+ * import url map，用于存储import的url路径
  */
 CssManager.importMap = new Map();
 /**
@@ -610,7 +1201,6 @@ CssManager.cssPreName = '___nodommodule___';
  */
 class NEvent {
     /**
-     * @param module        模块
      * @param eventName     事件名
      * @param eventStr      事件串或事件处理函数,以“:”分割,中间不能有空格,结构为: 方法名[:delg(代理到父对象):nopopo(禁止冒泡):once(只执行一次):capture(useCapture)]
      *                      如果为函数，则替代第三个参数
@@ -705,7 +1295,7 @@ class NEvent {
      * @param module    模块
      * @param dom       虚拟dom
      * @param name      参数名
-     * @returns         参数值
+     * @returns         附加参数值
      */
     getParam(module, dom, name) {
         return module.objectManager.getEventParam(this.id, dom.key, name);
@@ -863,7 +1453,6 @@ class EventManager {
     }
     /**
      * 处理外部事件
-     * @param module    模块
      * @param dom       dom节点
      * @param event     事件对象
      * @returns         如果有是外部事件，则返回true，否则返回false
@@ -943,7 +1532,7 @@ class Renderer {
      * @param src               源dom
      * @param model             模型，如果src已经带有model，则此参数无效
      * @param parent            父dom
-     * @param key               key
+     * @param key               key 附加key，放在domkey的后面
      * @returns
      */
     static renderDom(module, src, model, parent, key) {
@@ -963,7 +1552,7 @@ class Renderer {
         model = src.model || model;
         //设置当前根root
         if (!parent) {
-            this.currentModuleRoot = src;
+            this.currentModuleRoot = dst;
         }
         else {
             if (!model) {
@@ -980,6 +1569,7 @@ class Renderer {
         if (src.staticNum > 0) {
             src.staticNum--;
         }
+        dst.staticNum = src.staticNum;
         //先处理model指令
         if (src.directives && src.directives.length > 0 && src.directives[0].type.name === 'model') {
             src.directives[0].exec(module, dst, src);
@@ -1065,14 +1655,41 @@ class Renderer {
             if (!src.props || src.props.size === 0) {
                 return;
             }
+            //因为存在大小写，所以用正则式进行匹配
+            const styleReg = /^style$/i;
+            const classReg = /^class$/i;
+            let value;
             for (let k of src.props) {
-                if (k[1] instanceof Expression) {
-                    dst.props[k[0]] = k[1].val(module, dst.model);
+                if (Array.isArray(k[1])) { //数组，需要合并
+                    value = [];
+                    for (let i = 0; i < k[1].length; i++) {
+                        let a = k[1][i];
+                        if (a instanceof Expression) {
+                            value.push(a.val(module, dst.model));
+                            dst.staticNum = -1;
+                        }
+                        else {
+                            value.push(a);
+                        }
+                    }
+                    if (styleReg.test(k[0])) {
+                        value = src.getStyleString(value);
+                    }
+                    else if (classReg.test(k[0])) {
+                        value = src.getClassString(value);
+                    }
+                    else {
+                        value = value.join(' ');
+                    }
+                }
+                else if (k[1] instanceof Expression) {
+                    value = k[1].val(module, dst.model);
                     dst.staticNum = -1;
                 }
                 else {
-                    dst.props[k[0]] = k[1];
+                    value = k[1];
                 }
+                dst.props[k[0]] = value;
             }
         }
     }
@@ -1146,8 +1763,9 @@ class Renderer {
             module.saveNode(dom.key, el);
             //保存自定义key对应element
             if (dom.props['key']) {
-                module.saveElement(dom['key'], el);
+                module.saveElement(dom.props['key'], el);
             }
+            dom.props['key'] = dom.key;
             //子模块容器的处理由子模块处理
             if (!dom.subModuleId) {
                 //设置属性
@@ -1276,6 +1894,123 @@ class Renderer {
  * 等待渲染列表（模块名）
  */
 Renderer.waitList = [];
+
+/**
+ * 路由类
+ */
+class Route {
+    /**
+     *
+     * @param config 路由配置项
+     */
+    constructor(config, parent) {
+        /**
+         * 路由参数名数组
+         */
+        this.params = [];
+        /**
+         * 路由参数数据
+         */
+        this.data = {};
+        /**
+         * 子路由
+         */
+        this.children = [];
+        if (!config || Util.isEmpty(config.path)) {
+            return;
+        }
+        this.id = Util.genId();
+        //参数赋值
+        for (let o in config) {
+            this[o] = config[o];
+        }
+        this.parent = parent;
+        //解析路径
+        if (this.path) {
+            this.parse();
+        }
+        if (parent) {
+            parent.addChild(this);
+        }
+        //子路由
+        if (config.routes && Array.isArray(config.routes)) {
+            config.routes.forEach((item) => {
+                new Route(item, this);
+            });
+        }
+    }
+    /**
+     * 添加子路由
+     * @param child
+     */
+    addChild(child) {
+        this.children.push(child);
+        child.parent = this;
+    }
+    /**
+     * 通过路径解析路由对象
+     */
+    parse() {
+        let pathArr = this.path.split('/');
+        let node = this.parent;
+        let param = [];
+        let paramIndex = -1; //最后一个参数开始
+        let prePath = ''; //前置路径
+        for (let i = 0; i < pathArr.length; i++) {
+            let v = pathArr[i].trim();
+            if (v === '') {
+                pathArr.splice(i--, 1);
+                continue;
+            }
+            if (v.startsWith(':')) { //参数
+                if (param.length === 0) {
+                    paramIndex = i;
+                }
+                param.push(v.substr(1));
+            }
+            else {
+                paramIndex = -1;
+                param = []; //上级路由的参数清空
+                this.path = v; //暂存path
+                let j = 0;
+                for (; j < node.children.length; j++) {
+                    let r = node.children[j];
+                    if (r.path === v) {
+                        node = r;
+                        break;
+                    }
+                }
+                //没找到，创建新节点
+                if (j === node.children.length) {
+                    if (prePath !== '') {
+                        new Route({ path: prePath }, node);
+                        node = node.children[node.children.length - 1];
+                    }
+                    prePath = v;
+                }
+            }
+            //不存在参数
+            this.params = paramIndex === -1 ? [] : param;
+        }
+    }
+    /**
+     * 克隆
+     * @returns 克隆对象
+     */
+    clone() {
+        let r = new Route();
+        Object.getOwnPropertyNames(this).forEach(item => {
+            if (item === 'data') {
+                return;
+            }
+            r[item] = this[item];
+        });
+        if (this.data) {
+            r.data = Util.clone(this.data);
+        }
+        return r;
+    }
+}
 
 /**
  * 模块状态类型
@@ -1579,70 +2314,6 @@ class Router {
         }
     }
     /**
-     * 添加路由
-     * @param route 	路由配置
-     * @param parent 	父路由
-     */
-    static addRoute(route, parent) {
-        //建立根(空路由)
-        if (!this.root) {
-            this.root = new Route();
-        }
-        let pathArr = route.path.split('/');
-        let node = parent || this.root;
-        let param = [];
-        let paramIndex = -1; //最后一个参数开始
-        let prePath = ''; //前置路径
-        for (let i = 0; i < pathArr.length; i++) {
-            let v = pathArr[i].trim();
-            if (v === '') {
-                pathArr.splice(i--, 1);
-                continue;
-            }
-            if (v.startsWith(':')) { //参数
-                if (param.length === 0) {
-                    paramIndex = i;
-                }
-                param.push(v.substr(1));
-            }
-            else {
-                paramIndex = -1;
-                param = []; //上级路由的参数清空
-                route.path = v; //暂存path
-                let j = 0;
-                for (; j < node.children.length; j++) {
-                    let r = node.children[j];
-                    if (r.path === v) {
-                        node = r;
-                        break;
-                    }
-                }
-                //没找到，创建新节点
-                if (j === node.children.length) {
-                    if (prePath !== '') {
-                        new Route({ path: prePath, parent: node });
-                        node = node.children[node.children.length - 1];
-                    }
-                    prePath = v;
-                }
-            }
-            //不存在参数
-            if (paramIndex === -1) {
-                route.params = [];
-            }
-            else {
-                route.params = param;
-            }
-        }
-        //添加到树
-        if (node !== undefined && node !== route) {
-            route.path = prePath;
-            node.addChild(route);
-        }
-        // 添加到路由map    
-        this.routeMap.set(route.id, route);
-    }
-    /**
      * 获取路由数组
      * @param path 	要解析的路径
      * @param clone 是否clone，如果为false，则返回路由树的路由对象，否则返回克隆对象
@@ -1720,6 +2391,10 @@ Router.activeFieldMap = new Map();
  * 绑定到module的router指令对应的key，即router容器对应的key，格式为 {moduleId:routerKey,...}
  */
 Router.routerKeyMap = new Map();
+/**
+ * 根路由
+ */
+Router.root = new Route();
 //处理popstate事件
 window.addEventListener('popstate', function (e) {
     //根据state切换module
@@ -1730,71 +2405,6 @@ window.addEventListener('popstate', function (e) {
     Router.startStyle = 1;
     Router.go(state);
 });
-
-/**
- * 路由类
- */
-class Route {
-    /**
-     *
-     * @param config 路由配置项
-     */
-    constructor(config) {
-        /**
-         * 路由参数名数组
-         */
-        this.params = [];
-        /**
-         * 路由参数数据
-         */
-        this.data = {};
-        /**
-         * 子路由
-         */
-        this.children = [];
-        if (!config || Util.isEmpty(config.path)) {
-            return;
-        }
-        //参数赋值
-        for (let o in config) {
-            this[o] = config[o];
-        }
-        this.id = Util.genId();
-        Router.addRoute(this, config.parent);
-        //子路由
-        if (config.routes && Array.isArray(config.routes)) {
-            config.routes.forEach((item) => {
-                item.parent = this;
-                new Route(item);
-            });
-        }
-    }
-    /**
-     * 添加子路由
-     * @param child
-     */
-    addChild(child) {
-        this.children.push(child);
-        child.parent = this;
-    }
-    /**
-     * 克隆
-     * @returns 克隆对象
-     */
-    clone() {
-        let r = new Route();
-        Object.getOwnPropertyNames(this).forEach(item => {
-            if (item === 'data') {
-                return;
-            }
-            r[item] = this[item];
-        });
-        if (this.data) {
-            r.data = Util.clone(this.data);
-        }
-        return r;
-    }
-}
 
 /**
  * 调度器，用于每次空闲的待操作序列调度
@@ -1878,15 +2488,18 @@ function nodom(clazz, el) {
  * 暴露的创建路由方法
  * @param config  数组或单个配置
  */
-function createRoute(config) {
+function createRoute(config, parent) {
+    let route;
+    parent = parent || Router.root;
     if (Util.isArray(config)) {
         for (let item of config) {
-            new Route(item);
+            route = new Route(item, parent);
         }
     }
     else {
-        return new Route(config);
+        route = new Route(config, parent);
     }
+    return route;
 }
 /**
  * 创建指令
@@ -2023,562 +2636,6 @@ function request(config) {
 }
 
 /**
- * 异常处理类
- * @since       1.0.0
- */
-class NError extends Error {
-    constructor(errorName, p1, p2, p3, p4) {
-        super(errorName);
-        let msg = NodomMessage.ErrorMsgs[errorName];
-        if (msg === undefined) {
-            this.message = "未知错误";
-            return;
-        }
-        //复制请求参数
-        let params = [msg];
-        for (let i = 1; i < arguments.length; i++) {
-            params.push(arguments[i]);
-        }
-        this.message = Util.compileStr.apply(null, params);
-    }
-}
-
-/**
- * 基础服务库
- * @since       1.0.0
- */
-class Util {
-    //唯一主键
-    static genId() {
-        return this.generatedId++;
-    }
-    /**
-     * 初始化保留词map
-     */
-    static initKeyMap() {
-        this.keyWordMap.set('arguments', true);
-        this.keyWordMap.set('boolean', true);
-        this.keyWordMap.set('break', true);
-        this.keyWordMap.set('byte', true);
-        this.keyWordMap.set('catch', true);
-        this.keyWordMap.set('char', true);
-        this.keyWordMap.set('const', true);
-        this.keyWordMap.set('default', true);
-        this.keyWordMap.set('delete', true);
-        this.keyWordMap.set('do', true);
-        this.keyWordMap.set('double', true);
-        this.keyWordMap.set('else', true);
-        this.keyWordMap.set('enum', true);
-        this.keyWordMap.set('eval', true);
-        this.keyWordMap.set('false', true);
-        this.keyWordMap.set('float', true);
-        this.keyWordMap.set('for', true);
-        this.keyWordMap.set('function', true);
-        this.keyWordMap.set('goto', true);
-        this.keyWordMap.set('if', true);
-        this.keyWordMap.set('in', true);
-        this.keyWordMap.set('instanceof', true);
-        this.keyWordMap.set('int', true);
-        this.keyWordMap.set('let', true);
-        this.keyWordMap.set('long', true);
-        this.keyWordMap.set('new', true);
-        this.keyWordMap.set('null', true);
-        this.keyWordMap.set('return', true);
-        this.keyWordMap.set('short', true);
-        this.keyWordMap.set('switch', true);
-        this.keyWordMap.set('this', true);
-        this.keyWordMap.set('throw', true);
-        this.keyWordMap.set('true', true);
-        this.keyWordMap.set('try', true);
-        this.keyWordMap.set('this', true);
-        this.keyWordMap.set('throw', true);
-        this.keyWordMap.set('typeof', true);
-        this.keyWordMap.set('var', true);
-        this.keyWordMap.set('while', true);
-        this.keyWordMap.set('with', true);
-        this.keyWordMap.set('Array', true);
-        this.keyWordMap.set('Date', true);
-        this.keyWordMap.set('JSON', true);
-        this.keyWordMap.set('Set', true);
-        this.keyWordMap.set('Map', true);
-        this.keyWordMap.set('eval', true);
-        this.keyWordMap.set('function', true);
-        this.keyWordMap.set('Infinity', true);
-        this.keyWordMap.set('isFinite', true);
-        this.keyWordMap.set('isNaN', true);
-        this.keyWordMap.set('isPrototypeOf', true);
-        this.keyWordMap.set('Math', true);
-        this.keyWordMap.set('NaN', true);
-        this.keyWordMap.set('Number', true);
-        this.keyWordMap.set('Object', true);
-        this.keyWordMap.set('prototype', true);
-        this.keyWordMap.set('String', true);
-        this.keyWordMap.set('isPrototypeOf', true);
-        this.keyWordMap.set('undefined', true);
-        this.keyWordMap.set('valueOf', true);
-    }
-    /**
-     * 是否为 js 保留关键字
-     * @param name  名字
-     * @returns     如果为保留字，则返回true，否则返回false
-     */
-    static isKeyWord(name) {
-        return this.keyWordMap.has(name);
-    }
-    /******对象相关******/
-    /**
-     * 对象复制
-     * @param srcObj    源对象
-     * @param expKey    不复制的键正则表达式或名
-     * @param extra     clone附加参数
-     * @returns         复制的对象
-     */
-    static clone(srcObj, expKey, extra) {
-        let me = this;
-        let map = new WeakMap();
-        return clone(srcObj, expKey, extra);
-        /**
-         * clone对象
-         * @param src   待clone对象
-         * @param extra clone附加参数
-         * @returns     克隆后的对象
-         */
-        function clone(src, expKey, extra) {
-            //非对象或函数，直接返回            
-            if (!src || typeof src !== 'object' || Util.isFunction(src)) {
-                return src;
-            }
-            let dst;
-            //带有clone方法，则直接返回clone值
-            if (src.clone && Util.isFunction(src.clone)) {
-                return src.clone(extra);
-            }
-            else if (me.isObject(src)) {
-                dst = new Object();
-                //把对象加入map，如果后面有新克隆对象，则用新克隆对象进行覆盖
-                map.set(src, dst);
-                Object.getOwnPropertyNames(src).forEach((prop) => {
-                    //不克隆的键
-                    if (expKey) {
-                        if (expKey.constructor === RegExp && expKey.test(prop) //正则表达式匹配的键不复制
-                            || Util.isArray(expKey) && expKey.includes(prop) //被排除的键不复制
-                        ) {
-                            return;
-                        }
-                    }
-                    dst[prop] = getCloneObj(src[prop], expKey, extra);
-                });
-            }
-            else if (me.isMap(src)) {
-                dst = new Map();
-                //把对象加入map，如果后面有新克隆对象，则用新克隆对象进行覆盖
-                src.forEach((value, key) => {
-                    //不克隆的键
-                    if (expKey) {
-                        if (expKey.constructor === RegExp && expKey.test(key) //正则表达式匹配的键不复制
-                            || expKey.includes(key)) { //被排除的键不复制
-                            return;
-                        }
-                    }
-                    dst.set(key, getCloneObj(value, expKey, extra));
-                });
-            }
-            else if (me.isArray(src)) {
-                dst = new Array();
-                //把对象加入map，如果后面有新克隆对象，则用新克隆对象进行覆盖
-                src.forEach(function (item, i) {
-                    dst[i] = getCloneObj(item, expKey, extra);
-                });
-            }
-            return dst;
-        }
-        /**
-         * 获取clone对象
-         * @param value     待clone值
-         * @param expKey    排除键
-         * @param extra     附加参数
-         */
-        function getCloneObj(value, expKey, extra) {
-            if (typeof value === 'object' && !Util.isFunction(value)) {
-                let co = null;
-                if (!map.has(value)) { //clone新对象
-                    co = clone(value, expKey, extra);
-                }
-                else { //从map中获取对象
-                    co = map.get(value);
-                }
-                return co;
-            }
-            return value;
-        }
-    }
-    /**
-     * 合并多个对象并返回
-     * @param   参数数组
-     * @returns 返回对象
-     */
-    static merge(o1, o2, o3, o4, o5, o6) {
-        let me = this;
-        for (let i = 0; i < arguments.length; i++) {
-            if (!this.isObject(arguments[i])) {
-                throw new NError('invoke', 'Util.merge', i + '', 'object');
-            }
-        }
-        let retObj = Object.assign.apply(null, arguments);
-        subObj(retObj);
-        return retObj;
-        //处理子对象
-        function subObj(obj) {
-            for (let o in obj) {
-                if (me.isObject(obj[o]) || me.isArray(obj[o])) { //对象或数组
-                    retObj[o] = me.clone(retObj[o]);
-                }
-            }
-        }
-    }
-    /**
-     * 把obj2对象所有属性赋值给obj1
-     */
-    static assign(obj1, obj2) {
-        if (Object.assign) {
-            Object.assign(obj1, obj2);
-        }
-        else {
-            this.getOwnProps(obj2).forEach(function (p) {
-                obj1[p] = obj2[p];
-            });
-        }
-        return obj1;
-    }
-    /**
-     * 比较两个对象值是否相同(只比较object和array)
-     * @param src   源对象
-     * @param dst   目标对象
-     * @returns     值相同则返回true，否则返回false
-     */
-    static compare(src, dst, deep) {
-        if (!src && !dst) {
-            return true;
-        }
-        if (typeof src !== 'object' || typeof dst !== 'object') {
-            return false;
-        }
-        const keys = Object.getOwnPropertyNames(src);
-        if (keys.length !== Object.getOwnPropertyNames(dst).length) {
-            return false;
-        }
-        for (let k of keys) {
-            if (src[k] !== dst[k]) {
-                return false;
-            }
-        }
-        //深度比较
-        if (deep) {
-            for (let k of keys) {
-                let r = this.compare(src[k], dst[k]);
-                if (!r) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-    /**
-     * 获取对象自有属性
-     */
-    static getOwnProps(obj) {
-        if (!obj) {
-            return [];
-        }
-        return Object.getOwnPropertyNames(obj);
-    }
-    /**************对象判断相关************/
-    /**
-     * 是否为函数
-     * @param foo   检查的对象
-     * @returns     true/false
-     */
-    static isFunction(foo) {
-        return foo !== undefined && foo !== null && foo.constructor === Function;
-    }
-    /**
-     * 是否为数组
-     * @param obj   检查的对象
-     * @returns     true/false
-     */
-    static isArray(obj) {
-        return Array.isArray(obj);
-    }
-    /**
-     * 判断是否为map
-     * @param obj
-     */
-    static isMap(obj) {
-        return obj !== null && obj !== undefined && obj.constructor === Map;
-    }
-    /**
-     * 是否为对象
-     * @param obj   检查的对象
-     * @returns true/false
-     */
-    static isObject(obj) {
-        return obj !== null && obj !== undefined && obj.constructor === Object;
-    }
-    /**
-     * 判断是否为整数
-     * @param v 检查的值
-     * @returns true/false
-     */
-    static isInt(v) {
-        return Number.isInteger(v);
-    }
-    /**
-     * 判断是否为number
-     * @param v 检查的值
-     * @returns true/false
-     */
-    static isNumber(v) {
-        return typeof v === 'number';
-    }
-    /**
-     * 判断是否为boolean
-     * @param v 检查的值
-     * @returns true/false
-     */
-    static isBoolean(v) {
-        return typeof v === 'boolean';
-    }
-    /**
-     * 判断是否为字符串
-     * @param v 检查的值
-     * @returns true/false
-     */
-    static isString(v) {
-        return typeof v === 'string';
-    }
-    /**
-     * 是否为数字串
-     * @param v 检查的值
-     * @returns true/false
-     */
-    static isNumberString(v) {
-        return /^\d+\.?\d*$/.test(v);
-    }
-    /**
-     * 对象/字符串是否为空
-     * @param obj   检查的对象
-     * @returns     true/false
-     */
-    static isEmpty(obj) {
-        if (obj === null || obj === undefined)
-            return true;
-        let tp = typeof obj;
-        if (this.isObject(obj)) {
-            let keys = Object.keys(obj);
-            if (keys !== undefined) {
-                return keys.length === 0;
-            }
-        }
-        else if (tp === 'string') {
-            return obj === '';
-        }
-        return false;
-    }
-    /**
-     * 把srcNode替换为nodes
-     * @param srcNode       源dom
-     * @param nodes         替换的dom或dom数组
-     */
-    static replaceNode(srcNode, nodes) {
-        // if (!this.isNode(srcNode)) {
-        //     throw new NError('invoke', 'this.replaceNode', '0', 'Node');
-        // }
-        // if (!this.isNode(nodes) && !this.isArray(nodes)) {
-        //     throw new NError('invoke1', 'this.replaceNode', '1', 'Node', 'Node Array');
-        // }
-        let pnode = srcNode.parentNode;
-        let bnode = srcNode.nextSibling;
-        if (pnode === null) {
-            return;
-        }
-        pnode.removeChild(srcNode);
-        const nodeArr = this.isArray(nodes) ? nodes : [nodes];
-        nodeArr.forEach(function (node) {
-            if (bnode === undefined || bnode === null) {
-                pnode.appendChild(node);
-            }
-            else {
-                pnode.insertBefore(node, bnode);
-            }
-        });
-    }
-    /**
-     * 清空子节点
-     * @param el
-     */
-    static empty(el) {
-        let nodes = el.childNodes;
-        for (let i = nodes.length - 1; i >= 0; i--) {
-            el.removeChild(nodes[i]);
-        }
-    }
-    /******日期相关******/
-    /**
-     * 日期格式化
-     * @param srcDate   时间戳串
-     * @param format    日期格式
-     * @returns          日期串
-     */
-    static formatDate(srcDate, format) {
-        //时间戳
-        let timeStamp;
-        if (this.isString(srcDate)) {
-            //排除日期格式串,只处理时间戳
-            let reg = /^\d+$/;
-            if (reg.test(srcDate) === true) {
-                timeStamp = parseInt(srcDate);
-            }
-        }
-        else if (this.isNumber(srcDate)) {
-            timeStamp = srcDate;
-        }
-        else {
-            throw new NError('invoke', 'this.formatDate', '0', 'date string', 'date');
-        }
-        //得到日期
-        let date = new Date(timeStamp);
-        // invalid date
-        if (isNaN(date.getDay())) {
-            return '';
-        }
-        let o = {
-            "M+": date.getMonth() + 1,
-            "d+": date.getDate(),
-            "h+": date.getHours() % 12 === 0 ? 12 : date.getHours() % 12,
-            "H+": date.getHours(),
-            "m+": date.getMinutes(),
-            "s+": date.getSeconds(),
-            "q+": Math.floor((date.getMonth() + 3) / 3),
-            "S": date.getMilliseconds() //毫秒
-        };
-        //年
-        if (/(y+)/.test(format)) {
-            format = format.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
-        }
-        //月日
-        this.getOwnProps(o).forEach(function (k) {
-            if (new RegExp("(" + k + ")").test(format)) {
-                format = format.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
-            }
-        });
-        //星期
-        if (/(E+)/.test(format)) {
-            format = format.replace(RegExp.$1, ((RegExp.$1.length > 1) ? (RegExp.$1.length > 2 ? "/u661f/u671f" : "/u5468") : "") + NodomMessage.WeekDays[date.getDay() + ""]);
-        }
-        return format;
-    }
-    /******字符串相关*****/
-    /**
-     * 编译字符串，把{n}替换成带入值
-     * @param str 待编译的字符串
-     * @param args1,args2,args3,... 待替换的参数
-     * @returns 转换后的消息
-     */
-    static compileStr(src, p1, p2, p3, p4, p5) {
-        let reg;
-        let args = arguments;
-        let index = 0;
-        for (;;) {
-            if (src.indexOf('\{' + index + '\}') !== -1) {
-                reg = new RegExp('\\{' + index + '\\}', 'g');
-                src = src.replace(reg, args[index + 1]);
-                index++;
-            }
-            else {
-                break;
-            }
-        }
-        return src;
-    }
-    /**
-     * 函数调用
-     * @param foo   函数
-     * @param obj   this指向
-     * @param args  参数数组
-     */
-    static apply(foo, obj, args) {
-        if (!foo) {
-            return;
-        }
-        return Reflect.apply(foo, obj || null, args);
-    }
-    /**
-     * 合并并修正路径，即路径中出现'//','///','\/'的情况，统一置换为'/'
-     * @param paths 待合并路径数组
-     * @returns     返回路径
-     */
-    static mergePath(paths) {
-        return paths.join('/').replace(/(\/{2,})|\\\//g, '\/');
-    }
-    /**
-     * eval
-     * @param evalStr   eval串
-     * @returns         eval值
-     */
-    static eval(evalStr) {
-        return new Function(`return(${evalStr})`)();
-    }
-    /**
-     * 改造 dom key，避免克隆时重复，格式为：key_id
-     * @param node  节点
-     * @param id    附加id
-     * @param deep  是否深度处理
-     */
-    static setNodeKey(node, id, deep) {
-        node.key += '_' + (id || Util.genId());
-        if (deep && node.children) {
-            for (let c of node.children) {
-                Util.setNodeKey(c, id, deep);
-            }
-        }
-    }
-    /**
-     * 设置dom asset
-     * @param dom       渲染后的dom节点
-     * @param name      asset name
-     * @param value     asset value
-     */
-    static setDomAsset(dom, name, value) {
-        if (!dom.assets) {
-            dom.assets = {};
-        }
-        dom.assets[name] = value;
-    }
-    /**
-     * 删除dom asset
-     * @param dom   渲染后的dom节点
-     * @param name  asset name
-     * @returns
-     */
-    static delDomAsset(dom, name) {
-        if (!dom.assets) {
-            return;
-        }
-        delete dom.assets[name];
-    }
-}
-/**
- * 全局id
- */
-Util.generatedId = 1;
-/**
- * js 保留字 map
- */
-Util.keyWordMap = new Map();
-//初始化keymap
-Util.initKeyMap();
-
-/**
  * 指令类
  */
 class Directive {
@@ -2662,6 +2719,7 @@ class VirtualDom {
     /**
      * 移除多个指令
      * @param directives 	待删除的指令类型数组或指令类型
+     * @returns             如果虚拟dom上的指令集为空，则返回void
      */
     removeDirectives(directives) {
         if (!this.directives) {
@@ -2675,6 +2733,7 @@ class VirtualDom {
     /**
      * 移除指令
      * @param directive 	待删除的指令类型名
+     * @returns             如果虚拟dom上的指令集为空，则返回void
      */
     removeDirective(directive) {
         if (!this.directives) {
@@ -2692,6 +2751,7 @@ class VirtualDom {
      * 添加指令
      * @param directive     指令对象
      * @param sort          是否排序
+     * @returns             如果虚拟dom上的指令集不为空，且指令集中已经存在传入的指令对象，则返回void
      */
     addDirective(directive, sort) {
         if (!this.directives) {
@@ -2708,6 +2768,7 @@ class VirtualDom {
     }
     /**
      * 指令排序
+     * @returns           如果虚拟dom上指令集为空，则返回void
      */
     sortDirective() {
         if (!this.directives) {
@@ -2722,7 +2783,7 @@ class VirtualDom {
     /**
      * 是否有某个类型的指令
      * @param typeName 	    指令类型名
-     * @returns             true/false
+     * @returns             如果指令集不为空，且含有传入的指令类型名则返回true，否则返回false
      */
     hasDirective(typeName) {
         return this.directives && this.directives.findIndex(item => item.type.name === typeName) !== -1;
@@ -2731,7 +2792,7 @@ class VirtualDom {
      * 获取某个类型的指令
      * @param module            模块
      * @param directiveType 	指令类型名
-     * @returns                 指令对象
+     * @returns                 如果指令集为空，则返回void；否则返回指令类型名等于传入参数的指令对象
      */
     getDirective(directiveType) {
         if (!this.directives) {
@@ -2741,6 +2802,7 @@ class VirtualDom {
     }
     /**
      * 添加子节点
+     * @param dom     子节点
      */
     add(dom) {
         if (!this.children) {
@@ -2749,154 +2811,131 @@ class VirtualDom {
         this.children.push(dom);
     }
     /**
-     * 是否存在某个class
-     * @param cls   class name
-     * @return      true/false
-     */
-    hasClass(module, cls) {
-        let classes = this.getParam(module, '$classes');
-        if (!classes) {
-            return false;
-        }
-        return classes.includes(cls);
-    }
-    /**
-     * 初始化class数组
-     */
-    initClassArr() {
-        let classes = this.classArr;
-        if (classes) {
-            return;
-        }
-        this.classArr = [];
-        let clazz = this.getProp('class');
-        if (clazz) {
-            this.classArr = clazz.trim().split(/\s+/);
-            this.setProp('class', this.classArr.join(' '));
-        }
-    }
-    /**
      * 添加css class
-     * @param cls class名,可以多个，以“空格”分割
+     * @param cls class名或表达式,可以多个，以“空格”分割
      */
     addClass(cls) {
-        this.initClassArr();
-        let classes = this.classArr;
-        let arr = cls.trim().split(/\s+/);
-        let change = false;
-        for (let a of arr) {
-            if (!classes.includes(a)) {
-                change = true;
-                classes.push(a);
+        this.addProp('class', cls);
+        //需要从remove class map 移除
+        if (this.removedClassMap && this.removedClassMap.size > 0) {
+            let arr = cls.trim().split(/\s+/);
+            for (let a of arr) {
+                if (a === '') {
+                    continue;
+                }
+                this.removedClassMap.delete(a);
             }
-        }
-        if (change) {
-            this.setProp('class', classes.join(' '));
-            this.setStaticOnce();
         }
     }
     /**
-     * 删除css class
+     * 删除css class，因为涉及到表达式，此处只记录删除标识
      * @param cls class名,可以多个，以“空格”分割
      */
     removeClass(cls) {
-        let classes = this.classArr;
-        if (!classes) {
+        let pv = this.getProp('class');
+        if (!pv) {
             return;
+        }
+        if (!this.removedClassMap) {
+            this.removedClassMap = new Map();
         }
         let arr = cls.trim().split(/\s+/);
-        let change = false;
         for (let a of arr) {
-            let ind;
-            if ((ind = classes.indexOf(a)) !== -1) {
-                change = true;
-                classes.splice(ind, 1);
+            if (a === '') {
+                continue;
             }
+            this.removedClassMap.set(a, true);
         }
-        if (change) {
-            if (classes.length === 0) {
-                this.delProp('class');
-            }
-            else {
-                this.setProp('class', classes.join(' '));
-            }
-            this.setStaticOnce();
-        }
+        this.setStaticOnce();
     }
     /**
-     * 初始化style map
+     * 获取class串
+     * @returns class 串
      */
-    initStyleMap() {
-        if (this.styleMap) {
-            return;
-        }
-        this.styleMap = new Map();
-        let styles = this.styleMap;
-        let oriStyle = this.getProp('style');
-        if (oriStyle) {
-            let sa = oriStyle.trim().split(/\s*;\s*/);
-            for (let s of sa) {
-                let sa1 = s.split(/\s*:\s*/);
-                styles.set(sa1[0], sa[1]);
+    getClassString(values) {
+        let clsArr = [];
+        for (let pv of values) {
+            let arr = pv.trim().split(/\s+/);
+            for (let a of arr) {
+                if (!this.removedClassMap || !this.removedClassMap.has(a)) {
+                    if (!clsArr.includes(a)) {
+                        clsArr.push(a);
+                    }
+                }
             }
+        }
+        if (clsArr.length > 0) {
+            return clsArr.join(' ');
         }
     }
     /**
      * 添加style
-     *  @param styleStr style字符串
+     *  @param style style字符串或表达式
      */
-    addStyle(styleStr) {
-        this.initStyleMap();
-        let change = false;
-        let sa = styleStr.trim().split(/\s*;\s*/);
-        let styles = this.styleMap;
-        for (let s of sa) {
-            if (s === '') {
-                continue;
+    addStyle(style) {
+        this.addProp('style', style);
+        if (typeof style === 'string') {
+            //需要从remove class map 移除
+            if (this.removedStyleMap && this.removedStyleMap.size > 0) {
+                let arr = style.trim().split(/\s*;\s*/);
+                for (let a of arr) {
+                    if (a === '') {
+                        continue;
+                    }
+                    let sa1 = a.split(/\s*:\s*/);
+                    let p = sa1[0].trim();
+                    if (p !== '') {
+                        this.removedClassMap.delete(sa1[0].trim());
+                    }
+                }
             }
-            let sa1 = s.split(/\s*:\s*/);
-            if (!styles.has(sa1[0]) || styles.get(sa1[0]) !== sa1[1]) {
-                change = true;
-                styles.set(sa1[0], sa1[1]);
-            }
-        }
-        if (change) {
-            this.setProp('style', [...styles].map(item => item.join(':')).join(';'));
-            this.setStaticOnce();
         }
     }
     /**
      * 删除style
-     * @param styleStr style字符串，可以是stylename:stylevalue[;...]或stylename1;stylename2
+     * @param styleStr style字符串，多个style以空格' '分割
      */
     removeStyle(styleStr) {
-        let styles = this.styleMap;
-        if (!styles) {
-            return;
+        if (!this.removedClassMap) {
+            this.removedClassMap = new Map();
         }
-        let change = false;
-        let sa = styleStr.trim().split(/\s*;\s*/);
-        for (let s of sa) {
-            let sa1 = s.split(/\s*:\s*/);
-            if (!sa1[1] && styles.has(sa1[0]) || styles.get(sa1[0]) === sa1[1]) {
-                change = true;
-                styles.delete(sa1[0]);
+        let arr = styleStr.trim().split(/\s+/);
+        for (let a of arr) {
+            if (a === '') {
+                continue;
+            }
+            this.removedClassMap.set(a, true);
+        }
+        this.setStaticOnce();
+    }
+    /**
+     * 获取style串
+     * @returns style 串
+     */
+    getStyleString(values) {
+        let map = new Map();
+        for (let pv of values) {
+            let sa = pv.trim().split(/\s*;\s*/);
+            for (let s of sa) {
+                if (s === '') {
+                    continue;
+                }
+                let sa1 = s.split(/\s*:\s*/);
+                //不在移除style map才能加入
+                if (!this.removedStyleMap || !this.removedStyleMap.has(sa1[0])) {
+                    map.set(sa1[0], sa1[1]);
+                }
             }
         }
-        if (change) {
-            if (styles.size === 0) {
-                this.delProp('style');
-            }
-            else {
-                this.setProp('style', [...styles].map(item => item.join(':')).join(';'));
-            }
-            this.setStaticOnce();
+        if (map.size > 0) {
+            return [...map].map(item => item.join(':')).join(';');
         }
     }
     /**
      * 是否拥有属性
      * @param propName  属性名
      * @param isExpr    是否只检查表达式属性
+     * @returns         如果属性集含有传入的属性名返回true，否则返回false
      */
     hasProp(propName) {
         if (this.props) {
@@ -2907,6 +2946,7 @@ class VirtualDom {
      * 获取属性值
      * @param propName  属性名
      * @param isExpr    是否只获取表达式属性
+     * @returns         传入属性名的value
      */
     getProp(propName, isExpr) {
         if (this.props) {
@@ -2922,11 +2962,47 @@ class VirtualDom {
         if (!this.props) {
             this.props = new Map();
         }
+        if (propName === 'style') {
+            if (this.removedStyleMap) { //清空removedStyleMap
+                this.removedStyleMap.clear();
+            }
+        }
+        else if (propName === 'class') {
+            if (this.removedClassMap) { //清空removedClassMap
+                this.removedClassMap.clear();
+            }
+        }
         this.props.set(propName, v);
+    }
+    /**
+     * 添加属性，如果原来的值存在，则属性值变成数组
+     * @param pName     属性名
+     * @param pValue    属性值
+     */
+    addProp(pName, pValue) {
+        let pv = this.getProp(pName);
+        if (!pv) {
+            this.setProp(pName, pValue);
+        }
+        else if (Array.isArray(pv)) {
+            if (pv.includes(pValue)) {
+                return false;
+            }
+            pv.push(pValue);
+        }
+        else if (pv !== pValue) {
+            this.setProp(pName, [pv, pValue]);
+        }
+        else {
+            return false;
+        }
+        this.setStaticOnce();
+        return true;
     }
     /**
      * 删除属性
      * @param props     属性名或属性名数组
+     * @returns         如果虚拟dom上的属性集为空，则返回void
      */
     delProp(props) {
         if (!this.props) {
@@ -2957,6 +3033,7 @@ class VirtualDom {
     /**
      * 删除asset
      * @param assetName     asset name
+     * @returns             如果虚拟dom上的直接属性集为空，则返回void
      */
     delAsset(assetName) {
         if (!this.assets) {
@@ -3102,7 +3179,8 @@ class Compiler {
         // 清理comment
         srcStr = srcStr.replace(/\<\!\-\-[\s\S]*?\-\-\>/g, '');
         // 正则式分解标签和属性
-        const regWhole = /((?<!\\)'[\s\S]*?(?<!\\)')|((?<!\\)"[\s\S]*?(?<!\\)")|((?<!\\)`[\s\S]*?(?<!\\)`)|({{{*)|(}*}})|([\w$-]+(\s*=)?)|(<\s*[a-zA-Z][a-zA-Z0-9-_]*)|(\/?>)|(<\/\s*[a-zA-Z][a-zA-Z0-9-_]*>)/g;
+        // const regWhole = /((?<!\\)'[\s\S]*?(?<!\\)')|((?<!\\)"[\s\S]*?(?<!\\)")|((?<!\\)`[\s\S]*?(?<!\\)`)|({{{*)|(}*}})|([\w$-]+(\s*=)?)|(<\s*[a-zA-Z][a-zA-Z0-9-_]*)|(\/?>)|(<\/\s*[a-zA-Z][a-zA-Z0-9-_]*>)/g;
+        const regWhole = /('[\s\S]*?')|("[\s\S]*?")|(`[\s\S]*?`)|({{{*)|(}*}})|([\w$-]+(\s*=)?)|(<\s*[a-zA-Z][a-zA-Z0-9-_]*)|(\/?>)|(<\/\s*[a-zA-Z][a-zA-Z0-9-_]*>)/g;
         //属性名正则式
         const propReg = /^[a-zA-Z_$][$-\w]*?\s*?=?$/;
         //不可见字符正则式
@@ -3278,10 +3356,9 @@ class Compiler {
                 return;
             }
             if (value) {
-                let r;
                 //去掉字符串两端
-                if (((r = /((?<=^')(.*?)(?='$))|((?<=^")(.*?)(?="$)|((?<=^`)(.*?)(?=`$)))/.exec(value)) !== null)) {
-                    value = r[0].trim();
+                if (['"', "'", '`'].includes(value[0]) && ['"', "'", '`'].includes(value[value.length - 1])) {
+                    value = value.substring(1, value.length - 1).trim();
                 }
             }
             //指令
@@ -3376,6 +3453,7 @@ class Compiler {
                 dom.setProp('template', c.getProp('template'));
                 //template节点不再需要
                 dom.children.splice(j--, 1);
+                continue;
             }
             if (c.hasDirective('slot')) { //带slot的不处理
                 continue;
@@ -3400,8 +3478,8 @@ class Compiler {
      */
     postHandleNode(node) {
         // 自定义元素判断
-        if (DefineElementManager.has(node.tagName)) { //自定义元素
-            let clazz = DefineElementManager.get(node.tagName);
+        let clazz = DefineElementManager.get(node.tagName);
+        if (clazz) { //自定义元素
             Reflect.construct(clazz, [node, this.module]);
         }
         // 模块类判断
@@ -3663,7 +3741,6 @@ class EventFactory {
         if (!eobj.has(event.name)) {
             eobj.set(event.name, {});
         }
-        console.log(key, event);
         let obj = eobj.get(event.name);
         if (key1) { //代理事件
             if (!obj.delg) {
@@ -3746,7 +3823,6 @@ class EventFactory {
         }
         else if (toDelg && obj.toDelg) {
             let index = obj.toDelg.findIndex(item => item === event);
-            console.log(index);
             if (index !== -1) {
                 obj.toDelg.splice(index, 1);
                 if (obj.toDelg.length === 0) {
@@ -3881,7 +3957,7 @@ class EventFactory {
 }
 
 /**
- * 存储
+ * NCache模块-存储在内存中
  */
 class NCache {
     constructor() {
@@ -3892,8 +3968,8 @@ class NCache {
         this.cacheData = {};
     }
     /**
-     * 从cache
-     * @param key   键，支持"."
+     * 通过提供的键名从内存中拿到对应的值
+     * @param key   键，支持"."（多级数据分割）
      * @reutrns     值或undefined
      */
     get(key) {
@@ -3914,7 +3990,7 @@ class NCache {
         }
     }
     /**
-     * 保存值
+     * 通过提供的键名和值将其存储在内存中
      * @param key       键
      * @param value     值
      */
@@ -3945,7 +4021,7 @@ class NCache {
         }
     }
     /**
-     * 移除键
+     * 通过提供的键名将其移除
      * @param key   键
      */
     remove(key) {
@@ -4008,16 +4084,16 @@ class NCache {
  */
 class GlobalCache {
     /**
-         * 保存到cache
-         * @param key       键，支持"."
-         * @param value     值
-         */
+     * 保存到cache
+     * @param key       键，支持"."（多级数据分割）
+     * @param value     值
+     */
     static set(key, value) {
         this.cache.set(key, value);
     }
     /**
      * 从cache读取
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      * @returns     缓存的值或undefined
      */
     static get(key) {
@@ -4034,12 +4110,13 @@ class GlobalCache {
     }
     /**
      * 从cache移除
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      */
     static remove(key) {
         this.cache.remove(key);
     }
 }
+//NCache实例
 GlobalCache.cache = new NCache();
 
 /**
@@ -4180,136 +4257,38 @@ class ModelManager {
      * @param data      数据对象
      * @param model     模型
      */
-    static addToDataMap(data, model) {
-        this.dataMap.set(data, model);
+    static addToMap(data, model) {
+        this.modelMap.set(model.$key, { data: data, model: model });
     }
     /**
      * 删除从 dataNModelMap
-     * @param data      数据对象
-     * @param model     模型
+     * @param key       model key
      */
-    static delFromDataMap(data) {
-        this.dataMap.delete(data);
+    static delFromMap(key) {
+        if (!this.modelMap.has(key)) {
+            return;
+        }
+        this.modelMap.get(key);
+        this.modelMap.delete(key);
     }
     /**
      * 从dataNModelMap获取model
      * @param data      数据对象
      * @returns         model
      */
-    static getFromDataMap(data) {
-        return this.dataMap.get(data);
+    static getModel(key) {
+        if (this.modelMap.has(key)) {
+            return this.modelMap.get(key)['model'];
+        }
     }
     /**
-     * 是否存在数据模型映射
-     * @param data  数据对象
-     * @returns     true/false
+     * 获取数据对象
+     * @param key   model key
+     * @returns     data
      */
-    static hasDataModel(data) {
-        return this.dataMap.has(data);
-    }
-    /**
-     * 添加源模型到到模型map
-     * @param model     模型代理
-     * @param srcNModel  源模型
-     */
-    static addModel(model, srcNModel) {
-        if (!this.modelMap.has(model)) {
-            this.modelMap.set(model, { model: srcNModel });
-        }
-        else {
-            this.modelMap.get(model).model = srcNModel;
-        }
-    }
-    /**
-   * 删除源模型到到模型map
-   * @param model     模型代理
-   * @param srcNModel  源模型
-   */
-    static delModel(model) {
-        this.modelMap.delete(model);
-    }
-    /**
-     * 从模型Map获取源数据
-     * @param model     模型代理
-     * @returns         源模型
-     */
-    static getData(model) {
-        if (this.modelMap.has(model)) {
-            return this.modelMap.get(model).data;
-        }
-        return undefined;
-    }
-    /**
-     * 获取model监听器
-     * @param model     model
-     * @param key       model对应的属性
-     * @param foo       监听处理方法
-     * @returns         void
-     */
-    static addWatcher(model, key, foo) {
-        // 把model加入到model map
-        if (!this.modelMap.has(model)) {
-            this.modelMap.set(model, {});
-        }
-        let watchers = this.modelMap.get(model).watchers;
-        //添加watchers属性
-        if (!watchers) {
-            watchers = {};
-            this.modelMap.get(model).watchers = watchers;
-        }
-        //添加观察器数组
-        if (!watchers[key]) {
-            watchers[key] = [foo];
-        }
-        else {
-            //把处理函数加入观察器数组，先进行重复添加判断
-            if (typeof foo === 'string') { //字符串
-                if (!watchers[key].find(item => item === foo)) {
-                    watchers[key].push(foo);
-                }
-            }
-            else { //函数
-                let foos = foo.toString();
-                if (!watchers[key].find(item => item.toString() === foos)) {
-                    watchers[key].push(foo);
-                }
-            }
-        }
-    }
-    /**
-     * 获取model监听器
-     * @param model     model
-     * @param key       model对应的属性
-     * @param foo       监听处理方法
-     * @returns         void
-     */
-    static removeWatcher(model, key, foo) {
-        if (!this.modelMap.has(model) || !this.modelMap.get(model).watchers) {
-            return;
-        }
-        let watchers = this.modelMap.get(model).watchers;
-        if (!watchers[key]) {
-            return;
-        }
-        let index = watchers[key].findIndex(foo);
-        //找到后移除
-        if (index !== -1) {
-            watchers.splice(index, 1);
-        }
-    }
-    /**
-     * 获取model监听器
-     * @param model     model
-     * @param key       model对应的属性
-     * @returns         监听处理函数数组
-     */
-    static getWatcher(model, key) {
-        if (!this.modelMap.has(model)) {
-            return;
-        }
-        let watchers = this.modelMap.get(model).watchers;
-        if (watchers) {
-            return watchers[key];
+    static getData(key) {
+        if (this.modelMap.has(key)) {
+            return this.modelMap.get(key)['data'];
         }
     }
     /**
@@ -4319,10 +4298,10 @@ class ModelManager {
      * @returns
      */
     static bindToModule(model, module) {
-        let obj = this.modelMap.get(model);
-        if (!obj) {
+        if (!model || !this.modelMap.has(model.$key)) {
             return;
         }
+        let obj = this.modelMap.get(model.$key);
         let mid = typeof module === 'number' ? module : module.id;
         if (!obj.modules) {
             obj.modules = [mid];
@@ -4347,10 +4326,10 @@ class ModelManager {
      * @returns
      */
     static bindToModules(model, ids) {
-        let obj = this.modelMap.get(model);
-        if (!obj) {
+        if (!this.modelMap.has(model.$key)) {
             return;
         }
+        let obj = this.modelMap.get(model.$key);
         if (!obj.modules) {
             obj.modules = ids;
         }
@@ -4376,8 +4355,11 @@ class ModelManager {
      * @returns
      */
     static unbindFromModule(model, module) {
-        let obj = this.modelMap.get(model);
-        if (!obj || !obj.modules) {
+        if (!this.modelMap.has(model.$key)) {
+            return;
+        }
+        let obj = this.modelMap.get(model.$key);
+        if (!obj.modules) {
             return;
         }
         let mid = typeof module === 'number' ? module : module.id;
@@ -4399,11 +4381,10 @@ class ModelManager {
      * @returns model绑定的模块id数组
      */
     static getModuleIds(model) {
-        let obj = this.modelMap.get(model);
-        if (!obj) {
+        if (!this.modelMap.has(model.$key)) {
             return;
         }
-        return obj.modules;
+        return this.modelMap.get(model.$key).modules;
     }
     /**
      * 更新导致渲染
@@ -4415,62 +4396,54 @@ class ModelManager {
      * @param force     强制渲染
      */
     static update(model, key, oldValue, newValue, force) {
-        //处理观察器函数
-        let obj = this.modelMap.get(model);
-        if (!obj) {
+        const modules = this.getModuleIds(model);
+        if (!modules) {
             return;
         }
-        let mids = obj.modules;
-        let modules = [];
-        if (mids) {
-            for (let mid of mids) {
-                let m = ModuleFactory.get(mid);
-                modules.push(m);
-                //增加修改标志
-                m.changedModelMap.set(model.$key, true);
+        //第一个module为watcher对应module
+        for (let mid of modules) {
+            const m = ModuleFactory.get(mid);
+            if (m) {
+                Renderer.add(m);
             }
         }
-        //watcher 处理
-        let watcher = this.getWatcher(model, key);
-        if (watcher) {
-            for (let foo of watcher) {
-                if (modules) {
-                    for (let m of modules) {
-                        //方法名
-                        if (typeof foo === 'string') {
-                            foo = m.getMethod(foo);
-                            if (foo) {
-                                foo.call(m, model, oldValue, newValue);
-                            }
-                        }
-                        else {
-                            foo.call(m, model, oldValue, newValue);
+        //监听器
+        if (model.$watchers) {
+            //对象监听器
+            if (model.$watchers.$this) {
+                for (let cfg of model.$watchers.$this) {
+                    for (let mid of cfg.modules) {
+                        const m = ModuleFactory.get(mid);
+                        if (m) {
+                            cfg.f.call(m, model, oldValue, newValue);
                         }
                     }
                 }
-                else {
-                    foo.call(model, key, newValue, oldValue);
-                }
             }
-        }
-        if (oldValue !== newValue || force) {
-            for (let m of modules) {
-                Renderer.add(m);
+            //属性监听器
+            if (model.$watchers[key]) {
+                for (let cfg of model.$watchers[key]) {
+                    for (let mid of cfg.modules) {
+                        const m = ModuleFactory.get(mid);
+                        if (m) {
+                            cfg.f.call(m, model, oldValue, newValue);
+                        }
+                    }
+                }
             }
         }
     }
 }
-// public module: Module;
 /**
- * 数据对象与模型映射，key为数据对象，value为model
+ * 模型map
+ * 样式为 {modelKey:{data:data,model:model,modules:[]}，
+ * 其中：
+ *      modelkey表示model对应key，
+ *      data为原始数据，
+ *      model为代理对象,
+ *      modules为该数据对象绑定的模块id数组
  */
-ModelManager.dataMap = new WeakMap();
-/**
- * 模型模块映射
- * key:model proxy, value:{data:data,watchers:{key:[监听器1,监听器2,...]},modules:[id1,id2,...]}
- * 每个数据对象，可有多个监听器
- */
-ModelManager.modelMap = new WeakMap();
+ModelManager.modelMap = new Map();
 
 /**
  * 模型类
@@ -4484,61 +4457,51 @@ class Model {
     constructor(data, module) {
         //模型管理器
         let proxy = new Proxy(data, {
-            set: (src, key, value, receiver) => {
+            set(src, key, value, receiver) {
                 //值未变,proxy 不处理
                 if (src[key] === value) {
                     return true;
                 }
-                //不处理原型属性和构造器 
-                if (['__proto__', 'constructor'].includes(key)) {
+                //不处理原型属性
+                if (['__proto__'].includes(key)) {
                     return true;
                 }
-                const excArr = ["$key"];
                 let ov = src[key];
                 let r = Reflect.set(src, key, value, receiver);
                 //非对象，null，非model更新渲染
-                if (typeof value !== 'function' && excArr.indexOf(key) === -1) {
-                    ModelManager.update(proxy, key, ov, value);
+                if (value && !value.$key && typeof value === 'object') {
+                    value = new Model(value, module);
                 }
+                ModelManager.update(proxy, key, ov, value);
                 return r;
             },
-            get: (src, key, receiver) => {
+            get(src, key, receiver) {
                 let res = Reflect.get(src, key, receiver);
-                //数组的sort和fill触发强行渲染
-                if (Array.isArray(src) && ['sort', 'fill'].indexOf(key) !== -1) { //强制渲染
-                    ModelManager.update(proxy, null, null, null, true);
-                }
-                let data = ModelManager.getFromDataMap(src[key]);
-                if (data) {
-                    return data;
-                }
-                if (res !== null && typeof res === 'object') {
-                    //如果是对象，则返回代理，便于后续激活get set方法                   
-                    //判断是否已经代理，如果未代理，则增加代理
-                    if (!src[key].$key) {
-                        let p = new Model(res, module);
-                        return p;
+                if (res) {
+                    if (res.$key) {
+                        return ModelManager.getModel(res.$key);
+                    }
+                    else if (typeof res === 'object' && src.hasOwnProperty(key)) { //未代理对象，需要创建模型
+                        return new Model(res, module);
                     }
                 }
                 return res;
             },
-            deleteProperty: function (src, key) {
-                //如果删除对象，从mm中同步删除
+            deleteProperty(src, key) {
+                //如果删除对象，从modelmanager中同步删除
                 if (src[key] !== null && typeof src[key] === 'object') {
-                    ModelManager.delFromDataMap(src[key]);
-                    ModelManager.delModel(src[key]);
+                    ModelManager.delFromMap(src[key].$key);
                 }
                 delete src[key];
-                ModelManager.update(proxy, key, null, null, true);
+                ModelManager.update(src, key, null, null, true);
                 return true;
             }
         });
-        proxy.$watch = this.$watch;
-        proxy.$get = this.$get;
-        proxy.$set = this.$set;
+        for (let k of ['$watch', '$unwatch', '$get', '$set']) {
+            proxy[k] = this[k];
+        }
         proxy.$key = Util.genId();
-        ModelManager.addToDataMap(data, proxy);
-        ModelManager.addModel(proxy, data);
+        ModelManager.addToMap(data, proxy);
         //绑定到模块
         if (module) {
             ModelManager.bindToModule(proxy, module);
@@ -4547,26 +4510,78 @@ class Model {
     }
     /**
      * 观察(取消观察)某个数据项
-     * @param key       数据项名
+     * @param key       数据项名或数组
      * @param operate   数据项变化时执行方法名(在module的methods中定义)
-     * @param cancel    取消观察
      */
-    $watch(key, operate, cancel) {
-        let model = this;
-        let index = -1;
-        //如果带'.'，则只取最里面那个对象
-        if ((index = key.lastIndexOf('.')) !== -1) {
-            model = this.$get(key.substr(0, index));
-            key = key.substr(index + 1);
-        }
-        if (!model) {
-            return;
-        }
-        if (cancel) {
-            ModelManager.removeWatcher(model, key, operate);
+    $watch(key, operate) {
+        let mids = ModelManager.getModuleIds(this);
+        let arr = [];
+        if (Array.isArray(key)) {
+            for (let k of key) {
+                watchOne(this, k, operate);
+            }
         }
         else {
-            ModelManager.addWatcher(model, key, operate);
+            watchOne(this, key, operate);
+        }
+        //返回取消watch函数
+        return () => {
+            for (let f of arr) {
+                const foos = f.m.$watchers[f.k];
+                if (foos) {
+                    for (let i = 0; i < foos.length; i++) {
+                        //方法相同则撤销watch
+                        if (foos[i].f === f.f) {
+                            foos.splice(i, 1);
+                            if (foos.length === 0) {
+                                delete f.m.$watchers[f.k];
+                            }
+                        }
+                    }
+                }
+            }
+            //释放arr
+            arr = null;
+        };
+        function watchOne(model, key, operate) {
+            let index = -1;
+            //如果带'.'，则只取最里面那个对象
+            if ((index = key.lastIndexOf('.')) !== -1) {
+                model = this.$get(key.substr(0, index));
+                key = key.substr(index + 1);
+            }
+            if (!model) {
+                return;
+            }
+            const listener = { modules: mids, f: operate };
+            //对象，监听整个对象
+            if (typeof model[key] === 'object') {
+                model = model[key];
+                if (!model.$watchers) {
+                    model.$watchers = {};
+                }
+                if (!model.$watchers.$this) {
+                    model.$watchers.$this = [listener];
+                }
+                else {
+                    model.$watchers.$this.push(listener);
+                }
+                //保存用于撤销watch
+                arr.push({ m: model, k: '$this', f: operate });
+            }
+            else { //否则监听属性
+                if (!model.$watchers) {
+                    model.$watchers = {};
+                }
+                if (!model.$watchers[key]) {
+                    model.$watchers[key] = [listener];
+                }
+                else {
+                    model.$watchers[key].push(listener);
+                }
+                //保存用于撤销watch
+                arr.push({ m: model, k: key, f: operate });
+            }
         }
     }
     /**
@@ -4609,6 +4624,7 @@ class Model {
                     ModelManager.bindToModules(m, mids);
                     model[arr[i]] = m;
                 }
+                model = model[arr[i]];
             }
             key = arr[arr.length - 1];
         }
@@ -4639,7 +4655,7 @@ class ObjectManager {
     }
     /**
      * 保存到cache
-     * @param key       键，支持"."
+     * @param key       键，支持"."（多级数据分割）
      * @param value     值
      */
     set(key, value) {
@@ -4647,7 +4663,7 @@ class ObjectManager {
     }
     /**
      * 从cache读取
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      * @returns     缓存的值或undefined
      */
     get(key) {
@@ -4655,7 +4671,7 @@ class ObjectManager {
     }
     /**
      * 从cache移除
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      */
     remove(key) {
         this.cache.remove(key);
@@ -4705,7 +4721,7 @@ class ObjectManager {
     /**
      * 设置dom参数值
      * @param key       dom key
-     * @param name       参数名
+     * @param name      参数名
      * @param value     参数值
      */
     setDomParam(key, name, value) {
@@ -4721,7 +4737,7 @@ class ObjectManager {
         return this.get('$domparam.' + key + '.' + name);
     }
     /**
-     * 移除dom参数
+     * 移除dom参数值
      * @param key       dom key
      * @param name      参数名
      */
@@ -4736,7 +4752,7 @@ class ObjectManager {
         this.remove('$domparam.' + key);
     }
     /**
-     * 清除缓存dom对象
+     * 清除缓存dom对象集
      */
     clearAllDomParams() {
         this.remove('$domparam');
@@ -4936,6 +4952,7 @@ class Module {
         if (ModuleFactory.getMain() === this) {
             return;
         }
+        delete this.srcDom;
         this.doModuleEvent('beforeUnActive');
         //设置状态
         this.state = EModuleState.UNACTIVE;
@@ -5069,7 +5086,6 @@ class Module {
                 this.model[d] = o;
             }
         }
-        this.props = props;
         this.srcDom = dom;
         if (this.state === EModuleState.INITED || this.state === EModuleState.UNACTIVE) {
             this.active();
@@ -5108,6 +5124,7 @@ class Module {
                 }
             }
         }
+        this.props = props;
     }
     /**
      * 编译
@@ -5151,17 +5168,9 @@ class Module {
     mergeProps(dom, props) {
         let change = false;
         for (let k of Object.keys(props)) {
-            if (props[k] !== dom.getProp(k)) {
-                change = true;
-                if (k === 'style') {
-                    dom.addStyle(props[k]);
-                }
-                else if (k === 'class') {
-                    dom.addClass(props[k]);
-                }
-                else {
-                    dom.setProp(k, props[k]);
-                }
+            let c = dom.addProp(k, props[k]);
+            if (!change) {
+                change = c;
             }
         }
         return change;
@@ -5321,9 +5330,6 @@ class FOR extends DefineElement {
             throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'FOR', 'cond');
         }
         node.delProp('cond');
-        // if(typeof cond === 'number'){ //表达式
-        //     cond = GlobalCache.getExpression(cond);
-        // }
         node.addDirective(new Directive('repeat', cond));
     }
 }
@@ -5336,9 +5342,6 @@ class RECUR extends DefineElement {
         //条件
         let cond = node.getProp('cond');
         node.delProp('cond');
-        // if(typeof cond === 'number'){ //表达式
-        //     cond = GlobalCache.getExpression(cond);
-        // }
         node.addDirective(new Directive('recur', cond));
     }
 }
@@ -5354,9 +5357,6 @@ class IF extends DefineElement {
             throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'IF', 'cond');
         }
         node.delProp('cond');
-        // if(typeof cond === 'number'){ //表达式
-        //     cond = GlobalCache.getExpression(cond);
-        // }
         node.addDirective(new Directive('if', cond));
     }
 }
@@ -5378,9 +5378,6 @@ class ELSEIF extends DefineElement {
             throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ELSEIF', 'cond');
         }
         node.delProp('cond');
-        // if(typeof cond === 'number'){ //表达式
-        //     cond = GlobalCache.getExpression(cond);
-        // }
         node.addDirective(new Directive('elseif', cond));
     }
 }
@@ -5439,7 +5436,7 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             module.objectManager.setDomParam(dom.key, 'moduleId', mid);
             module.addChild(m);
             //共享当前dom的model给子模块
-            if (dom.props.hasOwnProperty('useDomModel')) {
+            if (src.hasProp('useDomModel')) {
                 m.model = dom.model;
                 //绑定model到子模块，共享update,watch方法
                 ModelManager.bindToModule(m.model, m);
@@ -5507,7 +5504,7 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             }
             //渲染一次-1，所以需要+1
             src.staticNum++;
-            let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].$key);
+            let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].$key + '');
             //删除$index属性
             if (idxName) {
                 delete d.props['$index'];
@@ -5551,14 +5548,10 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             }
             //克隆，后续可以继续用
             let node1 = node.clone();
-            let key;
-            if (!Array.isArray(m)) { //recur子节点不为数组，依赖子层数据
+            //recur子节点不为数组，依赖子层数据，否则以来repeat数据
+            if (!Array.isArray(m)) {
                 node1.model = m;
-                key = m.$key;
-                Util.setNodeKey(node1, key, true);
-            }
-            else {
-                key = dom.model.$key;
+                Util.setNodeKey(node1, m.$key, true);
             }
             src.children = [node1];
         }
@@ -5711,10 +5704,10 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                     }
                 }
                 //修改value值，该节点不重新渲染
-                if (type !== 'radio') {
-                    dom.props['value'] = v;
-                    el.value = v;
-                }
+                // if (type !== 'radio') {
+                //     dom.props['value'] = v;
+                //     el.value = v;
+                // }
             });
             GlobalCache.set('$fieldChangeEvent', event);
         }
@@ -5753,7 +5746,6 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             GlobalCache.set('$routeClickEvent', event);
         }
         src.addEvent(event);
-        // module.eventFactory.addEvent(dom.key, event);
         return true;
     });
     /**
@@ -5795,9 +5787,11 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                 //更改渲染子节点
                 src.children = chds;
                 //非内部渲染,更改model
-                if (!src.getProp('innerRender')) {
+                if (!src.hasProp('innerRender')) {
                     for (let c of src.children) {
                         c.model = cfg.model;
+                        //对象绑定到当前模块
+                        ModelManager.bindToModule(cfg.model, module);
                     }
                 }
             }
@@ -5877,10 +5871,16 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             // tigger为false 播放Leave动画
             if (el) {
                 if (el.getAttribute('class').indexOf(`${nameLeave}-leave-to`) != -1) {
-                    // 当前已经处于leave动画播放完成之后了，直接返回
-                    // dom.vdom.addClass(`${nameLeave}-leave-to`)
+                    // 当前已经处于leave动画播放完成之后，若是进入离开动画，这时候需要他保持隐藏状态。
+                    dom.props['class'] += ` ${nameLeave}-leave-to`;
+                    if (isAppear) {
+                        dom.props["style"]
+                            ? (dom.props["style"] += ";display:none;")
+                            : (dom.props["style"] = "display:none;");
+                    }
                     return true;
                 }
+                // // 确保在触发动画之前还是隐藏状态
                 // 调用函数触发 Leave动画/过渡
                 changeStateFromShowToHide(el);
                 return true;
@@ -5889,7 +5889,9 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                 // el不存在，第一次渲染
                 if (isAppear) {
                     // 是进入离开动画，管理初次渲染的状态，让他隐藏
-                    dom.vdom.addStyle('display:none');
+                    dom.props["style"]
+                        ? (dom.props["style"] += ";display:none;")
+                        : (dom.props["style"] = "display:none;");
                 }
                 // 下一帧
                 setTimeout(() => {
@@ -5897,11 +5899,9 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                     let el = module.getNode(dom.key);
                     if (isAppear) {
                         // 动画/过渡 是进入离开动画/过渡，并且当前是需要让他隐藏所以我们不播放动画，直接隐藏。
-                        dom.vdom.removeStyle('display:none');
                         el.classList.add(`${nameLeave}-leave-to`);
                         // 这里必须将这个属性加入到dom中,否则该模块其他数据变化触发增量渲染时,diff会将这个节点重新渲染,导致显示异常
                         // 这里添加添加属性是为了避免diff算法重新渲染该节点
-                        dom.vdom.addClass(`${nameLeave}-leave-to`);
                         dom.props['class'] += ` ${nameLeave}-leave-to`;
                         el.style.display = 'none';
                     }
@@ -5918,8 +5918,17 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             // tigger为true 播放Enter动画
             if (el) {
                 if (el.getAttribute('class').indexOf(`${nameEnter}-enter-to`) != -1) {
-                    // dom.vdom.addClass(`${nameEnter}-enter-to`)
+                    // 这里不需要像tigger=false时那样处理，这时候他已经处于进入动画播放完毕状态，
+                    // 模块内其他数据变化引起该指令重新执行，这时候需要他保持现在显示的状态，直接返回true
+                    dom.props['class'] += ` ${nameEnter}-enter-to`;
                     return true;
+                }
+                if (isAppear) {
+                    // 如果是进入离开动画，在播放enter动画之前确保该元素是隐藏状态
+                    // 确保就算diff更新了该dom还是有隐藏属性
+                    dom.props["style"]
+                        ? (dom.props["style"] += ";display:none;")
+                        : (dom.props["style"] = "display:none;");
                 }
                 // 调用函数触发Enter动画/过渡
                 changeStateFromHideToShow(el);
@@ -5928,22 +5937,22 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                 // el不存在，是初次渲染
                 if (isAppear) {
                     // 管理初次渲染元素的隐藏显示状态
-                    dom.vdom.addStyle('display:none');
+                    dom.props["style"]
+                        ? (dom.props["style"] += ";display:none;")
+                        : (dom.props["style"] = "display:none;");
                 }
                 // 下一帧
                 setTimeout(() => {
                     // 等虚拟dom把元素更新上去了之后，取得元素
                     let el = module.getNode(dom.key);
                     if (isAppear) {
-                        dom.vdom.removeStyle('display:none');
                         // 这里必须将这个属性加入到dom中,否则该模块其他数据变化触发增量渲染时,diff会将这个节点重新渲染,导致显示异常
                         // 这里添加添加属性是为了避免diff算法重新渲染该节点
-                        dom.vdom.addStyle(`${nameEnter}-enter-to`);
                         dom.props['class'] += ` ${nameEnter}-enter-to`;
                         el.style.display = 'none';
                     }
                     // Enter动画与Leave动画不同，
-                    //不管动画是不是进入离开动画，我们在初次渲染的时候都要执行一遍动画
+                    // 不管动画是不是进入离开动画，在初次渲染的时候都要执行一遍动画
                     // Leave动画不一样，如果是开始离开动画，并且初次渲染的时候需要隐藏，那么我们没有必要播放一遍离开动画
                     changeStateFromHideToShow(el);
                 }, 0);
@@ -6010,9 +6019,6 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                 requestAnimationFrame(() => {
                     // 动画类型是aniamtion
                     el.classList.remove(nameEnter + '-enter-to');
-                    // 设置动画的类名
-                    el.classList.add(nameLeave + '-leave-active');
-                    // el.classList.add(nameLeave + '-leave-from')
                     // 动画延时时间
                     el.style.animationDelay = delayLeave;
                     // 动画持续时间
@@ -6022,18 +6028,17 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                     if (timingFunctionLeave != 'ease') {
                         el.style.animationTimingFunction = timingFunctionLeave;
                     }
-                    requestAnimationFrame(() => {
-                        // 重定位一下触发动画
-                        // el.classList.add(nameLeave + '-leave-to')
-                        // el.classList.remove(nameLeave + '-leave-from')
-                        // 在触发动画之前执行hook
-                        if (beforeLeave) {
-                            beforeLeave.apply(module.model, [module]);
-                        }
-                        void el.offsetWidth;
-                        //添加动画结束时间监听
-                        el.addEventListener('animationend', handler);
-                    });
+                    // 在触发动画之前执行hook
+                    if (beforeLeave) {
+                        beforeLeave.apply(module.model, [module]);
+                    }
+                    // 触发一次回流reflow
+                    void el.offsetWidth;
+                    // 添加动画类名
+                    el.classList.add(nameLeave + '-leave-active');
+                    //添加动画结束时间监听
+                    el.addEventListener('animationend', handler);
+                    // })
                 });
             }
         }
@@ -6053,7 +6058,6 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                 setTimeout(() => {
                     let [width, height] = getElRealSzie(el);
                     // 在第一帧设置初始状态
-                    // requestAnimationFrame(() => {
                     // 移除掉上一次过渡的最终状态
                     el.classList.remove(nameLeave + '-leave-to');
                     // 添加过渡的类名
@@ -6100,7 +6104,6 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                             el.addEventListener('transitionend', handler);
                         });
                     });
-                    // })
                 }, delay);
             }
             else {
@@ -6112,9 +6115,6 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                     // 动画开始之前先将元素显示
                     requestAnimationFrame(() => {
                         el.classList.remove(nameLeave + '-leave-to');
-                        // 设置动画的类名
-                        el.classList.add(nameEnter + '-enter-active');
-                        // el.classList.add(nameEnter + '-enter-from')
                         // 设置动画的持续时间
                         if (durationEnter != '') {
                             el.style.animationDuration = durationEnter;
@@ -6126,17 +6126,15 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                         if (isAppear) {
                             el.style.display = '';
                         }
-                        requestAnimationFrame(() => {
-                            // el.classList.add(nameEnter + '-enter-to')
-                            // el.classList.remove(nameEnter + '-enter-from')
-                            // 在触发过渡之前执行hook 
-                            if (beforeEnter) {
-                                beforeEnter.apply(module.model, [module]);
-                            }
-                            // 重定位一下触发动画
-                            void el.offsetWidth;
-                            el.addEventListener('animationend', handler);
-                        });
+                        // 在触发过渡之前执行hook 
+                        if (beforeEnter) {
+                            beforeEnter.apply(module.model, [module]);
+                        }
+                        // 触发一次回流reflow
+                        void el.offsetWidth;
+                        // 重新添加类名
+                        el.classList.add(nameEnter + '-enter-active');
+                        el.addEventListener('animationend', handler);
                     });
                 }, delay);
             }

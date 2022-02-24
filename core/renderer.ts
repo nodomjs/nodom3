@@ -6,7 +6,6 @@ import { Expression } from "./expression";
 import { CssManager } from "./cssmanager";
 import { EventManager } from "./eventmanager";
 import { IRenderedDom } from "./types";
-import { domainToASCII } from "url";
 
 /**
  * 渲染器
@@ -20,7 +19,7 @@ export class Renderer {
     /**
      * 当前模块根dom
      */
-    private static currentModuleRoot:VirtualDom;
+    private static currentModuleRoot:IRenderedDom;
     /**
      * 添加到渲染列表
      * @param module 模块
@@ -48,7 +47,7 @@ export class Renderer {
      * @param src               源dom
      * @param model             模型，如果src已经带有model，则此参数无效
      * @param parent            父dom
-     * @param key               key
+     * @param key               key 附加key，放在domkey的后面
      * @returns 
      */
     public static renderDom(module:Module,src:VirtualDom,model:Model,parent?:IRenderedDom,key?:string):IRenderedDom{
@@ -69,7 +68,7 @@ export class Renderer {
         model = src.model || model;
         //设置当前根root
         if(!parent){
-            this.currentModuleRoot = src;
+            this.currentModuleRoot = dst;
         }else{
             if(!model){
                 model = parent.model;
@@ -86,6 +85,7 @@ export class Renderer {
         if(src.staticNum>0){
             src.staticNum--;
         }
+        dst.staticNum = src.staticNum;
         
         //先处理model指令
         if(src.directives && src.directives.length>0 && src.directives[0].type.name === 'model'){
@@ -164,7 +164,7 @@ export class Renderer {
             }
             return true;
         }
-
+        
         /**
          * 处理属性（带表达式）
          */
@@ -172,13 +172,36 @@ export class Renderer {
             if(!src.props || src.props.size === 0){
                 return;
             }
+            //因为存在大小写，所以用正则式进行匹配
+            const styleReg = /^style$/i;
+            const classReg = /^class$/i;
+            let value;
             for(let k of src.props){
-                if(k[1] instanceof Expression){
-                    dst.props[k[0]] = k[1].val(module,dst.model);
+                if(Array.isArray(k[1])){  //数组，需要合并
+                    value = [];
+                    for(let i=0;i<k[1].length;i++){
+                        let a = k[1][i];
+                        if(a instanceof Expression){
+                            value.push(a.val(module,dst.model));
+                            dst.staticNum = -1;
+                        }else{
+                            value.push(a);
+                        }
+                    }
+                    if(styleReg.test(k[0])){
+                        value = src.getStyleString(value);
+                    }else if(classReg.test(k[0])){
+                        value = src.getClassString(value);
+                    }else{
+                        value = value.join(' ');
+                    }
+                }else if(k[1] instanceof Expression){
+                    value = k[1].val(module,dst.model);
                     dst.staticNum = -1;
                 }else{
-                    dst.props[k[0]] = k[1];
+                    value = k[1];
                 }
+                dst.props[k[0]] = value;
             }
         }
     }
@@ -253,8 +276,9 @@ export class Renderer {
             module.saveNode(dom.key,el);
             //保存自定义key对应element
             if(dom.props['key']){
-                module.saveElement(dom['key'],el);
+                module.saveElement(dom.props['key'],el);
             }
+
             //子模块容器的处理由子模块处理
             if(!dom.subModuleId){
                 //设置属性

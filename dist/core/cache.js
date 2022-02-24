@@ -1,5 +1,5 @@
 /**
- * 存储
+ * NCache模块-存储在内存中
  */
 export class NCache {
     constructor() {
@@ -10,8 +10,8 @@ export class NCache {
         this.cacheData = {};
     }
     /**
-     * 从cache
-     * @param key   键，支持"."
+     * 通过提供的键名从内存中拿到对应的值
+     * @param key   键，支持"."（多级数据分割）
      * @reutrns     值或undefined
      */
     get(key) {
@@ -32,7 +32,7 @@ export class NCache {
         }
     }
     /**
-     * 保存值
+     * 通过提供的键名和值将其存储在内存中
      * @param key       键
      * @param value     值
      */
@@ -63,7 +63,7 @@ export class NCache {
         }
     }
     /**
-     * 移除键
+     * 通过提供的键名将其移除
      * @param key   键
      */
     remove(key) {

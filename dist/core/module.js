@@ -202,6 +202,7 @@ export class Module {
         if (ModuleFactory.getMain() === this) {
             return;
         }
+        delete this.srcDom;
         this.doModuleEvent('beforeUnActive');
         //设置状态
         this.state = EModuleState.UNACTIVE;
@@ -335,7 +336,6 @@ export class Module {
                 this.model[d] = o;
             }
         }
-        this.props = props;
         this.srcDom = dom;
         if (this.state === EModuleState.INITED || this.state === EModuleState.UNACTIVE) {
             this.active();
@@ -368,12 +368,13 @@ export class Module {
                 if (this.originTree) {
                     propChanged = this.mergeProps(this.originTree, props);
                 }
-                const tmp = this.template(this.props);
+                const tmp = this.template(props);
                 if (tmp !== this.oldTemplate || propChanged) {
                     this.active();
                 }
             }
         }
+        this.props = props;
     }
     /**
      * 编译
@@ -417,17 +418,9 @@ export class Module {
     mergeProps(dom, props) {
         let change = false;
         for (let k of Object.keys(props)) {
-            if (props[k] !== dom.getProp(k)) {
-                change = true;
-                if (k === 'style') {
-                    dom.addStyle(props[k]);
-                }
-                else if (k === 'class') {
-                    dom.addClass(props[k]);
-                }
-                else {
-                    dom.setProp(k, props[k]);
-                }
+            let c = dom.addProp(k, props[k]);
+            if (!change) {
+                change = c;
             }
         }
         return change;

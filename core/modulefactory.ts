@@ -22,9 +22,9 @@ export class ModuleFactory {
      * 添加模块到工厂
      * @param item  模块对象
      */
-    public static add(item:Module) {
+    public static add(item: Module) {
         // //第一个为主模块
-        if(this.modules.size === 0){
+        if (this.modules.size === 0) {
             this.mainModule = item;
         }
         this.modules.set(item.id, item);
@@ -37,10 +37,10 @@ export class ModuleFactory {
      * 获得模块
      * @param name  类、类名或实例id
      */
-    public static get(name:any): Module {
-        if(typeof name === 'number'){
+    public static get(name: any): Module {
+        if (typeof name === 'number') {
             return this.modules.get(name);
-        }else{
+        } else {
             return this.getInstance(name);
         }
     }
@@ -50,7 +50,7 @@ export class ModuleFactory {
      * @param clazzName     模块类名
      * @returns     true/false
      */
-    public static hasClass(clazzName:string):boolean{
+    public static hasClass(clazzName: string): boolean {
         return this.classes.has(clazzName.toLowerCase());
     }
 
@@ -59,15 +59,15 @@ export class ModuleFactory {
      * @param clazz     模块类
      * @param alias     注册别名
      */
-    public static addClass(clazz:any,alias?:string){
+    public static addClass(clazz: any, alias?: string) {
         //转换成小写
         let name = clazz.name.toLowerCase();
-        if(this.classes.has(name)){
+        if (this.classes.has(name)) {
             return;
         }
-        this.classes.set(name,clazz);
-        if(alias){
-            this.classes.set(alias,clazz);
+        this.classes.set(name, clazz);
+        if (alias) {
+            this.classes.set(alias.toLowerCase(), clazz);
         }
     }
 
@@ -76,21 +76,19 @@ export class ModuleFactory {
      * @param className     模块类或类名
      * @param props         模块外部属性
      */
-    private static getInstance(clazz:any): Module {
-        let className = (typeof clazz === 'string')?clazz:clazz.name.toLowerCase();
+    private static getInstance(clazz: any): Module {
+        let className = (typeof clazz === 'string') ? clazz : clazz.name.toLowerCase();
         let cls;
         // 初始化模块
-        if(!this.classes.has(className) && typeof clazz === 'function'){
+        if (!this.classes.has(className) && typeof clazz === 'function') {
             cls = clazz;
-        }else{
+        } else {
             cls = this.classes.get(className);
         }
-        
-        if(!cls){
+        if (!cls) {
             return;
         }
-
-        let m:Module = Reflect.construct(cls, []);
+        let m: Module = Reflect.construct(cls, []);
         m.init();
         return m;
     }

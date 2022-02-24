@@ -32,7 +32,7 @@ Nodom是一款用于构建用户界面的前端`MVVM`模式框架，Nodom支持�
 
 ### 最新的Nodom
 
-最新的版本可在[GitHub](https://github.com/fieldyang/nodom3)上获取，内有官方发布的重要信息，包括详细的更新日志，及之前的版本。
+最新的版本可在[GitHub](https://github.com/weblabsw/nodom3)上获取，内有官方发布的重要信息，包括详细的更新日志，及之前的版本。
 
 ### 体验Nodom
 

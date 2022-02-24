@@ -29,7 +29,7 @@ export declare class Renderer {
      * @param src               源dom
      * @param model             模型，如果src已经带有model，则此参数无效
      * @param parent            父dom
-     * @param key               key
+     * @param key               key 附加key，放在domkey的后面
      * @returns
      */
     static renderDom(module: Module, src: VirtualDom, model: Model, parent?: IRenderedDom, key?: string): IRenderedDom;

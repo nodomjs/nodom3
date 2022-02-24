@@ -36,10 +36,19 @@ export declare class VirtualDom {
      */
     assets: Map<string, any>;
     /**
-     * 静态属性(attribute)集合
+     * 属性(attribute)集合
      * {prop1:value1,...}
+     * 属性值可能是值，也可能是表达式，还可能是数组，当为子模块时，存在从props传递过来的属性，如果模块模版存在相同属性，则会变成数组。
      */
     props: Map<string, any>;
+    /**
+     * 删除的class名数组
+     */
+    removedClassMap: Map<string, boolean>;
+    /**
+     * 删除的style属性名map
+     */
+    removedStyleMap: Map<string, boolean>;
     /**
      * 事件数组
      */
@@ -48,14 +57,6 @@ export declare class VirtualDom {
      * 子节点数组[]
      */
     children: Array<VirtualDom>;
-    /**
-     * 样式map
-     */
-    private styleMap;
-    /**
-     * class 数组
-     */
-    private classArr;
     /**
      * 父虚拟dom
      */
@@ -83,84 +84,87 @@ export declare class VirtualDom {
     /**
      * 移除多个指令
      * @param directives 	待删除的指令类型数组或指令类型
+     * @returns             如果虚拟dom上的指令集为空，则返回void
      */
     removeDirectives(directives: string[]): void;
     /**
      * 移除指令
      * @param directive 	待删除的指令类型名
+     * @returns             如果虚拟dom上的指令集为空，则返回void
      */
     removeDirective(directive: string): void;
     /**
      * 添加指令
      * @param directive     指令对象
      * @param sort          是否排序
+     * @returns             如果虚拟dom上的指令集不为空，且指令集中已经存在传入的指令对象，则返回void
      */
     addDirective(directive: Directive, sort?: boolean): void;
     /**
      * 指令排序
+     * @returns           如果虚拟dom上指令集为空，则返回void
      */
     sortDirective(): void;
     /**
      * 是否有某个类型的指令
      * @param typeName 	    指令类型名
-     * @returns             true/false
+     * @returns             如果指令集不为空，且含有传入的指令类型名则返回true，否则返回false
      */
     hasDirective(typeName: string): boolean;
     /**
      * 获取某个类型的指令
      * @param module            模块
      * @param directiveType 	指令类型名
-     * @returns                 指令对象
+     * @returns                 如果指令集为空，则返回void；否则返回指令类型名等于传入参数的指令对象
      */
     getDirective(directiveType: string): Directive;
     /**
      * 添加子节点
+     * @param dom     子节点
      */
     add(dom: VirtualDom): void;
     /**
-     * 是否存在某个class
-     * @param cls   class name
-     * @return      true/false
-     */
-    hasClass(module: any, cls: string): boolean;
-    /**
-     * 初始化class数组
-     */
-    private initClassArr;
-    /**
      * 添加css class
-     * @param cls class名,可以多个，以“空格”分割
+     * @param cls class名或表达式,可以多个，以“空格”分割
      */
-    addClass(cls: string): void;
+    addClass(cls: string | Expression): void;
     /**
-     * 删除css class
+     * 删除css class，因为涉及到表达式，此处只记录删除标识
      * @param cls class名,可以多个，以“空格”分割
      */
     removeClass(cls: string): void;
     /**
-     * 初始化style map
+     * 获取class串
+     * @returns class 串
      */
-    private initStyleMap;
+    getClassString(values: any): string;
     /**
      * 添加style
-     *  @param styleStr style字符串
+     *  @param style style字符串或表达式
      */
-    addStyle(styleStr: string): void;
+    addStyle(style: string | Expression): void;
     /**
      * 删除style
-     * @param styleStr style字符串，可以是stylename:stylevalue[;...]或stylename1;stylename2
+     * @param styleStr style字符串，多个style以空格' '分割
      */
     removeStyle(styleStr: string): void;
+    /**
+     * 获取style串
+     * @returns style 串
+     */
+    getStyleString(values: any): string;
     /**
      * 是否拥有属性
      * @param propName  属性名
      * @param isExpr    是否只检查表达式属性
+     * @returns         如果属性集含有传入的属性名返回true，否则返回false
      */
     hasProp(propName: string): boolean;
     /**
      * 获取属性值
      * @param propName  属性名
      * @param isExpr    是否只获取表达式属性
+     * @returns         传入属性名的value
      */
     getProp(propName: string, isExpr?: boolean): any;
     /**
@@ -170,8 +174,15 @@ export declare class VirtualDom {
      */
     setProp(propName: string, v: any): void;
     /**
+     * 添加属性，如果原来的值存在，则属性值变成数组
+     * @param pName     属性名
+     * @param pValue    属性值
+     */
+    addProp(pName: any, pValue: any): boolean;
+    /**
      * 删除属性
      * @param props     属性名或属性名数组
+     * @returns         如果虚拟dom上的属性集为空，则返回void
      */
     delProp(props: string | string[]): void;
     /**
@@ -183,6 +194,7 @@ export declare class VirtualDom {
     /**
      * 删除asset
      * @param assetName     asset name
+     * @returns             如果虚拟dom上的直接属性集为空，则返回void
      */
     delAsset(assetName: string): void;
     /**
@@ -223,9 +235,8 @@ export declare class VirtualDom {
     private setStaticOnce;
     /**
      * 克隆
-     * @param changeKey     是否更改key，如果为true，则生成的节点用新的key
      */
-    clone(module: Module): VirtualDom;
+    clone(): VirtualDom;
     /**
      * 保存事件
      * @param key       dom key

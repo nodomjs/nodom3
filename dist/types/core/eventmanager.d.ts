@@ -16,7 +16,6 @@ export declare class EventManager {
     static bind(module: Module, dom: IRenderedDom): void;
     /**
      * 处理外部事件
-     * @param module    模块
      * @param dom       dom节点
      * @param event     事件对象
      * @returns         如果有是外部事件，则返回true，否则返回false

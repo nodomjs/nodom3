@@ -18,7 +18,7 @@ export class ObjectManager {
     }
     /**
      * 保存到cache
-     * @param key       键，支持"."
+     * @param key       键，支持"."（多级数据分割）
      * @param value     值
      */
     set(key, value) {
@@ -26,7 +26,7 @@ export class ObjectManager {
     }
     /**
      * 从cache读取
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      * @returns     缓存的值或undefined
      */
     get(key) {
@@ -34,7 +34,7 @@ export class ObjectManager {
     }
     /**
      * 从cache移除
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      */
     remove(key) {
         this.cache.remove(key);
@@ -84,7 +84,7 @@ export class ObjectManager {
     /**
      * 设置dom参数值
      * @param key       dom key
-     * @param name       参数名
+     * @param name      参数名
      * @param value     参数值
      */
     setDomParam(key, name, value) {
@@ -100,7 +100,7 @@ export class ObjectManager {
         return this.get('$domparam.' + key + '.' + name);
     }
     /**
-     * 移除dom参数
+     * 移除dom参数值
      * @param key       dom key
      * @param name      参数名
      */
@@ -115,7 +115,7 @@ export class ObjectManager {
         this.remove('$domparam.' + key);
     }
     /**
-     * 清除缓存dom对象
+     * 清除缓存dom对象集
      */
     clearAllDomParams() {
         this.remove('$domparam');

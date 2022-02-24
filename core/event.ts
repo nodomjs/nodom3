@@ -23,7 +23,7 @@ export class NEvent {
      */
     public name: string;
     /**
-     * 事件处理函数名(需要在模块methods中定义)
+     * 事件处理函数名(需要在模块中定义)
      */
     public handler: string | Function;
     /**
@@ -45,13 +45,12 @@ export class NEvent {
     public capture: boolean;
 
     /**
-     * 依赖事件，用于扩展事件存储原始事件对戏
+     * 依赖事件，用于扩展事件存储原始事件
      */
     public dependEvent:NEvent;
     
 
     /**
-     * @param module        模块
      * @param eventName     事件名
      * @param eventStr      事件串或事件处理函数,以“:”分割,中间不能有空格,结构为: 方法名[:delg(代理到父对象):nopopo(禁止冒泡):once(只执行一次):capture(useCapture)]
      *                      如果为函数，则替代第三个参数
@@ -147,7 +146,7 @@ export class NEvent {
      * @param module    模块
      * @param dom       虚拟dom
      * @param name      参数名
-     * @returns         参数值
+     * @returns         附加参数值
      */
     public getParam(module:Module,dom:IRenderedDom,name: string) {
         return module.objectManager.getEventParam(this.id,dom.key,name);

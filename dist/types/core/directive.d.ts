@@ -12,7 +12,7 @@ export declare class Directive {
      */
     id: number;
     /**
-     * 指令类型，指令管理器中定义
+     * 指令类型
      */
     type: DirectiveType;
     /**
@@ -20,11 +20,11 @@ export declare class Directive {
      */
     value: any;
     /**
-     * 表达式id
+     * 表达式
      */
     expression: Expression;
     /**
-     * 禁用
+     * 禁用指令
      */
     disabled: boolean;
     /**

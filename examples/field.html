@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang='en'>
+<html lang="en">
 	<head>
-		<meta charset='UTF-8' />
-		<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 		<title>field</title>
 	</head>
 	<body>
 		<div></div>
 	</body>
-	<script type='module'>
-		import{nodom,Module,Util,ModuleFactory} from '../dist/nodom.esm.js'
+	<script type="module">
+		import { nodom, Module, Util, ModuleFactory } from "../dist/nodom.esm.js";
 
-		class Module1 extends Module{
-			template(){
+		class Module1 extends Module {
+			template() {
 				return `
 				<div>
 					<button e-click='change'>change</button>
@@ -44,58 +44,65 @@
 							简介:<textarea x-field='intro'></textarea>
 						</div>
 					</div>
+                    <button e-click='click'>click</button>
 				</div>
-				`
-			}	
-			
-			data(){
-				return{
-					name: 'nodom',
-					sexy: 'F',
+				`;
+			}
+			click(model, dom, NEvent, e) {
+				console.log(model.married);
+			}
+			data() {
+				return {
+					name: "nodom",
+					sexy: "F",
 					married: 1,
 					edu: 2,
-					birth: '2017-05-11',
+					birth: "2017-05-11",
 					edus: [
-						{ eduId: 1, eduName: '高中' },
-						{ eduId: 2, eduName: '本科' },
-						{ eduId: 3, eduName: '硕士研究生' },
-						{ eduId: 4, eduName: '博士研究生' },
-					]
-				}
-			} 
-		
-			watchSexy (oldValue, value) {
+						{ eduId: 1, eduName: "高中" },
+						{ eduId: 2, eduName: "本科" },
+						{ eduId: 3, eduName: "硕士研究生" },
+						{ eduId: 4, eduName: "博士研究生" },
+					],
+				};
+			}
+
+			watchSexy(oldValue, value) {
 				console.log(this, oldValue, value);
 			}
-			change (model,dom) {
+			change(model, dom) {
 				model.married = 0;
-				model.sexy = 'F';
+				model.sexy = "F";
 				model.edu = 3;
-				model.name = 'aaaa';
-				model.intro = '这是nodom简介';
+				model.name = "aaaa";
+				model.intro = "这是nodom简介";
 			}
-			change1 (model,dom) {
-				model.name = 'nodom123';
+			change1(model, dom) {
+				model.name = "nodom123";
 			}
-			onFirstRender () {
-				console.log('dddd');
+			onFirstRender() {
+				console.log("dddd");
 				// console.log($.FilterManager.exec(this,'date','1616472327001',':yyyy-MM-dd HH:mm:ss'));
 			}
-			onRender(){
-				console.log('d1');
+
+			onBeforeFirstRender(model){
+				model.$watch('edu',(model,ov,nv)=>{
+					console.log(ov,nv);
+				});
+			}
+			onRender() {
+				console.log("d1");
 			}
 
-			formatDate(d){
-				return Util.formatDate(d,'yyyy-MM-dd');
+			formatDate(d) {
+				return Util.formatDate(d, "yyyy-MM-dd");
 			}
 
-			formatTime(d){
-				return Util.formatDate(d,'yyyy-MM-dd HH:mm:ss.S')
+			formatTime(d) {
+				return Util.formatDate(d, "yyyy-MM-dd HH:mm:ss.S");
 			}
-			
 		}
-		
-		nodom(Module1,'div');
-		
+
+		nodom(Module1, "div");
 	</script>
 </html>

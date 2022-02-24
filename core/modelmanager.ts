@@ -8,35 +8,37 @@ import { Renderer } from "./renderer";
  * 模型工厂
  */
 export class ModelManager {
-    // public module: Module;
-    /**
-     * 数据对象与模型映射，key为数据对象，value为model
-     */
-    private static dataMap: WeakMap<object, Model> = new WeakMap();
-    /**
-     * 模型模块映射
-     * key:model proxy, value:{data:data,watchers:{key:[监听器1,监听器2,...]},modules:[id1,id2,...]}
-     * 每个数据对象，可有多个监听器
-     */
-    private static modelMap: WeakMap<Model, any> = new WeakMap();
     
+    /**
+     * 模型map
+     * 样式为 {modelKey:{data:data,model:model,modules:[]}，
+     * 其中：
+     *      modelkey表示model对应key，
+     *      data为原始数据，
+     *      model为代理对象,
+     *      modules为该数据对象绑定的模块id数组
+     */
+    private static modelMap: Map<number, any> = new Map();
+
     /**
      * 添加到 dataNModelMap
      * @param data      数据对象
      * @param model     模型
      */
-    public static addToDataMap(data: Object, model: Model) {
-        this.dataMap.set(data, model);
+    public static addToMap(data: Object, model: Model) {
+        this.modelMap.set(model.$key,{data:data,model:model});
     }
 
     /**
      * 删除从 dataNModelMap
-     * @param data      数据对象
-     * @param model     模型
+     * @param key       model key
      */
-    public static delFromDataMap(data: Object) {
-        this.dataMap.delete(data);
-
+    public static delFromMap(key: number) {
+        if(!this.modelMap.has(key)){
+            return;
+        }
+        let o = this.modelMap.get(key);
+        this.modelMap.delete(key);
     }
 
     /**
@@ -44,124 +46,20 @@ export class ModelManager {
      * @param data      数据对象
      * @returns         model
      */
-    public static getFromDataMap(data: Object): Model {
-        return this.dataMap.get(data);
-    }
-
-    /**
-     * 是否存在数据模型映射
-     * @param data  数据对象
-     * @returns     true/false
-     */
-    public static hasDataModel(data: Object): Boolean {
-        return this.dataMap.has(data);
-    }
-
-
-    /**
-     * 添加源模型到到模型map
-     * @param model     模型代理
-     * @param srcNModel  源模型
-     */
-    public static addModel(model: any, srcNModel: Model) {
-        if (!this.modelMap.has(model)) {
-            this.modelMap.set(model, { model: srcNModel });
-        } else {
-            this.modelMap.get(model).model = srcNModel;
-        }
-    }
-    /**
-   * 删除源模型到到模型map
-   * @param model     模型代理
-   * @param srcNModel  源模型
-   */
-    public static delModel(model: any) {
-        this.modelMap.delete(model);
-    }
-    /**
-     * 从模型Map获取源数据
-     * @param model     模型代理
-     * @returns         源模型
-     */
-    public static getData(model: any): Model {
-        if (this.modelMap.has(model)) {
-            return this.modelMap.get(model).data;
-        }
-        return undefined;
-    }
-
-    /**
-     * 获取model监听器
-     * @param model     model
-     * @param key       model对应的属性
-     * @param foo       监听处理方法
-     * @returns         void
-     */
-    public static addWatcher(model: Model, key: string, foo: Function | string) {
-        // 把model加入到model map
-        if (!this.modelMap.has(model)) {
-            this.modelMap.set(model, {});
-        }
-        let watchers = this.modelMap.get(model).watchers;
-        //添加watchers属性
-        if (!watchers) {
-            watchers = {};
-            this.modelMap.get(model).watchers = watchers;
-        }
-        
-        //添加观察器数组
-        if (!watchers[key]) {
-            watchers[key] = [foo];
-        }else{
-            //把处理函数加入观察器数组，先进行重复添加判断
-            if(typeof foo === 'string'){  //字符串
-                if(!watchers[key].find(item=>item === foo)){
-                    watchers[key].push(foo);
-                }
-            }else{ //函数
-                let foos = foo.toString();
-                if(!watchers[key].find(item=>item.toString() === foos)){
-                    watchers[key].push(foo);
-                }
-            }
+    public static getModel(key:number): Model {
+        if(this.modelMap.has(key)){
+            return this.modelMap.get(key)['model'];
         }
     }
 
     /**
-     * 获取model监听器
-     * @param model     model
-     * @param key       model对应的属性
-     * @param foo       监听处理方法
-     * @returns         void
+     * 获取数据对象
+     * @param key   model key
+     * @returns     data
      */
-    public static removeWatcher(model: Model, key: string, foo: Function | string) {
-        if (!this.modelMap.has(model) || !this.modelMap.get(model).watchers) {
-            return;
-        }
-        let watchers = this.modelMap.get(model).watchers;
-        if (!watchers[key]) {
-            return;
-        }
-        let index = watchers[key].findIndex(foo);
-        //找到后移除
-        if (index !== -1) {
-            watchers.splice(index, 1);
-        }
-    }
-
-    /**
-     * 获取model监听器
-     * @param model     model
-     * @param key       model对应的属性
-     * @returns         监听处理函数数组
-     */
-    public static getWatcher(model: Model, key: string): Array<Function> {
-        if (!this.modelMap.has(model)) {
-            return;
-        }
-        let watchers = this.modelMap.get(model).watchers;
-        if (watchers) {
-            return watchers[key];
+    public static getData(key:number):any{
+        if(this.modelMap.has(key)){
+            return this.modelMap.get(key)['data'];
         }
     }
 
@@ -172,10 +70,10 @@ export class ModelManager {
      * @returns 
      */
     public static bindToModule(model:Model,module:Module|number){
-        let obj = this.modelMap.get(model);
-        if(!obj){
+        if(!model || !this.modelMap.has(model.$key)){
             return;
         }
+        let obj = this.modelMap.get(model.$key);
         let mid = typeof module === 'number'?module:module.id;
         if(!obj.modules){
             obj.modules = [mid];
@@ -191,6 +89,8 @@ export class ModelManager {
                 ModelManager.bindToModule(model[item],module);
             }
         });
+
+        
     }
 
     /**
@@ -200,10 +100,11 @@ export class ModelManager {
      * @returns 
      */
      public static bindToModules(model:Model,ids:number[]){
-        let obj = this.modelMap.get(model);
-        if(!obj){
+        if(!this.modelMap.has(model.$key)){
             return;
         }
+        let obj = this.modelMap.get(model.$key);
+        
         if(!obj.modules){
             obj.modules = ids;
         }else{
@@ -230,8 +131,11 @@ export class ModelManager {
      * @returns 
      */
      public static unbindFromModule(model:Model,module:Module|number){
-        let obj = this.modelMap.get(model);
-        if(!obj || !obj.modules){
+        if(!this.modelMap.has(model.$key)){
+            return;
+        }
+        let obj = this.modelMap.get(model.$key);
+        if(!obj.modules){
             return;
         }
         let mid = typeof module === 'number'?module:module.id;
@@ -255,11 +159,10 @@ export class ModelManager {
      * @returns model绑定的模块id数组
      */
     public static getModuleIds(model:Model):number[]{
-        let obj = this.modelMap.get(model);
-        if(!obj){
+        if(!this.modelMap.has(model.$key)){
             return;
         }
-        return obj.modules;
+        return this.modelMap.get(model.$key).modules;
     }
 
     /**
@@ -272,48 +175,42 @@ export class ModelManager {
      * @param force     强制渲染
      */
     public static update(model: Model, key: string, oldValue?: any, newValue?: VirtualDom, force?:boolean) {
-        //处理观察器函数
-        let obj = this.modelMap.get(model);
-        if(!obj){
+        const modules = this.getModuleIds(model);
+        if(!modules){
             return;
         }
-        
-        let mids = obj.modules;
-        let modules = [];
-        if(mids){
-            for(let mid of mids){
-                let m = ModuleFactory.get(mid);
-                modules.push(m);
-                //增加修改标志
-                m.changedModelMap.set(model.$key,true);
-            }
-        }
-        //watcher 处理
-        let watcher = this.getWatcher(model,key);
-        if (watcher) {
-            for (let foo of watcher) {
-                if(modules){
-                    for(let m of modules){
-                        //方法名
-                        if (typeof foo === 'string') {
-                            foo = m.getMethod(foo);
-                            if (foo) {
-                                foo.call(m,model, oldValue, newValue);
-                            }
-                        } else {
-                            foo.call(m,model, oldValue, newValue);
-                        }
-                    }
-                }else{
-                    foo.call(model,key,newValue,oldValue);
-                }
-            }
-        }
-        if(oldValue !== newValue || force){
-            for(let m of modules){
+        //第一个module为watcher对应module
+        for(let mid of modules){
+            const m:Module = ModuleFactory.get(mid);
+            if(m){
                 Renderer.add(m);
             }
         }
-    }
 
+        //监听器
+        if(model.$watchers){
+            //对象监听器
+            if(model.$watchers.$this){
+                for(let cfg of model.$watchers.$this){
+                    for(let mid of cfg.modules){
+                        const m:Module = ModuleFactory.get(mid);
+                        if(m){
+                            cfg.f.call(m,model,oldValue,newValue);
+                        }
+                    }
+                }
+            }
+            //属性监听器
+            if(model.$watchers[key]){
+                for(let cfg of model.$watchers[key]){
+                    for(let mid of cfg.modules){
+                        const m:Module = ModuleFactory.get(mid);
+                        if(m){
+                            cfg.f.call(m,model,oldValue,newValue);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

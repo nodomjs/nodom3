@@ -4,16 +4,16 @@ import { NCache } from "./cache";
  */
 export class GlobalCache {
     /**
-         * 保存到cache
-         * @param key       键，支持"."
-         * @param value     值
-         */
+     * 保存到cache
+     * @param key       键，支持"."（多级数据分割）
+     * @param value     值
+     */
     static set(key, value) {
         this.cache.set(key, value);
     }
     /**
      * 从cache读取
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      * @returns     缓存的值或undefined
      */
     static get(key) {
@@ -30,11 +30,12 @@ export class GlobalCache {
     }
     /**
      * 从cache移除
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      */
     static remove(key) {
         this.cache.remove(key);
     }
 }
+//NCache实例
 GlobalCache.cache = new NCache();
 //# sourceMappingURL=globalcache.js.map

@@ -17,7 +17,7 @@ import { IRenderedDom } from "./types";
  */
 export  class ObjectManager {
     /**
-     * cache
+     * NCache
      */
     public cache:NCache;
 
@@ -25,6 +25,7 @@ export  class ObjectManager {
      * 模块
      */
     public module:Module;
+
     /**
      * module   模块
      * @param module 
@@ -36,7 +37,7 @@ export  class ObjectManager {
 
     /**
      * 保存到cache
-     * @param key       键，支持"."
+     * @param key       键，支持"."（多级数据分割）
      * @param value     值
      */
      public set(key:string,value:any){
@@ -45,7 +46,7 @@ export  class ObjectManager {
 
     /**
      * 从cache读取
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      * @returns     缓存的值或undefined
      */
     public get(key){
@@ -54,7 +55,7 @@ export  class ObjectManager {
 
     /**
      * 从cache移除
-     * @param key   键，支持"."
+     * @param key   键，支持"."（多级数据分割）
      */
     public remove(key){
         this.cache.remove(key);
@@ -108,7 +109,7 @@ export  class ObjectManager {
     /**
      * 设置dom参数值
      * @param key       dom key 
-     * @param name       参数名
+     * @param name      参数名
      * @param value     参数值
      */
     public setDomParam(key:string,name:string,value:any){
@@ -126,7 +127,7 @@ export  class ObjectManager {
     }
 
     /**
-     * 移除dom参数
+     * 移除dom参数值
      * @param key       dom key
      * @param name      参数名
      */
@@ -143,7 +144,7 @@ export  class ObjectManager {
     }
     
     /**
-     * 清除缓存dom对象
+     * 清除缓存dom对象集
      */
     public clearAllDomParams(){
         this.remove('$domparam');

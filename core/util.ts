@@ -2,7 +2,7 @@ import { NError } from "./error";
 import { NEvent } from "./event";
 import { Module } from "./module";
 import { ModuleFactory } from "./modulefactory";
-import { NodomMessage } from "./nodom";
+import { NodomMessage_en as NodomMessage } from "./locales/msg_en";
 import { IRenderedDom } from "./types";
 import { VirtualDom } from "./virtualdom";
 /**
@@ -20,13 +20,15 @@ export class Util {
      */
     public static keyWordMap = new Map();
     
-    //唯一主键
+    /**
+     * 唯一主键
+     */
     public static genId() {
         return this.generatedId++;
     }
 
     /**
-     * 初始化保留词map
+     * 初始化保留字map
      */
     public static initKeyMap(){
         this.keyWordMap.set('arguments',true);
@@ -116,9 +118,10 @@ export class Util {
 
         /**
          * clone对象
-         * @param src   待clone对象
-         * @param extra clone附加参数
-         * @returns     克隆后的对象
+         * @param src      待clone对象
+         * @param expKey   不克隆的键
+         * @param extra    clone附加参数
+         * @returns        克隆后的对象
          */
         function clone(src, expKey, extra?) {
             //非对象或函数，直接返回            
@@ -214,6 +217,7 @@ export class Util {
 
     /**
      * 把obj2对象所有属性赋值给obj1
+     * @returns 返回对象obj1
      */
     public static assign(obj1, obj2) {
         if (Object.assign) {
@@ -261,6 +265,8 @@ export class Util {
     }
     /**
      * 获取对象自有属性
+     * @param obj   需要获取属性的对象
+     * @returns     返回属性数组
      */
     public static getOwnProps(obj): Array<string> {
         if (!obj) {
@@ -270,7 +276,7 @@ export class Util {
     }
     /**************对象判断相关************/
     /**
-     * 是否为函数
+     * 判断是否为函数
      * @param foo   检查的对象
      * @returns     true/false
      */
@@ -279,7 +285,7 @@ export class Util {
     }
 
     /**
-     * 是否为数组
+     * 判断是否为数组
      * @param obj   检查的对象
      * @returns     true/false
      */
@@ -289,16 +295,16 @@ export class Util {
 
     /**
      * 判断是否为map
-     * @param obj 
+     * @param obj   检查的对象
      */
     public static isMap(obj): boolean {
         return obj !== null && obj !== undefined && obj.constructor === Map;
     }
 
     /**
-     * 是否为对象
+     * 判断是否为对象
      * @param obj   检查的对象
-     * @returns true/false
+     * @returns     true/false
      */
     public static isObject(obj): boolean {
         return obj !== null && obj !== undefined && obj.constructor === Object;
@@ -306,16 +312,16 @@ export class Util {
 
     /**
      * 判断是否为整数
-     * @param v 检查的值
-     * @returns true/false
+     * @param v     检查的值
+     * @returns     true/false
      */
     public static isInt(v): boolean {
         return Number.isInteger(v);
     }
     /**
      * 判断是否为number
-     * @param v 检查的值
-     * @returns true/false
+     * @param v     检查的值
+     * @returns     true/false
      */
     public static isNumber(v): boolean {
         return typeof v === 'number';
@@ -323,32 +329,32 @@ export class Util {
 
     /**
      * 判断是否为boolean
-     * @param v 检查的值
-     * @returns true/false
+     * @param v     检查的值
+     * @returns     true/false
      */
     public static isBoolean(v): boolean {
         return typeof v === 'boolean';
     }
     /**
      * 判断是否为字符串
-     * @param v 检查的值
-     * @returns true/false
+     * @param v     检查的值
+     * @returns     true/false
      */
     public static isString(v): boolean {
         return typeof v === 'string';
     }
 
     /**
-     * 是否为数字串
-     * @param v 检查的值
-     * @returns true/false
+     * 判断是否为数字串
+     * @param v     检查的值
+     * @returns     true/false
      */
     public static isNumberString(v): boolean {
         return /^\d+\.?\d*$/.test(v);
     }
 
     /**
-     * 对象/字符串是否为空
+     * 判断对象/字符串是否为空
      * @param obj   检查的对象
      * @returns     true/false
      */
@@ -399,7 +405,7 @@ export class Util {
     
     /**
      * 清空子节点
-     * @param el
+     * @param el   需要清空的节点
      */
     public static empty(el: HTMLElement) {
         const me = this;
@@ -412,8 +418,8 @@ export class Util {
     /******日期相关******/
     /**
      * 日期格式化
-     * @param srcDate   时间戳串
-     * @param format    日期格式
+     * @param srcDate    时间戳串
+     * @param format     日期格式
      * @returns          日期串
      */
     public static formatDate(srcDate: string | number, format: string): string {
@@ -469,9 +475,8 @@ export class Util {
     /******字符串相关*****/
     /**
      * 编译字符串，把{n}替换成带入值
-     * @param str 待编译的字符串
-     * @param args1,args2,args3,... 待替换的参数
-     * @returns 转换后的消息
+     * @param src   待编译的字符串
+     * @returns     转换后的消息
      */
     public static compileStr(src: string, p1?: any, p2?: any, p3?: any, p4?: any, p5?: any): string {
         let reg: RegExp;
@@ -504,8 +509,8 @@ export class Util {
 
     /**
      * 合并并修正路径，即路径中出现'//','///','\/'的情况，统一置换为'/'
-     * @param paths 待合并路径数组
-     * @returns     返回路径
+     * @param paths     待合并路径数组
+     * @returns         返回路径
      */
     public static mergePath(paths: string[]): string {
         return paths.join('/').replace(/(\/{2,})|\\\//g, '\/');
@@ -522,9 +527,9 @@ export class Util {
 
     /**
      * 改造 dom key，避免克隆时重复，格式为：key_id
-     * @param node  节点
-     * @param id    附加id
-     * @param deep  是否深度处理
+     * @param node    节点
+     * @param id      附加id
+     * @param deep    是否深度处理
      */
     public static setNodeKey(node:VirtualDom, id?:string,deep?:boolean){
         node.key += '_' + (id||Util.genId());

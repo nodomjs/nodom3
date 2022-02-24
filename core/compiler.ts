@@ -39,7 +39,8 @@ export class Compiler {
         // 清理comment
         srcStr = srcStr.replace(/\<\!\-\-[\s\S]*?\-\-\>/g,'');
         // 正则式分解标签和属性
-        const regWhole = /((?<!\\)'[\s\S]*?(?<!\\)')|((?<!\\)"[\s\S]*?(?<!\\)")|((?<!\\)`[\s\S]*?(?<!\\)`)|({{{*)|(}*}})|([\w$-]+(\s*=)?)|(<\s*[a-zA-Z][a-zA-Z0-9-_]*)|(\/?>)|(<\/\s*[a-zA-Z][a-zA-Z0-9-_]*>)/g;
+        // const regWhole = /((?<!\\)'[\s\S]*?(?<!\\)')|((?<!\\)"[\s\S]*?(?<!\\)")|((?<!\\)`[\s\S]*?(?<!\\)`)|({{{*)|(}*}})|([\w$-]+(\s*=)?)|(<\s*[a-zA-Z][a-zA-Z0-9-_]*)|(\/?>)|(<\/\s*[a-zA-Z][a-zA-Z0-9-_]*>)/g;
+        const regWhole = /('[\s\S]*?')|("[\s\S]*?")|(`[\s\S]*?`)|({{{*)|(}*}})|([\w$-]+(\s*=)?)|(<\s*[a-zA-Z][a-zA-Z0-9-_]*)|(\/?>)|(<\/\s*[a-zA-Z][a-zA-Z0-9-_]*>)/g;
         //属性名正则式
         const propReg = /^[a-zA-Z_$][$-\w]*?\s*?=?$/;
         //不可见字符正则式
@@ -213,8 +214,8 @@ export class Compiler {
             if(value){
                 let r;
                 //去掉字符串两端
-                if(((r=/((?<=^')(.*?)(?='$))|((?<=^")(.*?)(?="$)|((?<=^`)(.*?)(?=`$)))/.exec(value)) !== null)){
-                    value = r[0].trim();
+                if(['"',"'",'`'].includes(value[0]) && ['"',"'",'`'].includes(value[value.length-1])){
+                    value = value.substring(1,value.length-1).trim();
                 }
             }
             //指令
@@ -310,6 +311,7 @@ export class Compiler {
                 dom.setProp('template',c.getProp('template'));
                 //template节点不再需要
                 dom.children.splice(j--,1);
+                continue;
             }
             if(c.hasDirective('slot')){ //带slot的不处理
                 continue;
@@ -334,8 +336,8 @@ export class Compiler {
      */
     private postHandleNode(node:VirtualDom){
         // 自定义元素判断
-        if(DefineElementManager.has(node.tagName)){ //自定义元素
-            let clazz = DefineElementManager.get(node.tagName);
+        let clazz = DefineElementManager.get(node.tagName);
+        if(clazz){ //自定义元素
             Reflect.construct(clazz,[node,this.module]);
         }
         // 模块类判断

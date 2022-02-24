@@ -303,70 +303,6 @@ export class Router {
         }
     }
     /**
-     * 添加路由
-     * @param route 	路由配置
-     * @param parent 	父路由
-     */
-    static addRoute(route, parent) {
-        //建立根(空路由)
-        if (!this.root) {
-            this.root = new Route();
-        }
-        let pathArr = route.path.split('/');
-        let node = parent || this.root;
-        let param = [];
-        let paramIndex = -1; //最后一个参数开始
-        let prePath = ''; //前置路径
-        for (let i = 0; i < pathArr.length; i++) {
-            let v = pathArr[i].trim();
-            if (v === '') {
-                pathArr.splice(i--, 1);
-                continue;
-            }
-            if (v.startsWith(':')) { //参数
-                if (param.length === 0) {
-                    paramIndex = i;
-                }
-                param.push(v.substr(1));
-            }
-            else {
-                paramIndex = -1;
-                param = []; //上级路由的参数清空
-                route.path = v; //暂存path
-                let j = 0;
-                for (; j < node.children.length; j++) {
-                    let r = node.children[j];
-                    if (r.path === v) {
-                        node = r;
-                        break;
-                    }
-                }
-                //没找到，创建新节点
-                if (j === node.children.length) {
-                    if (prePath !== '') {
-                        new Route({ path: prePath, parent: node });
-                        node = node.children[node.children.length - 1];
-                    }
-                    prePath = v;
-                }
-            }
-            //不存在参数
-            if (paramIndex === -1) {
-                route.params = [];
-            }
-            else {
-                route.params = param;
-            }
-        }
-        //添加到树
-        if (node !== undefined && node !== route) {
-            route.path = prePath;
-            node.addChild(route);
-        }
-        // 添加到路由map    
-        this.routeMap.set(route.id, route);
-    }
-    /**
      * 获取路由数组
      * @param path 	要解析的路径
      * @param clone 是否clone，如果为false，则返回路由树的路由对象，否则返回克隆对象
@@ -444,6 +380,10 @@ Router.activeFieldMap = new Map();
  * 绑定到module的router指令对应的key，即router容器对应的key，格式为 {moduleId:routerKey,...}
  */
 Router.routerKeyMap = new Map();
+/**
+ * 根路由
+ */
+Router.root = new Route();
 //处理popstate事件
 window.addEventListener('popstate', function (e) {
     //根据state切换module

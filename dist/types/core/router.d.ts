@@ -92,12 +92,6 @@ export declare class Router {
      */
     private static setDomActive;
     /**
-     * 添加路由
-     * @param route 	路由配置
-     * @param parent 	父路由
-     */
-    static addRoute(route: Route, parent: Route): void;
-    /**
      * 获取路由数组
      * @param path 	要解析的路径
      * @param clone 是否clone，如果为false，则返回路由树的路由对象，否则返回克隆对象

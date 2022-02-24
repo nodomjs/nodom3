@@ -38,7 +38,7 @@ export default (function () {
             module.objectManager.setDomParam(dom.key, 'moduleId', mid);
             module.addChild(m);
             //共享当前dom的model给子模块
-            if (dom.props.hasOwnProperty('useDomModel')) {
+            if (src.hasProp('useDomModel')) {
                 m.model = dom.model;
                 //绑定model到子模块，共享update,watch方法
                 ModelManager.bindToModule(m.model, m);
@@ -106,8 +106,7 @@ export default (function () {
             }
             //渲染一次-1，所以需要+1
             src.staticNum++;
-            // console.log(rows[i]);
-            let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].$key);
+            let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].$key + '');
             //删除$index属性
             if (idxName) {
                 delete d.props['$index'];
@@ -152,13 +151,10 @@ export default (function () {
             //克隆，后续可以继续用
             let node1 = node.clone();
             let key;
-            if (!Array.isArray(m)) { //recur子节点不为数组，依赖子层数据
+            //recur子节点不为数组，依赖子层数据，否则以来repeat数据
+            if (!Array.isArray(m)) {
                 node1.model = m;
-                key = m.$key;
-                Util.setNodeKey(node1, key, true);
-            }
-            else {
-                key = dom.model.$key;
+                Util.setNodeKey(node1, m.$key, true);
             }
             src.children = [node1];
         }
@@ -310,15 +306,10 @@ export default (function () {
                         temp[field] = v;
                     }
                 }
-                //修改value值，该节点不重新渲染
-                if (type !== 'radio') {
-                    dom.props['value'] = v;
-                    el.value = v;
-                }
             });
             GlobalCache.set('$fieldChangeEvent', event);
         }
-        module.eventFactory.addEvent(dom.key, event);
+        src.addEvent(event);
         return true;
     }, 10);
     /**
@@ -352,7 +343,7 @@ export default (function () {
             });
             GlobalCache.set('$routeClickEvent', event);
         }
-        module.eventFactory.addEvent(dom.key, event);
+        src.addEvent(event);
         return true;
     });
     /**
@@ -383,20 +374,24 @@ export default (function () {
             //获取替换节点进行替换
             let cfg = module.objectManager.get('$slots.' + this.value);
             if (cfg) {
+                let chds = [];
                 let rdom = cfg.dom;
                 //避免key重复，更新key
                 for (let d of rdom.children) {
-                    Util.setNodeKey(d, dom.key, true);
+                    let d1 = d.clone();
+                    Util.setNodeKey(d1, dom.key, true);
+                    chds.push(d1);
                 }
                 //更改渲染子节点
-                src.children = rdom.children;
+                src.children = chds;
                 //非内部渲染,更改model
-                if (!src.getProp('innerRender')) {
+                if (!src.hasProp('innerRender')) {
                     for (let c of src.children) {
                         c.model = cfg.model;
+                        //对象绑定到当前模块
+                        ModelManager.bindToModule(cfg.model, module);
                     }
                 }
-                module.objectManager.remove('$slots.' + this.value);
             }
         }
         return true;
@@ -474,10 +469,16 @@ export default (function () {
             // tigger为false 播放Leave动画
             if (el) {
                 if (el.getAttribute('class').indexOf(`${nameLeave}-leave-to`) != -1) {
-                    // 当前已经处于leave动画播放完成之后了，直接返回
-                    // dom.vdom.addClass(`${nameLeave}-leave-to`)
+                    // 当前已经处于leave动画播放完成之后，若是进入离开动画，这时候需要他保持隐藏状态。
+                    dom.props['class'] += ` ${nameLeave}-leave-to`;
+                    if (isAppear) {
+                        dom.props["style"]
+                            ? (dom.props["style"] += ";display:none;")
+                            : (dom.props["style"] = "display:none;");
+                    }
                     return true;
                 }
+                // // 确保在触发动画之前还是隐藏状态
                 // 调用函数触发 Leave动画/过渡
                 changeStateFromShowToHide(el);
                 return true;
@@ -486,7 +487,9 @@ export default (function () {
                 // el不存在，第一次渲染
                 if (isAppear) {
                     // 是进入离开动画，管理初次渲染的状态，让他隐藏
-                    dom.vdom.addStyle('display:none');
+                    dom.props["style"]
+                        ? (dom.props["style"] += ";display:none;")
+                        : (dom.props["style"] = "display:none;");
                 }
                 // 下一帧
                 setTimeout(() => {
@@ -494,11 +497,9 @@ export default (function () {
                     let el = module.getNode(dom.key);
                     if (isAppear) {
                         // 动画/过渡 是进入离开动画/过渡，并且当前是需要让他隐藏所以我们不播放动画，直接隐藏。
-                        dom.vdom.removeStyle('display:none');
                         el.classList.add(`${nameLeave}-leave-to`);
                         // 这里必须将这个属性加入到dom中,否则该模块其他数据变化触发增量渲染时,diff会将这个节点重新渲染,导致显示异常
                         // 这里添加添加属性是为了避免diff算法重新渲染该节点
-                        dom.vdom.addClass(`${nameLeave}-leave-to`);
                         dom.props['class'] += ` ${nameLeave}-leave-to`;
                         el.style.display = 'none';
                     }
@@ -515,8 +516,17 @@ export default (function () {
             // tigger为true 播放Enter动画
             if (el) {
                 if (el.getAttribute('class').indexOf(`${nameEnter}-enter-to`) != -1) {
-                    // dom.vdom.addClass(`${nameEnter}-enter-to`)
+                    // 这里不需要像tigger=false时那样处理，这时候他已经处于进入动画播放完毕状态，
+                    // 模块内其他数据变化引起该指令重新执行，这时候需要他保持现在显示的状态，直接返回true
+                    dom.props['class'] += ` ${nameEnter}-enter-to`;
                     return true;
+                }
+                if (isAppear) {
+                    // 如果是进入离开动画，在播放enter动画之前确保该元素是隐藏状态
+                    // 确保就算diff更新了该dom还是有隐藏属性
+                    dom.props["style"]
+                        ? (dom.props["style"] += ";display:none;")
+                        : (dom.props["style"] = "display:none;");
                 }
                 // 调用函数触发Enter动画/过渡
                 changeStateFromHideToShow(el);
@@ -525,22 +535,22 @@ export default (function () {
                 // el不存在，是初次渲染
                 if (isAppear) {
                     // 管理初次渲染元素的隐藏显示状态
-                    dom.vdom.addStyle('display:none');
+                    dom.props["style"]
+                        ? (dom.props["style"] += ";display:none;")
+                        : (dom.props["style"] = "display:none;");
                 }
                 // 下一帧
                 setTimeout(() => {
                     // 等虚拟dom把元素更新上去了之后，取得元素
                     let el = module.getNode(dom.key);
                     if (isAppear) {
-                        dom.vdom.removeStyle('display:none');
                         // 这里必须将这个属性加入到dom中,否则该模块其他数据变化触发增量渲染时,diff会将这个节点重新渲染,导致显示异常
                         // 这里添加添加属性是为了避免diff算法重新渲染该节点
-                        dom.vdom.addStyle(`${nameEnter}-enter-to`);
                         dom.props['class'] += ` ${nameEnter}-enter-to`;
                         el.style.display = 'none';
                     }
                     // Enter动画与Leave动画不同，
-                    //不管动画是不是进入离开动画，我们在初次渲染的时候都要执行一遍动画
+                    // 不管动画是不是进入离开动画，在初次渲染的时候都要执行一遍动画
                     // Leave动画不一样，如果是开始离开动画，并且初次渲染的时候需要隐藏，那么我们没有必要播放一遍离开动画
                     changeStateFromHideToShow(el);
                 }, 0);
@@ -607,9 +617,6 @@ export default (function () {
                 requestAnimationFrame(() => {
                     // 动画类型是aniamtion
                     el.classList.remove(nameEnter + '-enter-to');
-                    // 设置动画的类名
-                    el.classList.add(nameLeave + '-leave-active');
-                    // el.classList.add(nameLeave + '-leave-from')
                     // 动画延时时间
                     el.style.animationDelay = delayLeave;
                     // 动画持续时间
@@ -619,18 +626,17 @@ export default (function () {
                     if (timingFunctionLeave != 'ease') {
                         el.style.animationTimingFunction = timingFunctionLeave;
                     }
-                    requestAnimationFrame(() => {
-                        // 重定位一下触发动画
-                        // el.classList.add(nameLeave + '-leave-to')
-                        // el.classList.remove(nameLeave + '-leave-from')
-                        // 在触发动画之前执行hook
-                        if (beforeLeave) {
-                            beforeLeave.apply(module.model, [module]);
-                        }
-                        void el.offsetWidth;
-                        //添加动画结束时间监听
-                        el.addEventListener('animationend', handler);
-                    });
+                    // 在触发动画之前执行hook
+                    if (beforeLeave) {
+                        beforeLeave.apply(module.model, [module]);
+                    }
+                    // 触发一次回流reflow
+                    void el.offsetWidth;
+                    // 添加动画类名
+                    el.classList.add(nameLeave + '-leave-active');
+                    //添加动画结束时间监听
+                    el.addEventListener('animationend', handler);
+                    // })
                 });
             }
         }
@@ -650,7 +656,6 @@ export default (function () {
                 setTimeout(() => {
                     let [width, height] = getElRealSzie(el);
                     // 在第一帧设置初始状态
-                    // requestAnimationFrame(() => {
                     // 移除掉上一次过渡的最终状态
                     el.classList.remove(nameLeave + '-leave-to');
                     // 添加过渡的类名
@@ -697,7 +702,6 @@ export default (function () {
                             el.addEventListener('transitionend', handler);
                         });
                     });
-                    // })
                 }, delay);
             }
             else {
@@ -709,9 +713,6 @@ export default (function () {
                     // 动画开始之前先将元素显示
                     requestAnimationFrame(() => {
                         el.classList.remove(nameLeave + '-leave-to');
-                        // 设置动画的类名
-                        el.classList.add(nameEnter + '-enter-active');
-                        // el.classList.add(nameEnter + '-enter-from')
                         // 设置动画的持续时间
                         if (durationEnter != '') {
                             el.style.animationDuration = durationEnter;
@@ -723,17 +724,15 @@ export default (function () {
                         if (isAppear) {
                             el.style.display = '';
                         }
-                        requestAnimationFrame(() => {
-                            // el.classList.add(nameEnter + '-enter-to')
-                            // el.classList.remove(nameEnter + '-enter-from')
-                            // 在触发过渡之前执行hook 
-                            if (beforeEnter) {
-                                beforeEnter.apply(module.model, [module]);
-                            }
-                            // 重定位一下触发动画
-                            void el.offsetWidth;
-                            el.addEventListener('animationend', handler);
-                        });
+                        // 在触发过渡之前执行hook 
+                        if (beforeEnter) {
+                            beforeEnter.apply(module.model, [module]);
+                        }
+                        // 触发一次回流reflow
+                        void el.offsetWidth;
+                        // 重新添加类名
+                        el.classList.add(nameEnter + '-enter-active');
+                        el.addEventListener('animationend', handler);
                     });
                 }, delay);
             }
