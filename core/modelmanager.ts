@@ -89,8 +89,6 @@ export class ModelManager {
                 ModelManager.bindToModule(model[item],module);
             }
         });
-
-        
     }
 
     /**

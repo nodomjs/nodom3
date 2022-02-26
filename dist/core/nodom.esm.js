@@ -1,25 +1,3 @@
-'use strict';
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-function _interopNamespace(e) {
-    if (e && e.__esModule) return e;
-    var n = Object.create(null);
-    if (e) {
-        Object.keys(e).forEach(function (k) {
-            if (k !== 'default') {
-                var d = Object.getOwnPropertyDescriptor(e, k);
-                Object.defineProperty(n, k, d.get ? d : {
-                    enumerable: true,
-                    get: function () { return e[k]; }
-                });
-            }
-        });
-    }
-    n["default"] = e;
-    return Object.freeze(n);
-}
-
 /**
  * 自定义元素管理器
  */
@@ -2036,12 +2014,12 @@ class Route {
 /**
  * 模块状态类型
  */
-exports.EModuleState = void 0;
+var EModuleState;
 (function (EModuleState) {
     EModuleState[EModuleState["INITED"] = 1] = "INITED";
     EModuleState[EModuleState["UNACTIVE"] = 2] = "UNACTIVE";
     EModuleState[EModuleState["RENDERED"] = 4] = "RENDERED";
-})(exports.EModuleState || (exports.EModuleState = {}));
+})(EModuleState || (EModuleState = {}));
 
 /**
  * 路由管理类
@@ -2180,7 +2158,7 @@ class Router {
             }
             //延迟加载
             if (typeof module === 'string' && route.modulePath) { //模块路径
-                module = yield (function (t) { return Promise.resolve().then(function () { return /*#__PURE__*/_interopNamespace(require(t)); }); })(route.modulePath);
+                module = yield import(route.modulePath);
                 module = module[route.module];
             }
             //模块类
@@ -2307,7 +2285,7 @@ class Router {
         }
         module.model['$route'] = o;
         if (pm) {
-            if (pm.state === exports.EModuleState.RENDERED) { //被依赖模块处于渲染后状态
+            if (pm.state === EModuleState.RENDERED) { //被依赖模块处于渲染后状态
                 module.setContainer(pm.getNode(Router.routerKeyMap.get(pm.id)));
                 this.setDomActive(pm, route.fullPath);
             }
@@ -2489,7 +2467,7 @@ Scheduler.tasks = [];
 /**
  * nodom提示消息
  */
-exports.NodomMessage = void 0;
+var NodomMessage;
 /**
  * 新建一个App
  * @param clazz     模块类
@@ -2500,7 +2478,7 @@ function nodom(clazz, el) {
     Scheduler.addTask(Renderer.render, Renderer);
     //启动调度器
     Scheduler.start();
-    exports.NodomMessage = NodomMessage_en;
+    NodomMessage = NodomMessage_en;
     let mdl = ModuleFactory.get(clazz);
     mdl.setContainer(document.querySelector(el));
     mdl.active();
@@ -2646,7 +2624,7 @@ function request(config) {
         }).catch((re) => {
             switch (re.type) {
                 case "error":
-                    throw new NError("notexist1", exports.NodomMessage.TipWords['resource'], re.url);
+                    throw new NError("notexist1", NodomMessage.TipWords['resource'], re.url);
                 case "timeout":
                     throw new NError("timeout");
                 case "jsonparse":
@@ -2670,7 +2648,7 @@ class Directive {
         if (type) {
             this.type = DirectiveManager.getType(type);
             if (!this.type) {
-                throw new NError('notexist1', exports.NodomMessage.TipWords['directive'], type);
+                throw new NError('notexist1', NodomMessage.TipWords['directive'], type);
             }
         }
         if (Util.isString(value)) {
@@ -4490,27 +4468,27 @@ class Model {
                 let ov = src[key];
                 let r = Reflect.set(src, key, value, receiver);
                 //非对象，null，非model更新渲染
-                if (value && !value.$key && typeof value === 'object') {
+                if (value && typeof value === 'object' && !value.$key) {
                     value = new Model(value, module);
                 }
-                ModelManager.update(proxy, key, ov, value);
+                ModelManager.update(receiver, key, ov, value);
                 return r;
             },
             get(src, key, receiver) {
                 let res = Reflect.get(src, key, receiver);
-                if (res) {
+                if (res && typeof res === 'object') {
                     if (res.$key) {
                         return ModelManager.getModel(res.$key);
                     }
-                    else if (typeof res === 'object' && src.hasOwnProperty(key)) { //未代理对象，需要创建模型
+                    else { //未代理对象，需要创建模型
                         return new Model(res, module);
                     }
                 }
                 return res;
             },
             deleteProperty(src, key) {
-                //如果删除对象，从modelmanager中同步删除
-                if (src[key] !== null && typeof src[key] === 'object') {
+                //如果删除对象且不为数组元素，从modelmanager中同步删除
+                if (src[key] && src[key].$key && !(Array.isArray(src) && typeof key === 'number')) {
                     ModelManager.delFromMap(src[key].$key);
                 }
                 delete src[key];
@@ -4527,7 +4505,41 @@ class Model {
         if (module) {
             ModelManager.bindToModule(proxy, module);
         }
+        if (Array.isArray(data)) {
+            this.arrayOverload(proxy);
+        }
         return proxy;
+    }
+    /**
+     * 重载数组删除元素方法
+     * @param data  数组
+     */
+    arrayOverload(data) {
+        data.splice = function () {
+            const index = arguments[0];
+            const count = arguments[1];
+            if (count > 0) {
+                for (let i = index, len = index + count; i < len; i++) {
+                    if (data[i] && data[i].$key) {
+                        ModelManager.delFromMap(data[i].$key);
+                    }
+                }
+            }
+            Array.prototype['splice'].apply(data, arguments);
+        };
+        data.shift = function () {
+            if (data[0] && data[0].$key) {
+                ModelManager.delFromMap(data[0].$key);
+            }
+            Array.prototype['unshift'].apply(data, arguments);
+        };
+        data.pop = function () {
+            const d = data[data.length - 1];
+            if (d && d.$key) {
+                ModelManager.delFromMap(d.$key);
+            }
+            Array.prototype['pop'].apply(data, arguments);
+        };
     }
     /**
      * 观察(取消观察)某个数据项
@@ -4828,7 +4840,7 @@ class Module {
      */
     init() {
         // 设置状态为初始化
-        this.state = exports.EModuleState.INITED;
+        this.state = EModuleState.INITED;
         //初始化model
         this.model = new Model(this.data() || {}, this);
         //注册子模块
@@ -4858,7 +4870,7 @@ class Module {
      * 模型渲染
      */
     render() {
-        if (this.state === exports.EModuleState.UNACTIVE) {
+        if (this.state === EModuleState.UNACTIVE) {
             return;
         }
         this.dontAddToRender = true;
@@ -4898,7 +4910,7 @@ class Module {
             }
         }
         //设置已渲染状态
-        this.state = exports.EModuleState.RENDERED;
+        this.state = EModuleState.RENDERED;
         //执行后置方法
         this.doRenderOps(1);
         //执行每次渲染后事件
@@ -4953,7 +4965,7 @@ class Module {
      * @param deep  是否深度active，如果为true，则子模块进行active
      */
     active(deep) {
-        this.state = exports.EModuleState.INITED;
+        this.state = EModuleState.INITED;
         Renderer.add(this);
         if (deep) {
             for (let id of this.children) {
@@ -4976,7 +4988,7 @@ class Module {
         delete this.srcDom;
         this.doModuleEvent('beforeUnActive');
         //设置状态
-        this.state = exports.EModuleState.UNACTIVE;
+        this.state = EModuleState.UNACTIVE;
         //第一个module 从html dom树移除
         if (this.renderTree && !notFirstModule) {
             let el = this.getNode(this.renderTree.key);
@@ -5108,7 +5120,7 @@ class Module {
             }
         }
         this.srcDom = dom;
-        if (this.state === exports.EModuleState.INITED || this.state === exports.EModuleState.UNACTIVE) {
+        if (this.state === EModuleState.INITED || this.state === EModuleState.UNACTIVE) {
             this.active();
         }
         else { //计算template，如果导致模版改变，需要激活
@@ -5337,7 +5349,7 @@ class MODULE extends DefineElement {
         //类名
         let clazz = node.getProp('name');
         if (!clazz) {
-            throw new NError('itemnotempty', exports.NodomMessage.TipWords['element'], 'MODULE', 'className');
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'MODULE', 'className');
         }
         node.delProp('name');
         node.addDirective(new Directive('module', clazz));
@@ -5352,7 +5364,7 @@ class FOR extends DefineElement {
         //条件
         let cond = node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', exports.NodomMessage.TipWords['element'], 'FOR', 'cond');
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'FOR', 'cond');
         }
         node.delProp('cond');
         node.addDirective(new Directive('repeat', cond));
@@ -5379,7 +5391,7 @@ class IF extends DefineElement {
         //条件
         let cond = node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', exports.NodomMessage.TipWords['element'], 'IF', 'cond');
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'IF', 'cond');
         }
         node.delProp('cond');
         node.addDirective(new Directive('if', cond));
@@ -5400,7 +5412,7 @@ class ELSEIF extends DefineElement {
         //条件
         let cond = node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', exports.NodomMessage.TipWords['element'], 'ELSEIF', 'cond');
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ELSEIF', 'cond');
         }
         node.delProp('cond');
         node.addDirective(new Directive('elseif', cond));
@@ -6333,37 +6345,5 @@ EventManager.regist('swiperight', EventManager.get('swipe'));
 EventManager.regist('swipeup', EventManager.get('swipe'));
 EventManager.regist('swipedown', EventManager.get('swipe'));
 
-exports.Compiler = Compiler;
-exports.CssManager = CssManager;
-exports.DefineElement = DefineElement;
-exports.DefineElementManager = DefineElementManager;
-exports.DiffTool = DiffTool;
-exports.Directive = Directive;
-exports.DirectiveManager = DirectiveManager;
-exports.DirectiveType = DirectiveType;
-exports.EventFactory = EventFactory;
-exports.EventManager = EventManager;
-exports.Expression = Expression;
-exports.GlobalCache = GlobalCache;
-exports.Model = Model;
-exports.ModelManager = ModelManager;
-exports.Module = Module;
-exports.ModuleFactory = ModuleFactory;
-exports.NCache = NCache;
-exports.NError = NError;
-exports.NEvent = NEvent;
-exports.NFactory = NFactory;
-exports.NodomMessage_en = NodomMessage_en;
-exports.NodomMessage_zh = NodomMessage_zh;
-exports.Renderer = Renderer;
-exports.Route = Route;
-exports.Router = Router;
-exports.Scheduler = Scheduler;
-exports.Util = Util;
-exports.VirtualDom = VirtualDom;
-exports.createDirective = createDirective;
-exports.createRoute = createRoute;
-exports.nodom = nodom;
-exports.registModule = registModule;
-exports.request = request;
-//# sourceMappingURL=nodom.cjs.js.map
+export { Compiler, CssManager, DefineElement, DefineElementManager, DiffTool, Directive, DirectiveManager, DirectiveType, EModuleState, EventFactory, EventManager, Expression, GlobalCache, Model, ModelManager, Module, ModuleFactory, NCache, NError, NEvent, NFactory, NodomMessage, NodomMessage_en, NodomMessage_zh, Renderer, Route, Router, Scheduler, Util, VirtualDom, createDirective, createRoute, nodom, registModule, request };
+//# sourceMappingURL=nodom.esm.js.map

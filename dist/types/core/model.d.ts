@@ -22,6 +22,11 @@ export declare class Model {
      */
     constructor(data: any, module?: Module);
     /**
+     * 重载数组删除元素方法
+     * @param data  数组
+     */
+    private arrayOverload;
+    /**
      * 观察(取消观察)某个数据项
      * @param key       数据项名或数组
      * @param operate   数据项变化时执行方法名(在module的methods中定义)

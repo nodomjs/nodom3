@@ -39,26 +39,26 @@ export class Model {
                 let ov = src[key];
                 let r = Reflect.set(src, key, value, receiver); 
                 //非对象，null，非model更新渲染
-                if(value && !value.$key && typeof value === 'object' ){
+                if(value && typeof value === 'object' && !value.$key){
                     value = new Model(value,module);
                 }
-                ModelManager.update(proxy, key, ov, value);
+                ModelManager.update(receiver, key, ov, value);
                 return r;
             },
             get(src: any, key: string | symbol, receiver){
                 let res = Reflect.get(src, key, receiver);
-                if(res){
+                if(res && typeof res === 'object'){
                     if(res.$key){
                         return ModelManager.getModel(res.$key);
-                    }else if(typeof res === 'object' && src.hasOwnProperty(key)){ //未代理对象，需要创建模型
+                    }else{ //未代理对象，需要创建模型
                         return new Model(res, module);
                     }  
-                } 
+                }
                 return res;
             },
             deleteProperty(src: any, key: any){
-                //如果删除对象，从modelmanager中同步删除
-                if (src[key] !== null && typeof src[key] === 'object') {
+                //如果删除对象且不为数组元素，从modelmanager中同步删除
+                if (src[key]&& src[key].$key && !(Array.isArray(src)&&typeof key==='number')) {
                     ModelManager.delFromMap(src[key].$key);
                 }
                 delete src[key];
@@ -77,7 +77,44 @@ export class Model {
         if(module){
             ModelManager.bindToModule(proxy,module);
         }
+
+        if(Array.isArray(data)){
+            this.arrayOverload(proxy);   
+        }
         return proxy;
+    }
+
+    /**
+     * 重载数组删除元素方法
+     * @param data  数组
+     */
+    private arrayOverload(data){
+        data.splice = function(){
+            const index = arguments[0];
+            const count = arguments[1];
+            if(count > 0){
+                for(let i=index,len=index+count;i<len;i++){
+                    if(data[i] && data[i].$key){
+                        ModelManager.delFromMap(data[i].$key);
+                    }
+                }
+            }
+            Array.prototype['splice'].apply(data,arguments);
+        }
+        data.shift = function(){
+            if(data[0] && data[0].$key){
+                ModelManager.delFromMap(data[0].$key);
+            }
+            Array.prototype['unshift'].apply(data,arguments);
+        }
+        
+        data.pop = function(){
+            const d = data[data.length-1];
+            if(d && d.$key){
+                ModelManager.delFromMap(d.$key);
+            }
+            Array.prototype['pop'].apply(data,arguments);
+        }
     }
 
     /**
