@@ -4,7 +4,7 @@ nodom是一款基于数据驱动的web mvvm框架。
 用于搭建单页应用(SPA)，目前发展到版本3。
 插件也在同步更新中。
 
-详情请点击官网[nodom](http://www.nodom.cn/webroute/home)  
+详情请点击官网[nodom](http://www.nodom.cn)  
 ```js
 源码所在目录：./core  
 示例所在目录：./examples

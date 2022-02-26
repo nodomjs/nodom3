@@ -1,7 +1,8 @@
 tsconfig.json
 /.vscode/
 /examples/
-index.ts
-/core/
-/extend/
+#index.ts
+#/core/
+#/extend/
+rollup.config.js
 

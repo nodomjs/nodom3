@@ -44,7 +44,7 @@ export class Model {
             },
             deleteProperty(src, key) {
                 //如果删除对象且不为数组元素，从modelmanager中同步删除
-                if (src[key] && src[key].$key && !(Array.isArray(src) && typeof key === 'number')) {
+                if (src[key] && src[key].$key && !(Array.isArray(src) && /^\d+$/.test(key))) {
                     ModelManager.delFromMap(src[key].$key);
                 }
                 delete src[key];
@@ -87,7 +87,7 @@ export class Model {
             if (data[0] && data[0].$key) {
                 ModelManager.delFromMap(data[0].$key);
             }
-            Array.prototype['unshift'].apply(data, arguments);
+            Array.prototype['shift'].apply(data, arguments);
         };
         data.pop = function () {
             const d = data[data.length - 1];
