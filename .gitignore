@@ -5,3 +5,4 @@
 #tsconfig.json
 #.vscode/
 node_modules/
+rollup.config.js
