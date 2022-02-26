@@ -29,9 +29,10 @@ export declare class Model {
     /**
      * 观察(取消观察)某个数据项
      * @param key       数据项名或数组
-     * @param operate   数据项变化时执行方法名(在module的methods中定义)
+     * @param operate   数据项变化时执行方法
+     * @param deep      是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
      */
-    $watch(key: string | string[], operate: Function): Function;
+    $watch(key: string | string[], operate: Function, deep?: boolean): Function;
     /**
      * 查询子属性
      * @param key   子属性，可以分级，如 name.firstName

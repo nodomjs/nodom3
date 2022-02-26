@@ -120,9 +120,10 @@ export class Model {
     /**
      * 观察(取消观察)某个数据项
      * @param key       数据项名或数组
-     * @param operate   数据项变化时执行方法名(在module的methods中定义)
+     * @param operate   数据项变化时执行方法
+     * @param deep      是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
      */
-    public $watch(key: string|string[], operate: Function):Function {
+    public $watch(key: string|string[], operate: Function,deep?:boolean):Function {
         let mids = ModelManager.getModuleIds(this);
         let arr = [];
         if(Array.isArray(key)){
@@ -164,30 +165,25 @@ export class Model {
                 return;
             }
             const listener = {modules:mids,f:operate};
+
+            if(!model.$watchers){
+                model.$watchers = {};
+            }
+            if(!model.$watchers[key]){
+                model.$watchers[key] = [listener];
+            }else{
+                model.$watchers[key].push(listener);
+            }
+            //保存用于撤销watch
+            arr.push({m:model,k:key,f:operate});
+
             //对象，监听整个对象
-            if(typeof model[key] === 'object'){
-                model = model[key];
-                if(!model.$watchers){
-                    model.$watchers = {};
+            if(deep && typeof model[key] === 'object'){
+                for(let k of Object.keys(model[key])){
+                    if(k !== '$key' && typeof model[key][k] !== 'function'){
+                        watchOne(model[key],k,operate);
+                    }
                 }
-                if(!model.$watchers.$this){
-                    model.$watchers.$this = [listener];
-                }else{
-                    model.$watchers.$this.push(listener);
-                }
-                //保存用于撤销watch
-                arr.push({m:model,k:'$this',f:operate});
-            }else{  //否则监听属性
-                if(!model.$watchers){
-                    model.$watchers = {};
-                }
-                if(!model.$watchers[key]){
-                    model.$watchers[key] = [listener];
-                }else{
-                    model.$watchers[key].push(listener);
-                }
-                //保存用于撤销watch
-                arr.push({m:model,k:key,f:operate});
             }
         }
     }
