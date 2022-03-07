@@ -65,10 +65,10 @@ export class Renderer {
             model = module.model;
         }
         dst.model = model;
+        dst.staticNum = src.staticNum;
         if (src.staticNum > 0) {
             src.staticNum--;
         }
-        dst.staticNum = src.staticNum;
         //先处理model指令
         if (src.directives && src.directives.length > 0 && src.directives[0].type.name === 'model') {
             src.directives[0].exec(module, dst, src);
