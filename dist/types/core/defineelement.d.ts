@@ -1,5 +1,4 @@
 import { VirtualDom } from "./virtualdom";
-import { Module } from "./module";
 /**
  * 自定义元素
  * 用于扩充定义，主要对ast obj进行前置处理
@@ -10,5 +9,5 @@ export declare class DefineElement {
      * @param node
      * @param module
      */
-    constructor(node: VirtualDom, module: Module);
+    constructor(node: VirtualDom);
 }

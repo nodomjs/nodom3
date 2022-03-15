@@ -89,7 +89,7 @@ export class Compiler {
                             finishTag(re);
                         }
                         else { //标签开始
-                            tagName = re.substr(1).trim().toLowerCase();
+                            tagName = re.substring(1).trim().toLowerCase();
                             txtStartIndex = undefined;
                             isPreTag = (tagName === 'pre');
                             //新建dom节点
@@ -122,20 +122,6 @@ export class Compiler {
                         }
                     }
                 }
-                else if (re[0] === '<') { //模版串中的元素开始或结束
-                    if (re[1] === '/') {
-                        //template 结束且是最外层的template，则处理template
-                        if (re.substring(2, re.length - 1).trim().toLowerCase() === 'template' && --templateCount === 0) {
-                            domArr[domArr.length - 1].setProp('template', srcStr.substring(templateStartIndex, result.index).trim());
-                        }
-                    }
-                    else {
-                        //template开始，计数器+1
-                        if (re.substr(1).trim().toLowerCase() === 'template') {
-                            templateCount++;
-                        }
-                    }
-                }
             }
         }
         //异常情况
@@ -155,6 +141,10 @@ export class Compiler {
                 for (let i = domArr.length - 1; i >= 0; i--) {
                     if (!closedTag[i] && domArr[i].tagName === tag) {
                         domArr[i].children = domArr.slice(i + 1);
+                        //设置parent
+                        for (let d of domArr[i].children) {
+                            d.parent = domArr[i];
+                        }
                         //删除后续节点
                         domArr.splice(i + 1);
                         //标注该节点已闭合
@@ -184,13 +174,6 @@ export class Compiler {
          * 标签头结束
          */
         function finishTagHead() {
-            if (tagName === 'template') { //模版标签
-                if (templateCount === 0) { //模版最开始，需要记录模版开始位置
-                    templateStartIndex = regWhole.lastIndex;
-                }
-                //嵌套template中的计数
-                templateCount++;
-            }
             if (dom) {
                 txtStartIndex = regWhole.lastIndex;
             }
@@ -217,10 +200,10 @@ export class Compiler {
             //指令
             if (propName.startsWith("x-")) {
                 //不排序
-                dom.addDirective(new Directive(propName.substr(2), value));
+                dom.addDirective(new Directive(propName.substring(2), value));
             }
             else if (propName.startsWith("e-")) { //事件
-                dom.addEvent(new NEvent(me.module, propName.substr(2), value));
+                dom.addEvent(new NEvent(me.module, propName.substring(2), value));
             }
             else { //普通属性
                 dom.setProp(propName, value);
@@ -302,12 +285,6 @@ export class Compiler {
         let slotCt;
         for (let j = 0; j < dom.children.length; j++) {
             let c = dom.children[j];
-            if (c.tagName === 'template') { //模版作为模块的template属性
-                dom.setProp('template', c.getProp('template'));
-                //template节点不再需要
-                dom.children.splice(j--, 1);
-                continue;
-            }
             if (c.hasDirective('slot')) { //带slot的不处理
                 continue;
             }

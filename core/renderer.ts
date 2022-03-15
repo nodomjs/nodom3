@@ -139,7 +139,7 @@ export class Renderer {
             }
         }
         //添加到dom tree
-        if(parent && !dst.dontAddToTree){
+        if(parent){
             parent.children.push(dst);
         }
         return dst;
@@ -278,7 +278,6 @@ export class Renderer {
             if(dom.props['key']){
                 module.saveElement(dom.props['key'],el);
             }
-
             //子模块容器的处理由子模块处理
             if(!dom.subModuleId){
                 //设置属性
@@ -376,12 +375,12 @@ export class Renderer {
                     Renderer.renderToHtml(module,item[1],null,false);
                     break;
                 case 3: //删除
+                    //从模块移除（考虑子模块）
+                    module.removeNode(item[1],true);
                     //从html dom树移除
-                    if(pEl && n1){
+                    if(pEl && n1 && pEl.contains(n1)){
                         pEl.removeChild(n1);
                     }
-                    //移除
-                    module.removeNode(item[1],true);
                     break;
                 case 4: //移动
                     if(item[4] ){  //相对节点后

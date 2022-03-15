@@ -24,6 +24,8 @@ export class VirtualDom {
         if (tag) {
             this.tagName = tag;
         }
+        this.renderedTimes = 0;
+        this.isStatic = true;
     }
     /**
      * 移除多个指令
@@ -459,6 +461,17 @@ export class VirtualDom {
             this.events = [];
         }
         this.events.push(event);
+    }
+    /**
+     * 级连设置父dom为动态dom
+     */
+    setParentDynamic() {
+        //向上级联设置，如果父为动态，则不用再向上处理
+        let p = this.parent;
+        while (p && p.isStatic) {
+            p.isStatic = false;
+            p = p.parent;
+        }
     }
 }
 //# sourceMappingURL=virtualdom.js.map

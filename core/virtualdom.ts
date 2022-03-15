@@ -5,6 +5,7 @@ import { NEvent } from "./event";
 import { Expression } from "./expression";
 import { Model } from "./model";
 import { Module } from "./module";
+import { IRenderedDom } from "./types";
 import { Util } from "./util";
 
 /**
@@ -97,6 +98,21 @@ export class VirtualDom {
     public notChange: boolean;
 
     /**
+     * 是否为静态节点
+     */
+    public isStatic:boolean;
+
+    /**
+     * 渲染次数
+     */
+    public renderedTimes:number;
+
+    /**
+     * 渲染后节点，isStatic为true时保留
+     */
+    public renderedDom:IRenderedDom;
+
+    /**
      * @param tag       标签名
      * @param key       key
      */
@@ -105,6 +121,8 @@ export class VirtualDom {
         if (tag) {
             this.tagName = tag;
         }
+        this.renderedTimes = 0;
+        this.isStatic = true;
     }
 
     /**
@@ -568,5 +586,18 @@ export class VirtualDom {
             this.events = [];
         }
         this.events.push(event);
+    }
+
+
+    /**
+     * 级连设置父dom为动态dom
+     */
+    public setParentDynamic(){
+        //向上级联设置，如果父为动态，则不用再向上处理
+        let p = this.parent;
+        while(p && p.isStatic){
+            p.isStatic = false;
+            p = p.parent;
+        }
     }
 }

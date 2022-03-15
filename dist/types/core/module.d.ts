@@ -101,6 +101,10 @@ export declare class Module {
      */
     private oldTemplate;
     /**
+     * 源节点对应的html element
+     */
+    private srcElement;
+    /**
      * 构造器
      */
     constructor();
@@ -135,15 +139,13 @@ export declare class Module {
     addChild(module: number | Module): void;
     /**
      * 激活模块(添加到渲染器)
-     * @param deep  是否深度active，如果为true，则子模块进行active
+     * @param type  0 手动， 1父节点setProps激活，默认0
      */
-    active(deep?: boolean): void;
+    active(type?: number): void;
     /**
      * 取消激活
-     * @param deep              是否深度遍历
-     * @param notFirstModule    不是第一个模块
      */
-    unactive(deep?: boolean, notFirstModule?: boolean): void;
+    unactive(): void;
     /**
      * 获取父模块
      * @returns     父模块
@@ -260,4 +262,14 @@ export declare class Module {
      * @returns     key id
      */
     getDomKeyId(): number;
+    /**
+     * 子模块节点和源节点相互交换
+     * @param flag  0 子模块替换源节点  1源节点替换子模块
+     */
+    private exchange;
+    /**
+     * 从查询树中查找key对应的渲染节点
+     * @param key   dom key
+     */
+    findRenderedDom(key: string): IRenderedDom;
 }

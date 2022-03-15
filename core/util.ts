@@ -456,12 +456,12 @@ export class Util {
 
         //年
         if (/(y+)/.test(format)) {
-            format = format.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
+            format = format.replace(RegExp.$1, (date.getFullYear() + "").substring(4 - RegExp.$1.length));
         }
         //月日
         this.getOwnProps(o).forEach(function (k) {
             if (new RegExp("(" + k + ")").test(format)) {
-                format = format.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+                format = format.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substring(("" + o[k]).length)));
             }
         });
 

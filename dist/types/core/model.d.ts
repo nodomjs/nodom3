@@ -23,6 +23,7 @@ export declare class Model {
     constructor(data: any, module?: Module);
     /**
      * 重载数组删除元素方法
+     * 用于处理从数组中移除的model，从modelmap移除
      * @param data  数组
      */
     private arrayOverload;

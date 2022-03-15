@@ -86,34 +86,41 @@ export class Model {
 
     /**
      * 重载数组删除元素方法
+     * 用于处理从数组中移除的model，从modelmap移除
      * @param data  数组
      */
     private arrayOverload(data){
         data.splice = function(){
-            const index = arguments[0];
             const count = arguments[1];
+            let r = Array.prototype['splice'].apply(data,arguments);
             if(count > 0){
-                for(let i=index,len=index+count;i<len;i++){
-                    if(data[i] && data[i].$key){
-                        ModelManager.delFromMap(data[i].$key);
+                for(let i=0;i<r.length;i++){
+                    if(r[i].$key){
+                        ModelManager.delFromMap(r[i].$key);
+                        delete r[i].$key;
                     }
                 }
             }
-            Array.prototype['splice'].apply(data,arguments);
+            return r;
         }
         data.shift = function(){
-            if(data[0] && data[0].$key){
-                ModelManager.delFromMap(data[0].$key);
+            let d = data[0];
+            Array.prototype['shift'].apply(data);
+            if(d && d.$key){
+                ModelManager.delFromMap(d.$key);
+                delete d.$key;
             }
-            Array.prototype['shift'].apply(data,arguments);
+            return d;
         }
         
         data.pop = function(){
-            const d = data[data.length-1];
+            let d = data[data.length-1];
+            Array.prototype['pop'].apply(data);
             if(d && d.$key){
                 ModelManager.delFromMap(d.$key);
+                delete d.$key;
             }
-            Array.prototype['pop'].apply(data,arguments);
+            return d;
         }
     }
 
@@ -158,8 +165,8 @@ export class Model {
             let index = -1;
             //如果带'.'，则只取最里面那个对象
             if ((index = key.lastIndexOf('.')) !== -1) {
-                model = this.$get(key.substr(0, index));
-                key = key.substr(index + 1);
+                model = this.$get(key.substring(0, index));
+                key = key.substring(index + 1);
             }
             if (!model) {
                 return;

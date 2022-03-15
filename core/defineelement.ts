@@ -10,7 +10,7 @@ export class DefineElement {
      * @param node 
      * @param module 
      */
-    constructor(node:VirtualDom,module:Module){
+    constructor(node:VirtualDom){
         if (node.hasProp('tag')) {
             node.tagName = node.getProp('tag');
             node.delProp('tag');

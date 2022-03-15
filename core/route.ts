@@ -112,7 +112,7 @@ import { Util } from "./util";
                 if (param.length === 0) {
                     paramIndex = i;
                 }
-                param.push(v.substr(1));
+                param.push(v.substring(1));
             } else {
                 paramIndex = -1;
                 param = []; //上级路由的参数清空

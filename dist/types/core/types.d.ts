@@ -62,6 +62,10 @@ export interface IRenderedDom {
      */
     model?: Model;
     /**
+     * 是否静态节点
+     */
+    isStatic?: boolean;
+    /**
      * 直接属性 不是来自于attribute，而是直接作用于html element，如el.checked,el.value等
      */
     assets?: Object;
@@ -89,10 +93,6 @@ export interface IRenderedDom {
      *  < 0 不处理
      */
     staticNum?: number;
-    /**
-     * 不添加到树
-     */
-    dontAddToTree?: boolean;
     /**
      * 子模块id，模块容器时有效
      */

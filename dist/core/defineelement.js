@@ -8,7 +8,7 @@ export class DefineElement {
      * @param node
      * @param module
      */
-    constructor(node, module) {
+    constructor(node) {
         if (node.hasProp('tag')) {
             node.tagName = node.getProp('tag');
             node.delProp('tag');

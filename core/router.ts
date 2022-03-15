@@ -119,7 +119,7 @@ export class Router {
             // 清理map映射
             this.activeFieldMap.delete(module.id);
             //module置为不激活
-            module.unactive(true);
+            module.unactive();
         }
         if (diff[2].length === 0) { //路由相同，参数不同
             let route: Route = diff[0];
@@ -188,10 +188,17 @@ export class Router {
         if (typeof module === 'object') {
             return module;
         }
-        //延迟加载
-        if (typeof module === 'string' && route.modulePath) { //模块路径
-            module = await import(route.modulePath);
-            module = module[route.module];
+
+        //非模块类，是加载函数
+        if (!module.prototype) { //模块路径
+            const m = await module();
+            //通过import的模块，查找模块类
+            for(let k of Object.keys(m)){
+                if(m[k].name){
+                    module = m[k];
+                    break;
+                }
+            }
         }
         //模块类
         if (typeof module === 'function') {
@@ -310,7 +317,7 @@ export class Router {
     private static dependHandle(module: Module, route: Route, pm: Module) {
         const me = this;
         //深度激活
-        module.active(true);
+        module.active();
         //设置参数
         let o = {
             path: route.path

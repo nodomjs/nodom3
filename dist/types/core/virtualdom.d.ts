@@ -3,6 +3,7 @@ import { NEvent } from "./event";
 import { Expression } from "./expression";
 import { Model } from "./model";
 import { Module } from "./module";
+import { IRenderedDom } from "./types";
 /**
  * 虚拟dom
  */
@@ -76,6 +77,18 @@ export declare class VirtualDom {
      * 未改变标志，本次不渲染
      */
     notChange: boolean;
+    /**
+     * 是否为静态节点
+     */
+    isStatic: boolean;
+    /**
+     * 渲染次数
+     */
+    renderedTimes: number;
+    /**
+     * 渲染后节点，isStatic为true时保留
+     */
+    renderedDom: IRenderedDom;
     /**
      * @param tag       标签名
      * @param key       key
@@ -243,4 +256,8 @@ export declare class VirtualDom {
      * @param event     事件对象
      */
     addEvent(event: NEvent): void;
+    /**
+     * 级连设置父dom为动态dom
+     */
+    setParentDynamic(): void;
 }

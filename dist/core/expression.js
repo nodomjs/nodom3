@@ -51,7 +51,7 @@ export class Expression {
                         let s1 = '';
                         if (s.startsWith('...')) { // ...属性名
                             s1 = '...';
-                            s = s.substr(3);
+                            s = s.substring(3);
                         }
                         retS += s1 + '$model.' + s;
                         //存在‘.’，则变量不全在在当前模型中
@@ -64,7 +64,7 @@ export class Expression {
             index = reg.lastIndex;
         }
         if (index < exprStr.length) {
-            retS += exprStr.substr(index);
+            retS += exprStr.substring(index);
         }
         return retS;
         /**
@@ -77,7 +77,7 @@ export class Expression {
             //中间无'.'
             if (ind === -1) {
                 let ind1 = str.lastIndexOf('(');
-                let fn = str.substr(0, ind1);
+                let fn = str.substring(0, ind1);
                 //末尾字符
                 if (!Util.isKeyWord(fn)) {
                     let lch = str[str.length - 1];
@@ -90,7 +90,7 @@ export class Expression {
                 }
             }
             else if (str[0] !== '.') { //第一个为点不处理
-                let fn = str.substr(0, ind);
+                let fn = str.substring(0, ind);
                 if (!Util.isKeyWord(fn)) { //首字段非关键词，则为属性
                     return '$model.' + str;
                 }
