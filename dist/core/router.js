@@ -146,8 +146,10 @@ export class Router {
             if (typeof module === 'object') {
                 return module;
             }
+            console.log(module);
+            console.log(module.prototype);
             //非模块类，是加载函数
-            if (!module.prototype) { //模块路径
+            if (!module.__proto__.name) {
                 const m = yield module();
                 //通过import的模块，查找模块类
                 for (let k of Object.keys(m)) {

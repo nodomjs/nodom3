@@ -98,16 +98,6 @@ export class VirtualDom {
     public notChange: boolean;
 
     /**
-     * 是否为静态节点
-     */
-    public isStatic:boolean;
-
-    /**
-     * 渲染次数
-     */
-    public renderedTimes:number;
-
-    /**
      * 渲染后节点，isStatic为true时保留
      */
     public renderedDom:IRenderedDom;
@@ -121,8 +111,6 @@ export class VirtualDom {
         if (tag) {
             this.tagName = tag;
         }
-        this.renderedTimes = 0;
-        this.isStatic = true;
     }
 
     /**
@@ -217,13 +205,30 @@ export class VirtualDom {
 
     /**
      * 添加子节点
-     * @param dom     子节点
+     * @param dom       子节点 
+     * @param index     指定位置，如果不传此参数，则添加到最后
      */
-    public add(dom: VirtualDom) {
+    public add(dom:VirtualDom,index?:number){
         if (!this.children) {
             this.children = [];
         }
-        this.children.push(dom);
+        if(index){
+            this.children.splice(index,0,dom);
+        }else{
+            this.children.push(dom);
+        }
+        dom.parent = this;
+    }
+
+    /**
+     * 移除子节点
+     * @param dom   子节点
+     */
+    public remove(dom:VirtualDom){
+        let index = this.children.indexOf(dom);
+        if(index !== -1){
+            this.children.splice(index,1);
+        }
     }
 
 
@@ -586,18 +591,5 @@ export class VirtualDom {
             this.events = [];
         }
         this.events.push(event);
-    }
-
-
-    /**
-     * 级连设置父dom为动态dom
-     */
-    public setParentDynamic(){
-        //向上级联设置，如果父为动态，则不用再向上处理
-        let p = this.parent;
-        while(p && p.isStatic){
-            p.isStatic = false;
-            p = p.parent;
-        }
     }
 }

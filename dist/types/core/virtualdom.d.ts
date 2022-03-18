@@ -78,14 +78,6 @@ export declare class VirtualDom {
      */
     notChange: boolean;
     /**
-     * 是否为静态节点
-     */
-    isStatic: boolean;
-    /**
-     * 渲染次数
-     */
-    renderedTimes: number;
-    /**
      * 渲染后节点，isStatic为true时保留
      */
     renderedDom: IRenderedDom;
@@ -133,9 +125,15 @@ export declare class VirtualDom {
     getDirective(directiveType: string): Directive;
     /**
      * 添加子节点
-     * @param dom     子节点
+     * @param dom       子节点
+     * @param index     指定位置，如果不传此参数，则添加到最后
      */
-    add(dom: VirtualDom): void;
+    add(dom: VirtualDom, index?: number): void;
+    /**
+     * 移除子节点
+     * @param dom   子节点
+     */
+    remove(dom: VirtualDom): void;
     /**
      * 添加css class
      * @param cls class名或表达式,可以多个，以“空格”分割
@@ -256,8 +254,4 @@ export declare class VirtualDom {
      * @param event     事件对象
      */
     addEvent(event: NEvent): void;
-    /**
-     * 级连设置父dom为动态dom
-     */
-    setParentDynamic(): void;
 }

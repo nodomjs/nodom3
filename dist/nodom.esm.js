@@ -2156,8 +2156,10 @@ class Router {
             if (typeof module === 'object') {
                 return module;
             }
+            console.log(module);
+            console.log(module.prototype);
             //非模块类，是加载函数
-            if (!module.prototype) { //模块路径
+            if (!module.__proto__.name) {
                 const m = yield module();
                 //通过import的模块，查找模块类
                 for (let k of Object.keys(m)) {
@@ -2720,8 +2722,6 @@ class VirtualDom {
         if (tag) {
             this.tagName = tag;
         }
-        this.renderedTimes = 0;
-        this.isStatic = true;
     }
     /**
      * 移除多个指令
@@ -2809,13 +2809,30 @@ class VirtualDom {
     }
     /**
      * 添加子节点
-     * @param dom     子节点
+     * @param dom       子节点
+     * @param index     指定位置，如果不传此参数，则添加到最后
      */
-    add(dom) {
+    add(dom, index) {
         if (!this.children) {
             this.children = [];
         }
-        this.children.push(dom);
+        if (index) {
+            this.children.splice(index, 0, dom);
+        }
+        else {
+            this.children.push(dom);
+        }
+        dom.parent = this;
+    }
+    /**
+     * 移除子节点
+     * @param dom   子节点
+     */
+    remove(dom) {
+        let index = this.children.indexOf(dom);
+        if (index !== -1) {
+            this.children.splice(index, 1);
+        }
     }
     /**
      * 添加css class
@@ -3157,17 +3174,6 @@ class VirtualDom {
             this.events = [];
         }
         this.events.push(event);
-    }
-    /**
-     * 级连设置父dom为动态dom
-     */
-    setParentDynamic() {
-        //向上级联设置，如果父为动态，则不用再向上处理
-        let p = this.parent;
-        while (p && p.isStatic) {
-            p.isStatic = false;
-            p = p.parent;
-        }
     }
 }
 
@@ -5192,6 +5198,8 @@ class Module {
                 }
             }
         }
+        //增加编译后事件
+        this.doModuleEvent('onCompile');
     }
     /**
     * 合并属性
@@ -5641,7 +5649,7 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
      * ```
      */
     createDirective('recur', function (module, dom, src) {
-        //递归节点存放容器
+        //当前节点是递归节点存放容器
         if (dom.props.hasOwnProperty('ref')) {
             //如果出现在repeat中，src为单例，需要在使用前清空子节点，避免沿用上次的子节点
             src.children = [];
@@ -5666,6 +5674,7 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                 Util.setNodeKey(node1, m.$key, true);
             }
             src.children = [node1];
+            node1.parent = src;
         }
         else { //递归节点
             let data = dom.model[this.value];
@@ -5875,35 +5884,29 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             if (m) {
                 //缓存当前替换节点
                 m.objectManager.set('$slots.' + this.value, { dom: src, model: dom.model });
+                //只需添加一次，用后即删除
+                if (src.parent) {
+                    src.parent.remove(src);
+                }
             }
         }
         else { //源slot节点
             //获取替换节点进行替换
             const cfg = module.objectManager.get('$slots.' + this.value);
             if (cfg) {
-                let chds = src.parent.children;
-                let index = chds.indexOf(src);
                 //避免key重复，更新key
                 for (let d of cfg.dom.children) {
-                    //不管是否添加，索引号都+1，避免后续节点位置不对
-                    index++;
+                    let model;
                     if (src.hasProp('innerRender')) { //内部数据渲染
-                        //避免模版变化引起的innerRender丢失，而dom已绑定
-                        delete d.model;
+                        model = dom.model;
                     }
                     else { //外部数据渲染
-                        d.model = cfg.model;
+                        model = cfg.model;
                         //对象绑定到当前模块
                         ModelManager.bindToModule(cfg.model, module);
                     }
-                    //不重复添加
-                    if (chds.indexOf(d) !== -1) {
-                        continue;
-                    }
-                    //更新key
-                    d.key = module.getDomKeyId();
-                    d.parent = src.parent;
-                    chds.splice(index, 0, d);
+                    //key以s结尾，避免重复，以dom key作为附加key
+                    Renderer.renderDom(module, d, model, dom.parent, dom.key + 's');
                 }
             }
         }

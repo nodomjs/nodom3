@@ -8,7 +8,7 @@ import { Directive } from "../core/directive";
  */
 class MODULE extends DefineElement {
     constructor(node, module) {
-        super(node, module);
+        super(node);
         //类名
         let clazz = node.getProp('name');
         if (!clazz) {
@@ -23,7 +23,7 @@ class MODULE extends DefineElement {
  */
 class FOR extends DefineElement {
     constructor(node, module) {
-        super(node, module);
+        super(node);
         //条件
         let cond = node.getProp('cond');
         if (!cond) {
@@ -38,7 +38,7 @@ class FOR extends DefineElement {
  */
 class RECUR extends DefineElement {
     constructor(node, module) {
-        super(node, module);
+        super(node);
         //条件
         let cond = node.getProp('cond');
         node.delProp('cond');
@@ -50,7 +50,7 @@ class RECUR extends DefineElement {
  */
 class IF extends DefineElement {
     constructor(node, module) {
-        super(node, module);
+        super(node);
         //条件
         let cond = node.getProp('cond');
         if (!cond) {
@@ -62,7 +62,7 @@ class IF extends DefineElement {
 }
 class ELSE extends DefineElement {
     constructor(node, module) {
-        super(node, module);
+        super(node);
         node.addDirective(new Directive('else', null));
     }
 }
@@ -71,7 +71,7 @@ class ELSE extends DefineElement {
  */
 class ELSEIF extends DefineElement {
     constructor(node, module) {
-        super(node, module);
+        super(node);
         //条件
         let cond = node.getProp('cond');
         if (!cond) {
@@ -86,7 +86,7 @@ class ELSEIF extends DefineElement {
  */
 class ENDIF extends DefineElement {
     constructor(node, module) {
-        super(node, module);
+        super(node);
         node.addDirective(new Directive('endif', null));
     }
 }
@@ -95,7 +95,7 @@ class ENDIF extends DefineElement {
  */
 class SLOT extends DefineElement {
     constructor(node, module) {
-        super(node, module);
+        super(node);
         //条件
         let cond = node.getProp('name') || 'default';
         node.delProp('name');

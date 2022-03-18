@@ -416,6 +416,8 @@ export class Module {
                 }
             }
         }
+        //增加编译后事件
+        this.doModuleEvent('onCompile');
     }
     /**
     * 合并属性

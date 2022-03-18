@@ -48,7 +48,7 @@ export default (function () {
         //保存到dom上，提升渲染性能
         dom.subModuleId = mid;
         //变成文本节点，作为子模块占位符，子模块渲染后插入到占位符前面
-        dom.tagName = '';
+        delete dom.tagName;
         if (handle) { //需要处理
             //设置props，如果改变了props，启动渲染
             let o = {};
@@ -59,7 +59,7 @@ export default (function () {
                         if (!o.$data) {
                             o.$data = {};
                         }
-                        o.$data[p.substr(1)] = v;
+                        o.$data[p.substring(1)] = v;
                         //删除属性
                         delete dom.props[p];
                     }
@@ -131,7 +131,7 @@ export default (function () {
      * ```
      */
     createDirective('recur', function (module, dom, src) {
-        //递归节点存放容器
+        //当前节点是递归节点存放容器
         if (dom.props.hasOwnProperty('ref')) {
             //如果出现在repeat中，src为单例，需要在使用前清空子节点，避免沿用上次的子节点
             src.children = [];
@@ -150,13 +150,13 @@ export default (function () {
             }
             //克隆，后续可以继续用
             let node1 = node.clone();
-            let key;
             //recur子节点不为数组，依赖子层数据，否则以来repeat数据
             if (!Array.isArray(m)) {
                 node1.model = m;
                 Util.setNodeKey(node1, m.$key, true);
             }
             src.children = [node1];
+            node1.parent = src;
         }
         else { //递归节点
             let data = dom.model[this.value];
@@ -366,35 +366,33 @@ export default (function () {
             if (m) {
                 //缓存当前替换节点
                 m.objectManager.set('$slots.' + this.value, { dom: src, model: dom.model });
+                //只需添加一次，用后即删除
+                if (src.parent) {
+                    src.parent.remove(src);
+                }
             }
-            //此次不继续渲染，子节点在实际模块中渲染
-            return false;
         }
         else { //源slot节点
             //获取替换节点进行替换
-            let cfg = module.objectManager.get('$slots.' + this.value);
+            const cfg = module.objectManager.get('$slots.' + this.value);
             if (cfg) {
-                let chds = [];
-                let rdom = cfg.dom;
                 //避免key重复，更新key
-                for (let d of rdom.children) {
-                    let d1 = d.clone();
-                    Util.setNodeKey(d1, dom.key, true);
-                    chds.push(d1);
-                }
-                //更改渲染子节点
-                src.children = chds;
-                //非内部渲染,更改model
-                if (!src.hasProp('innerRender')) {
-                    for (let c of src.children) {
-                        c.model = cfg.model;
+                for (let d of cfg.dom.children) {
+                    let model;
+                    if (src.hasProp('innerRender')) { //内部数据渲染
+                        model = dom.model;
+                    }
+                    else { //外部数据渲染
+                        model = cfg.model;
                         //对象绑定到当前模块
                         ModelManager.bindToModule(cfg.model, module);
                     }
+                    //key以s结尾，避免重复，以dom key作为附加key
+                    Renderer.renderDom(module, d, model, dom.parent, dom.key + 's');
                 }
             }
         }
-        return true;
+        return false;
     }, 5);
     /**
      * 指令名
