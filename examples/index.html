@@ -4,46 +4,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>index</title>
-    <script type="text/javascript" src="../dist/nodom.esm.js"></script>
-
-    <style>
-        p {
-            margin-left: 20px;
-            line-height: 12px;
-        }
-
-        .title {
-            margin: 20px auto;
-            font-size: 32px;
-            font-weight: bold;
-        }
-
-        .introduction,
-        .examples {
-            margin: 20px auto;
-            color: #666666;
-        }
-    </style>
+    <title>nodom examples-index</title>
+    <link rel="stylesheet" type='text/css' href='css/index.css' />
+    
 </head>
 
 <body>
     <div class="code">
-        <div class="title">Nodom.JS</div>
+        <h1>nodom</h1>
         <div class="introduction">
-            Nodom是一个前端MVVM框架，与2017年发布1.0版本，经过几个webapp开发后，综合使用过程中的问题，现升级为2.0，用ES6进行了重新架构，主要区别如下：
-            <p>1.转json格式的虚拟dom;</p>
-            <p>2.class抽取；</p>
-            <p>3.增加工厂的使用；</p>
-            <p>4.简化view结构；</p>
-            <p>5.简化model结构；</p>
-            <p>6.取消插件，统一为自定义指令；</p>
-            <p>7.增加对象的序列化和反序列化，便于对象存储和还原，也会更好支持预编译功能；（实现中）</p>
-            <p>8.增加工作流引擎，降低页面间耦合度（实现中）。</p>
-            使用方式和Nodom1.0相似，取消了DD命名空间，全部改为Nodom。
+            nodom是一个前端mvvm框架，基于模块进行渲染，由model进行驱动，基本用法参考start.html。
         </div>
+        <h3>核心组成</h3>
+        <table>
+            <thead>
+                <tr>
+                    <td width='200'>名称</td>
+                    <td>说明</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>模块(Module)</td>
+                    <td>
+                        NoDom基于模块进行应用搭建，一个应用由单个或多个模块组成。
+                        渲染以模块为单位进行（增量渲染），所以为了保证渲染效率，模块不要过大，大模块可以拆分为多个小模块。
+                    </td>
+                </tr>
+                <tr>
+                    <td>模型(Model)</td>
+                    <td>
+                        模型为数据模型，每个数据对象都对应一个model，由模块的data()方法提供，
+                        模块基于model进行渲染，model的变化会导致模块的增量渲染，通常是多个model变化，进行一次渲染）。
+                    </td>
+                </tr>
+                <tr>
+                    <td>模版(Template)</td>
+                    <td>模版作为虚拟dom的生成来源，通常是一个html文件或html串，由模块的template()方法提供。</td>
+                </tr>
+                <tr>
+                    <td>指令(Directive)</td>
+                    <td>为增强dom节点的使用，增加了指令功能，指令以“x-”开头，目前支持11个指令:module,model,repeat,recur,if,else,show,field,route,router,animation。</td>
+                </tr>
+                <tr>
+                    <td>表达式(Expression)</td>
+                    <td>达式主要用于数据计算，表达式可用于元素属性(attribute)或textContent，用{{ }}进行包裹，
+                        作为元素属性时，{{}}两端不能用引号。</td>
+                </tr>
+                <tr>
+                    <td>事件(Event)</td>
+                    <td>事件和元素的事件相对应，以"e-"开头，如 e-click='eventName'，事件不能带参数，自动传递约定的参数。</td>
+                </tr>
+                <tr>
+                    <td>路由(Router)</td>
+                    <td>单页应用(SPA)基于模块切换达到传统的页面切换效果，模块的切换通常用路由来实现。路由主要用于操作模块切换、维护location history。</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class='annotion'>注：更多详情参考readme。</p>
+        <h3>例子</h3>
         <div class="examples">
-            实例
+            <p><a href="start.html">起步</a></p>
+            
             <p><a href="filter.html">过滤器用法</a></p>
             <p><a href="model.html">model用法</a></p>
             <p><a href="repeat.html">repeat用法</a></p>

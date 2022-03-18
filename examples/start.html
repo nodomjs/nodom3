@@ -4,62 +4,87 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 		<title>nodom-example start</title>
+		<link rel="stylesheet" type='text/css' href='css/index.css' />
 		</head>
 
 	<body>
-		<div class="view">
-		</div> 
+		<p>
+			采用js module方式进行包引入，示例如下：
+			<pre>
+	// script采用‘module’方式
+	&lt;script type='module'&gt;
+		//引入nodom
+		import{nodom,Module} from '../dist/nodom.esm.js'
+		class TestModule extends Module{
+			/**
+			 * 模版函数，用于产生需要的模版串
+			 * props 父模块传入的属性对象
+			 */
+			template(props){...}
+			/**
+			 * 数据函数，用于产生模块需要的数据
+			 */
+			data(){...}
+			//其他代码
+			...
+		}
+	&lt;/script&gt;
+			</pre>
+		</p>
+		<h3>例子1-起步</h3> 
+		<p></p>
+		<div class='module1'>
+		</div>
+		<h3></h3>
+
 	</body>
 	<script type='module'>
 		import{nodom,Module} from '../dist/nodom.esm.js'
+		/**
+		 * 模块定义
+		 */
 		class Module1 extends Module{
+			/**
+			 * 模版函数
+			 */
 			template(){
 				return `
-                    <div>
-						<p nid={{id}}><span class='name'>hello: &nbsp;{{name}} hahaha</span></p>
-						<p>age is:<span class='age'>{{age}}</span></p>
-						<p nid={{id}}><span class='name'>hello1:{{name1}} hahaha</span></p>
-                       <p>age1 is:<span class='age'>{{age1}}</span></p>
-						<p p1 =  '123' p2 p3='abc' v='hello world'>salary is:<span class='age1'>{{Math.round(salary)}}</span></p>
-						<h3>html 转义字符</h3>
-						<p p1='1'>x &amp;y &copy;nodom &nbsp;&nbsp;noomi</p>
-						<p p1>x &times; y &nbsp;&ensp;&emsp; x&divide;y &nbsp; x &gt;y &lt;z</p>
-						<H3>pre 测试</H3>
-						<PRE>
-				data={
-					name:'nodom',
-					age:3,
-					id:1,
-					salary:3000.25
-				}
- 
-						</pre>
-                        <button e-click='change'>change</button>
-						<button e-click='change1'>change1</button>
+				    <div>
+						<button e-click='changeName'>修改数据</button>
+						<p>
+							你好, {{name}}
+						</p>
+						<p> 你的爱好是:</p>
+						<ui>
+							<for cond={{hobbies}} tag='li'>{{title}}</for>
+						</ui>
                     </div>
 				`
 			}
+
+			/**
+			 * 数据函数
+			 */
 			data(){
 				return{
-					name:'nodom',
-					age:3,
-					name1:'yang',
-					age1:43,
-					id:1,
-					salary:3000.25
+					name:'nodom3',
+					hobbies:[
+						{title:'健身'},
+						{title:'美食'},
+						{title:'旅游'}
+					]
 				}
 			}	
-            
-			change(model){
-				model.name='nodom3';
-				model.age = 1;
+
+			/**
+			 * @param model	 指向button对应的model，如果没有特别说明，则从父dom继承 
+			 */
+			changeName(model){
+				//model可以换成this.model，this指向模块实例
+				model.name = 'noomi';
+				model.hobbies.push({title:'游戏'});
 			}
-			change1(model){
-				model.name1='nodom3.2';
-				model.age1 = 0.5;
-			}
-            
-		}
-    	nodom(Module1,'div');
+       	}
+    	nodom(Module1,'.module1');
 	</script>
 </html>

@@ -6,6 +6,10 @@ export declare class Compiler {
      */
     private module;
     /**
+     * 根结点
+     */
+    private root;
+    /**
      * 构造器
      * @param module
      */

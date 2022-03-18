@@ -11,50 +11,8 @@
 	</body>
 	<script type='module'>
 		import{nodom,Module} from '../dist/nodom.esm.js'
-		class UIButton extends Module{
-			/**
-			 * 模版函数
-			 * @param props     父模块传递的属性值 
-			 * @returns         模版字符串
-			 */
-			template(props){
-				let arr = ['ui-btn'];
-				//size
-				arr.push('ui-btn-' + (props.size||'normal'));
-				//icon
-				if(props.icon){
-					arr.push('ui-icon-' + props.icon);
-					arr.push('ui-btn-' + (props.iconPos||'left'));
-				}
-				
-				//无背景
-				if(props.nobg === 'true'){
-					arr.push('ui-btn-nobg');
-				}else{
-					//theme
-					if(props.theme){
-						arr.push('ui-btn-' + props.theme);
-					}
-				}
-
-				if(!props.title){
-					arr.push('ui-btn-notext');
-					props.title = '';
-				}
-
-				//从模版带来的class
-				if(props.class){
-					arr.push(props.class);
-				}
-				return  `
-					<button class='${arr.join(" ")}' ${props.style?'style="' + props.style + '"':''} data={{data}}>
-						${props.title}
-					</button>
-				`;
-			}
-		}
+		
 		class Module1 extends Module{
-			modules=[UIButton];
 			template(){
 				return `
 					<div class='code'>
@@ -63,8 +21,8 @@
 						<div class='tip'>单个if指令</div>
 						<div class='code code1'>
 							<div class='introduce'>如果discount<0.8，显示价格</div>
-							<if cond={{discount < 0.8}}>价格：{{price}}
-								<uibutton title='hello' e-click='hello'/>
+							<if cond={{discount < 0.8}}>
+								价格：{{price}}
 							</if>
 							<endif/>
 						</div>

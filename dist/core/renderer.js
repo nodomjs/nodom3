@@ -177,9 +177,6 @@ export class Renderer {
                     else if (classReg.test(k[0])) {
                         value = src.getClassString(value);
                     }
-                    else {
-                        value = value.join(' ');
-                    }
                 }
                 else if (k[1] instanceof Expression) {
                     value = k[1].val(module, dst.model);

@@ -10,205 +10,212 @@
     <div></div>
 </body>
 <script type='module'>
-    import {nodom,Module,GlobalCache,ModuleFactory} from '../dist/nodom.esm.min.js'
+    import {nodom,Module,GlobalCache,ModuleFactory,DefineElement,DefineElementManager} from '../dist/nodom.esm.min.js'
     
-    class ModuleA extends Module{
+	class ModuleA extends Module{
         template(props){
             let s;
-            console.log(this.model.rows1);
             if(!this.model.rows1 || this.model.rows1.length === 0){
                 s = `
-                    <div class='modulea' ${props.style?'style="' + props.style + '"':''}>
-                        <slot innerRender/>
+                    <div class='modulea'>
+                        <slot/>
                     </div>
                 `;
-				} else {
-					s = `
-                    <div class='modulea' ${props.style ? 'style="' + props.style + '"' : ""}>
-                        <div>{{name}}</div>
-                        <button e-click='clickShow'>showme</button>
-                        <input x-field='name'/>
-                        <ul x-show={{showme}} key='ul1'>
-                            <for cond={{rows1}} tag='li' e-click='clickme:delg'>{{title}}</for>
-                        </ul>
-                    </div>
-                `;
-				}
-				console.log(s)
-				return s;
+			} else {
+				s = `
+				<div class='modulea'>
+					<div>{{name}}</div>
+					<button e-click='clickShow'>showme</button>
+					<input x-field='name'/>
+					<ul x-show={{showme}} key='ul1'>
+						<for cond={{rows1}} tag='li' e-click='clickme:delg'>{{title}}</for>
+					</ul>
+				</div>
+			`;
 			}
-			data() {
-				return {
-					name: "yang",
-					showme: true,
-					x1: 0,
-					x2: 0,
-					rows: [{ name: "nodom1" }, { name: "nodom2" }, { name: "nodom3" }],
-				};
-			}
-			keyup() {
-				console.log("keyup");
-			}
-			clickShow(model) {
-				// model.showme = !model.showme;
-				console.log(this.getElement("ul1"));
-			}
-			clickme(model) {
-				console.log(model);
-			}
+			return s;
+		}
+		data() {
+			return {
+				name: "yang",
+				showme: true,
+				x1: 0,
+				x2: 0,
+				rows: [{ name: "nodom1" }, { name: "nodom2" }, { name: "nodom3" }]
+			};
+		}
+		keyup() {
+			console.log("keyup");
+		}
+		clickShow(model) {
+			// model.showme = !model.showme;
+			console.log(this.getElement("ul1"));
+		}
+		clickme(model) {
+			console.log(model);
+		}
+	}
+
+	class ModuleB extends Module {
+		template(props) {
+			return `
+			<div type='moduleb'>
+				<div>id is:{{id}},name is:<span style='color:red;font-weight:bold;padding-left:10px'>{{name}}</span></div>
+				<div>subscribe data is:{{subname}}</div>
+				<slot/>
+			</div>
+		`;
+		}
+		data() {
+			return {
+				rows: [{ name: "nodom1" }, { name: "noomi1" }, { name: "relaen1" }],
+			};
 		}
 
-		class ModuleB extends Module {
-			template(props) {
-				return `
-                <div>
-                    <div>id is:{{id}},name is:<span style='color:red;font-weight:bold;padding-left:10px'>{{name}}</span></div>
-                    <div>subscribe data is:{{subname}}</div>
-                </div>
-            `;
-			}
-			data() {
-				return {
-					rows: [{ name: "nodom1" }, { name: "noomi1" }, { name: "relaen1" }],
-				};
+		onBeforeFirstRender() {
+			GlobalCache.subscribe(this, "userName", function (value) {
+				console.log(this, value);
+				this.model["subname"] = value;
+			});
+		}
+	}
+
+	class UIButton extends Module {
+		/**
+		 * 模版函数
+		 * @param props     父模块传递的属性值
+		 * @returns         模版字符串
+		 */
+		template(props) {
+			let arr = ["ui-btn"];
+			//size
+			arr.push("ui-btn-" + (props.size || "normal"));
+			//icon
+			if (props.icon) {
+				arr.push("ui-icon-" + props.icon);
+				arr.push("ui-btn-" + (props.iconPos || "left"));
 			}
 
-			onBeforeFirstRender() {
-				GlobalCache.subscribe(this, "userName", function (value) {
-					console.log(this, value);
-					this.model["subname"] = value;
-				});
+			//无背景
+			if (props.nobg === "true") {
+				arr.push("ui-btn-nobg");
+			} else {
+				//theme
+				if (props.theme) {
+					arr.push("ui-btn-" + props.theme);
+				}
 			}
+
+			if (!props.title) {
+				arr.push("ui-btn-notext");
+				props.title = "";
+			}
+
+			//从模版带来的class
+			if (props.class) {
+				arr.push(props.class);
+			}
+			return `
+			<button class='${arr.join(" ")}'>
+				${props.title}
+			</button>
+		`;
+		}
+	}
+
+	class Module1 extends Module {
+		modules = [ModuleA, ModuleB, UIButton];
+		template(props) {
+			return `
+			<div >
+				<button e-click='add'>add</button>
+				<button e-click='setRows1'>setRows1</button>
+				<button e-click='clearRows1'>clearRows1</button>
+				<button e-click='active1'>active</button>
+				<button e-click='unactive1'>unactive</button>
+				<button e-click='hideOrShow'>hideOrShow</button>
+				<button e-click='change1'>change1</button>
+				<button e-click='change2'>change2</button>
+				<button e-click='setGlobalCache'>Save Global</button>
+				<div>name is:{{name1}}</div>
+				<input x-field='name1' />
+					
+				<!--useDomModel表示用当前dom对应的model直接覆盖子模块的model-->
+				<modulea class={{genCls()}} x-show={{show}} $rows1={{rows1}} style={{style}}>
+					<for tag='uibutton' e-click='clickBtn' title={{name}} cond={{rows}}/>
+					<ModuleB style='font-size:18px;' useDomModel x-repeat={{rows}} $index='idx' />
+				</modulea>
+			</div>
+		`;
+		}
+		data() {
+			return {
+				xxx: 1,
+				name1: "outer",
+				style: "width:600px",
+				show: true,
+				rows: [
+					{ id: 1, name: "nodom", title: "click1" },
+					{ id: 2, name: "noomi", title: "click2" },
+					{ id: 3, name: "relaen", title: "click3" }
+				],
+				rows2: [{ name: "nodom111" }, { name: "nodom222" }, { name: "nodom333" }]
+			};
 		}
 
-		class UIButton extends Module {
-			/**
-			 * 模版函数
-			 * @param props     父模块传递的属性值
-			 * @returns         模版字符串
-			 */
-			template(props) {
-				let arr = ["ui-btn"];
-				//size
-				arr.push("ui-btn-" + (props.size || "normal"));
-				//icon
-				if (props.icon) {
-					arr.push("ui-icon-" + props.icon);
-					arr.push("ui-btn-" + (props.iconPos || "left"));
-				}
-
-				//无背景
-				if (props.nobg === "true") {
-					arr.push("ui-btn-nobg");
-				} else {
-					//theme
-					if (props.theme) {
-						arr.push("ui-btn-" + props.theme);
-					}
-				}
-
-				if (!props.title) {
-					arr.push("ui-btn-notext");
-					props.title = "";
-				}
-
-				//从模版带来的class
-				if (props.class) {
-					arr.push(props.class);
-				}
-				return `
-                <button class='${arr.join(" ")}' ${props.style ? 'style="' + props.style + '"' : ""} data={{data}}>
-                    ${props.title}
-                </button>
-            `;
-			}
+		setRows1(model) {
+			model.rows1 = [{ title: "field" }, { title: "nodom" }];
 		}
 
-		class Module1 extends Module {
-			modules = [ModuleA, ModuleB, UIButton];
-			template(props) {
-				return `
-                <div >
-                    <button e-click='add'>add</button>
-                    <button e-click='setRows1'>setRows1</button>
-                    <button e-click='clearRows1'>clearRows1</button>
-                    <button e-click='active1'>active</button>
-                    <button e-click='unactive1'>unactive</button>
-                    <button e-click='hideOrShow'>hideOrShow</button>
-                    <button e-click='change1'>change1</button>
-                    <button e-click='setGlobalCache'>Save Global</button>
-                    <div>name is:{{name1}}</div>
-                    <input x-field='name1' />
-                    <!--useDomModel表示用当前dom对应的model直接覆盖子模块的model-->
-                    <modulea class={{genCls()}} x-show={{show}} $rows1={{rows1}} >
-                        <for tag='uibutton' e-click='clickBtn' title={{name}} cond={{rows}}/>
-                        <for cond={{rows}}>
-                            <ModuleB style='font-size:18px;' useDomModel/>
-                        </for>
-                    </modulea>
-                </div>
-            `;
-			}
-			data() {
-				return {
-					xxx: 1,
-					name1: "outer",
-					style: "width:800px",
-					show: true,
-					rows: [
-						{ id: 1, name: "nodom", title: "click1" },
-						{ id: 2, name: "noomi", title: "click2" },
-						{ id: 3, name: "relaen", title: "click3" },
-					],
-				};
-			}
-
-			setRows1(model) {
-				model.rows1 = [{ title: "field" }, { title: "nodom" }];
-			}
-
-			clearRows1(model) {
-				model.rows1 = null;
-				// model.rows1 = [];
-			}
-
-			add(model) {
-				model.rows.push({ id: 4, name: "weblab" });
-				console.log(model.rows);
-			}
-
-			genCls() {
-				return "cls2";
-			}
-
-			setGlobalCache() {
-				GlobalCache.set("userName", "yang");
-			}
-			clickBtn(model, dom) {
-				// console.log(this,model);
-				console.log("click");
-			}
-
-			hideOrShow(model) {
-				model.show = !model.show;
-			}
-
-			unactive1() {
-				let m = ModuleFactory.get(this.children[0]);
-				m.unactive(true);
-			}
-			active1() {
-				let m = ModuleFactory.get(this.children[0]);
-				m.active(true);
-			}
-
-			change1(model) {
-				// model.xxx = 2;
-				// model.style='background:#ccc'
-				model.rows.pop();
-				console.log(model.rows);
-			}
+		clearRows1(model) {
+			model.rows1 = null;
+			// model.rows1 = [];
 		}
-		nodom(Module1, "div");
+
+		add(model) {
+			model.rows.push({ id: 4, name: "weblab" });
+			model.rows2.push({ id: 4, name: "weblab444" });
+			console.log(model.rows);
+		}
+
+		genCls() {
+			return "cls2";
+		}
+
+		setGlobalCache() {
+			GlobalCache.set("userName", "yang");
+		}
+		clickBtn(model, dom) {
+			// console.log(this,model);
+			console.log("click");
+		}
+
+		hideOrShow(model) {
+			model.show = !model.show;
+		}
+
+		unactive1() {
+			let m = ModuleFactory.get(this.children[0]);
+			m.unactive();
+		}
+		active1() {
+			let m = ModuleFactory.get(this.children[0]);
+			m.active();
+		}
+
+		change1(model) {
+			// model.xxx = 2;
+			model.style='background:#ccc'
+			// model.rows.pop();
+			
+		}
+		change2(model) {
+			// model.xxx = 2;
+			model.style='font-weight:bold'
+			// model.rows.pop();
+			
+		}
+	}
+	nodom(Module1, "div");
 	</script>
 </html>

@@ -19,6 +19,7 @@
 				return `
 					<div>
 						{{20*((price+2)*discount)}}
+						<div>{{year + '年' + month + '月'}}</div>
 						<!--<div>多级数据：{{ac.age.as}}</div>-->
 						<h2>数据计算</h2>
 						<!--<div>价格：{{Math.round(price * discount) + 'hello'}}</div>-->
@@ -78,6 +79,8 @@
 							addr: "beijing",
 						},
 					],
+					year:2022,
+					month:2,
 					$num: 3,
 					progress: 1.321,
 					name: "kyle",

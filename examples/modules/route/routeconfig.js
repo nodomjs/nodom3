@@ -17,18 +17,18 @@ export function initRoute(){
             {
                 path: '/route1',
                 module: MdlPMod1,
+                // module:()=>{
+                //     return import('/examples/modules/route/mdlmod1.js')
+                // },
                 routes: [{
                     path: '/home',
-                    module: 'MdlMod1',
-                    modulePath:'/examples/modules/route/mdlmod1.js'
+                    module:()=>import ('/examples/modules/route/mdlmod1.js')
                 }, {
                     path: '/list',
-                    module: 'MdlMod2',
-                    modulePath:'/examples/modules/route/mdlmod2.js'
+                    module: ()=>import ('/examples/modules/route/mdlmod2.js')
                 }, {
                     path: '/data',
-                    module: 'MdlMod3',
-                    modulePath:'/examples/modules/route/mdlmod3.js'
+                    module:()=>import ('/examples/modules/route/mdlmod3.js')
                 }],
                 onLeave:function(model){
                     // console.log(this,model);

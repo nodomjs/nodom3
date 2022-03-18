@@ -1681,9 +1681,6 @@ var nodom = (function (exports) {
                         else if (classReg.test(k[0])) {
                             value = src.getClassString(value);
                         }
-                        else {
-                            value = value.join(' ');
-                        }
                     }
                     else if (k[1] instanceof Expression) {
                         value = k[1].val(module, dst.model);
@@ -2159,8 +2156,6 @@ var nodom = (function (exports) {
                 if (typeof module === 'object') {
                     return module;
                 }
-                console.log(module);
-                console.log(module.prototype);
                 //非模块类，是加载函数
                 if (!module.__proto__.name) {
                     const m = yield module();
@@ -3222,8 +3217,6 @@ var nodom = (function (exports) {
             let propName;
             //pre标签标志
             let isPreTag = false;
-            //template计数器
-            let templateCount = 0;
             //当前标签名
             let tagName;
             //表达式开始index
@@ -3236,69 +3229,68 @@ var nodom = (function (exports) {
             let result;
             while ((result = regWhole.exec(srcStr)) !== null) {
                 let re = result[0];
-                //不在模版中
-                {
-                    if (re.startsWith('{{')) { //表达式开始符号
-                        //整除2个数
-                        if (exprCount === 0) { //表达式开始
-                            exprStartIndex = result.index;
-                        }
-                        exprCount += re.length / 2 | 0;
+                if (re.startsWith('{{')) { //表达式开始符号
+                    //整除2个数
+                    if (exprCount === 0) { //表达式开始
+                        exprStartIndex = result.index;
                     }
-                    else if (re.endsWith('}}')) { //表达式结束
-                        exprCount -= re.length / 2 | 0;
-                        if (exprCount === 0) {
-                            handleExpr();
-                        }
+                    exprCount += re.length / 2 | 0;
+                }
+                else if (re.endsWith('}}')) { //表达式结束
+                    exprCount -= re.length / 2 | 0;
+                    if (exprCount === 0) {
+                        handleExpr();
                     }
                 }
                 //不在表达式中
                 if (exprCount === 0) {
-                    { //不在模版中
-                        if (re[0] === '<') { //标签
-                            //处理文本
-                            handleText(srcStr.substring(txtStartIndex, result.index));
-                            if (re[1] === '/') { //标签结束
-                                finishTag(re);
+                    if (re[0] === '<') { //标签
+                        //处理文本
+                        handleText(srcStr.substring(txtStartIndex, result.index));
+                        if (re[1] === '/') { //标签结束
+                            finishTag(re);
+                        }
+                        else { //标签开始
+                            tagName = re.substring(1).trim().toLowerCase();
+                            txtStartIndex = undefined;
+                            isPreTag = (tagName === 'pre');
+                            //新建dom节点
+                            dom = new VirtualDom(tagName, this.genKey());
+                            //第一个dom为root
+                            if (!me.root) {
+                                me.root = dom;
                             }
-                            else { //标签开始
-                                tagName = re.substring(1).trim().toLowerCase();
-                                txtStartIndex = undefined;
-                                isPreTag = (tagName === 'pre');
-                                //新建dom节点
-                                dom = new VirtualDom(tagName, this.genKey());
-                                domArr.push(dom);
-                                closedTag.push(false);
+                            domArr.push(dom);
+                            closedTag.push(false);
+                        }
+                    }
+                    else if (re === '>') { //标签头结束
+                        finishTagHead();
+                    }
+                    else if (re === '/>') { //标签结束
+                        finishTag();
+                    }
+                    else if (dom && dom.tagName) { //属性
+                        if (propReg.test(re)) {
+                            if (propName) { //propName=无值 情况，当无值处理
+                                handleProp();
+                            }
+                            if (re.endsWith('=')) { //属性带=，表示后续可能有值
+                                propName = re.substring(0, re.length - 1).trim();
+                            }
+                            else { //只有属性，无属性值
+                                propName = re;
+                                handleProp();
                             }
                         }
-                        else if (re === '>') { //标签头结束
-                            finishTagHead();
-                        }
-                        else if (re === '/>') { //标签结束
-                            finishTag();
-                        }
-                        else if (dom && dom.tagName) { //属性
-                            if (propReg.test(re)) {
-                                if (propName) { //propName=无值 情况，当无值处理
-                                    handleProp();
-                                }
-                                if (re.endsWith('=')) { //属性带=，表示后续可能有值
-                                    propName = re.substring(0, re.length - 1).trim();
-                                }
-                                else { //只有属性，无属性值
-                                    propName = re;
-                                    handleProp();
-                                }
-                            }
-                            else if (propName) { //属性值
-                                handleProp(re);
-                            }
+                        else if (propName) { //属性值
+                            handleProp(re);
                         }
                     }
                 }
             }
             //异常情况
-            if (domArr.length > 1 || exprCount !== 0 || templateCount !== 0) {
+            if (domArr.length > 1 || exprCount !== 0) {
                 throw new NError('wrongTemplate');
             }
             return domArr[0];
@@ -3317,6 +3309,7 @@ var nodom = (function (exports) {
                             //设置parent
                             for (let d of domArr[i].children) {
                                 d.parent = domArr[i];
+                                extraHandle(d);
                             }
                             //删除后续节点
                             domArr.splice(i + 1);
@@ -3332,16 +3325,29 @@ var nodom = (function (exports) {
                 }
                 //设置标签关闭
                 let ele = domArr[domArr.length - 1];
+                if (ele === me.root) {
+                    extraHandle(ele);
+                }
                 closedTag[closedTag.length - 1] = true;
-                me.postHandleNode(ele);
-                ele.sortDirective();
-                me.handleSlot(ele);
                 dom = undefined;
                 propName = undefined;
                 txtStartIndex = regWhole.lastIndex;
                 exprCount = 0;
                 exprStartIndex = 0;
                 // ele.allModelField = allModelField;    
+            }
+            /**
+             * 特殊处理
+             * @param dom   待处理节点
+             */
+            function extraHandle(dom) {
+                //文本不处理
+                if (!dom.tagName) {
+                    return;
+                }
+                me.postHandleNode(dom);
+                dom.sortDirective();
+                me.handleSlot(dom);
             }
             /**
              * 标签头结束

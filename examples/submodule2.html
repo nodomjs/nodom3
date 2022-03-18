@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nodom test</title>
+</head>
+<body>
+    <div></div>
+</body>
+<script type='module'>
+    import {nodom,Module,GlobalCache,ModuleFactory} from '../dist/nodom.esm.min.js'
+    
+    class ModuleA extends Module{
+        template(props){
+            let s;
+          	return `
+                <div style='background:#9cf'>
+                    <div>modulea</div>
+                    <div style='color:red'>
+                        <slot/>
+                    </div>
+                    <div  style='border:1px solid'>
+                        <for cond={{rows}}>
+                            <slot innerRender/>
+                        </for>
+                    </div>
+                </div>
+            `;
+        }
+        data() {
+            return {
+                name: "yang",
+                showme: true,
+                x1: 0,
+                x2: 0,
+                rows: [{ name: "nodom1" }, { name: "nodom2" }, { name: "nodom3" }],
+            };
+        }
+        keyup() {
+            console.log("keyup");
+        }
+        clickShow(model) {
+            // model.showme = !model.showme;
+            console.log(this.getElement("ul1"));
+        }
+        clickme(model) {
+            console.log(model);
+        }
+    }
+
+   
+    class Module1 extends Module {
+        modules = [ModuleA];
+        template(props) {
+            return `
+            <div >
+                <button e-click='change1'>change1</button>
+                <modulea style={{style}}>
+                    <span>{{name}}</span>
+                </modulea>
+            </div>
+        `;
+        }
+        data() {
+            return {
+                xxx: 1,
+                name: "outer",
+                style: "width:600px",
+                show: true,
+                rows: [
+                    { id: 1, name: "nodom", title: "click1" },
+                    { id: 2, name: "noomi", title: "click2" },
+                    { id: 3, name: "relaen", title: "click3" },
+                ],
+            };
+        }
+
+        change1(model) {
+            model.style='background:#ccc'
+        }
+    }
+		nodom(Module1, "div");
+	</script>
+</html>

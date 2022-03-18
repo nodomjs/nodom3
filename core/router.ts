@@ -188,10 +188,6 @@ export class Router {
         if (typeof module === 'object') {
             return module;
         }
-
-        console.log(module);
-        console.log(module.prototype)
-        
         //非模块类，是加载函数
         if (!module.__proto__.name) {
             const m = await module();
