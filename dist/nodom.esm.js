@@ -762,13 +762,12 @@ Util.initKeyMap();
  */
 class Expression {
     /**
-     * @param module    模块
      * @param exprStr	表达式串
      */
-    constructor(module, exprStr) {
+    constructor(exprStr) {
         this.id = Util.genId();
         this.allModelField = true;
-        if (!module || !exprStr) {
+        if (!exprStr) {
             return;
         }
         const funStr = this.compile(exprStr);
@@ -3397,7 +3396,7 @@ class Compiler {
             exprCount = 0;
             exprStartIndex = 0;
             //新建表达式
-            let expr = new Expression(me.module, s);
+            let expr = new Expression(s);
             if (dom && dom.tagName) { //标签
                 handleProp(expr);
             }

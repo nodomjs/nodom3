@@ -4,13 +4,12 @@ import { Util } from "./util";
  */
 export class Expression {
     /**
-     * @param module    模块
      * @param exprStr	表达式串
      */
-    constructor(module, exprStr) {
+    constructor(exprStr) {
         this.id = Util.genId();
         this.allModelField = true;
-        if (!module || !exprStr) {
+        if (!exprStr) {
             return;
         }
         const funStr = this.compile(exprStr);

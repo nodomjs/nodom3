@@ -27,13 +27,12 @@ export class Expression {
     value:any;
 
     /**
-     * @param module    模块
      * @param exprStr	表达式串
      */
-    constructor(module:Module,exprStr: string) {
+    constructor(exprStr: string) {
         this.id = Util.genId();
         this.allModelField = true;
-        if (!module || !exprStr) {
+        if (!exprStr) {
             return;
         }
         const funStr = this.compile(exprStr);

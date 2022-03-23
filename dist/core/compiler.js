@@ -231,7 +231,7 @@ export class Compiler {
             exprCount = 0;
             exprStartIndex = 0;
             //新建表达式
-            let expr = new Expression(me.module, s);
+            let expr = new Expression(s);
             if (dom && dom.tagName) { //标签
                 handleProp(expr);
             }

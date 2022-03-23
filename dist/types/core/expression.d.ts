@@ -21,10 +21,9 @@ export declare class Expression {
      */
     value: any;
     /**
-     * @param module    模块
      * @param exprStr	表达式串
      */
-    constructor(module: Module, exprStr: string);
+    constructor(exprStr: string);
     /**
      * 编译表达式串，替换字段和方法
      * @param exprStr   表达式串
