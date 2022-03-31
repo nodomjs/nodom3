@@ -273,7 +273,7 @@ export default (function () {
                 if (!el) {
                     return;
                 }
-                let directive = this.originTree.query(dom.key).getDirective('field');
+                let directive = dom.vdom.getDirective('field');
                 let type = dom.props['type'];
                 let field = directive.value;
                 let v = el.value;

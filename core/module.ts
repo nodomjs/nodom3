@@ -188,9 +188,11 @@ export class Module {
         if(this.state === EModuleState.UNACTIVE){
             return;
         }
+        
         this.dontAddToRender = true;
         //检测模版并编译
         let templateStr = this.template(this.props);
+        
         if(templateStr !== this.oldTemplate){
             this.oldTemplate = templateStr;
             this.compile();
@@ -239,10 +241,7 @@ export class Module {
      * @param root 	根虚拟dom
      */
     private doFirstRender() {
-        //源节点不在htmldom树中，不渲染
-        // if(this.srcElement && !this.srcElement.parentElement){
-        //     return;
-        // }
+        
         this.doModuleEvent('onBeforeFirstRender');
         //渲染树
         this.renderTree = Renderer.renderDom(this,this.originTree,this.model);
@@ -250,10 +249,6 @@ export class Module {
         //渲染为html element
         let el:any = Renderer.renderToHtml(this,this.renderTree,null,true);
         if(this.srcDom){  //子模块
-            // const srcEl = this.getParent().getNode(this.srcDom.key);
-            // this.container = srcEl.parentElement;
-            // this.container.replaceChild(srcEl,el);
-            // this.container.insertBefore(el,srcEl);
             this.srcElement = this.getParent().getNode(this.srcDom.key);
             this.exchange();
         }else if(this.container){  //路由
@@ -363,7 +358,10 @@ export class Module {
      *                          onBeforeRender：如果为true，表示不进行渲染
      */
     private doModuleEvent(eventName: string):boolean{
-        return this.invokeMethod(eventName, this.model);
+        let foo = this[eventName];
+        if(foo && typeof foo==='function'){
+            return foo.apply(this,[this.model]);
+        }
     }
 
     /**
@@ -388,13 +386,23 @@ export class Module {
      * @param methodName    方法名
      */
     public invokeMethod(methodName: string,arg1?:any,arg2?:any,arg3?:any) {
-        let foo = this[methodName];
+        let foo;
+        let m:Module = this;
+        //方法级联向上找，找到第一个则返回
+        while(m){
+            foo = m[methodName];
+            if(foo){
+                break;
+            }
+            m = m.getParent();
+        }
+
         if (foo && typeof foo === 'function') {
             let args = [];
             for(let i=1;i<arguments.length;i++){
                 args.push(arguments[i]);
             }
-            return foo.apply(this, args);
+            return foo.apply(m, args);
         }
     }
 
@@ -500,7 +508,6 @@ export class Module {
         this.domKeyId = 0;
         //清空孩子节点
         this.children = [];
-
         //清理css url
         CssManager.clearModuleRules(this);
         //清理dom参数

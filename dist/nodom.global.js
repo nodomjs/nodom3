@@ -4930,10 +4930,6 @@ var nodom = (function (exports) {
          * @param root 	根虚拟dom
          */
         doFirstRender() {
-            //源节点不在htmldom树中，不渲染
-            // if(this.srcElement && !this.srcElement.parentElement){
-            //     return;
-            // }
             this.doModuleEvent('onBeforeFirstRender');
             //渲染树
             this.renderTree = Renderer.renderDom(this, this.originTree, this.model);
@@ -4941,10 +4937,6 @@ var nodom = (function (exports) {
             //渲染为html element
             let el = Renderer.renderToHtml(this, this.renderTree, null, true);
             if (this.srcDom) { //子模块
-                // const srcEl = this.getParent().getNode(this.srcDom.key);
-                // this.container = srcEl.parentElement;
-                // this.container.replaceChild(srcEl,el);
-                // this.container.insertBefore(el,srcEl);
                 this.srcElement = this.getParent().getNode(this.srcDom.key);
                 this.exchange();
             }
@@ -5049,7 +5041,10 @@ var nodom = (function (exports) {
          *                          onBeforeRender：如果为true，表示不进行渲染
          */
         doModuleEvent(eventName) {
-            return this.invokeMethod(eventName, this.model);
+            let foo = this[eventName];
+            if (foo && typeof foo === 'function') {
+                return foo.apply(this, [this.model]);
+            }
         }
         /**
          * 获取模块方法
@@ -5071,13 +5066,22 @@ var nodom = (function (exports) {
          * @param methodName    方法名
          */
         invokeMethod(methodName, arg1, arg2, arg3) {
-            let foo = this[methodName];
+            let foo;
+            let m = this;
+            //方法级联向上找，找到第一个则返回
+            while (m) {
+                foo = m[methodName];
+                if (foo) {
+                    break;
+                }
+                m = m.getParent();
+            }
             if (foo && typeof foo === 'function') {
                 let args = [];
                 for (let i = 1; i < arguments.length; i++) {
                     args.push(arguments[i]);
                 }
-                return foo.apply(this, args);
+                return foo.apply(m, args);
             }
         }
         /**
@@ -5799,7 +5803,7 @@ var nodom = (function (exports) {
                     if (!el) {
                         return;
                     }
-                    let directive = this.originTree.query(dom.key).getDirective('field');
+                    let directive = dom.vdom.getDirective('field');
                     let type = dom.props['type'];
                     let field = directive.value;
                     let v = el.value;
