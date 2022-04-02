@@ -12,45 +12,50 @@ export class Router {
     /**
      * 路由map
      */
-    static routeMap: Map<number, Route> = new Map();
+    private static routeMap: Map<number, Route> = new Map();
     /**
      * 当前路径
      */
-    static currentPath: string;
+    private static currentPath: string;
 
     /**
      * path等待链表
      */
-    static waitList: Array<string> = [];
+    private static waitList: Array<string> = [];
 
     /**
      * 默认路由进入事件方法
      */
-    static onDefaultEnter: Function;
+    private static onDefaultEnter: Function;
     /**
      * 默认路由离开事件
      */
-    static onDefaultLeave: Function;
+    private static onDefaultLeave: Function;
 
     /**
      * 启动方式 0:直接启动 1:popstate 启动
      */
-    static startStyle: number = 0;
+    public static startStyle: number = 0;
 
     /**
      * 激活Dom map，格式为{moduleId:[]}
      */
-    static activeFieldMap: Map<number, Array<any>> = new Map();
+    private static activeFieldMap: Map<number, Array<any>> = new Map();
 
     /**
      * 绑定到module的router指令对应的key，即router容器对应的key，格式为 {moduleId:routerKey,...}
      */
-    static routerKeyMap: Map<number, string> = new Map();
+    private static routerKeyMap: Map<number, string> = new Map();
 
     /**
      * 根路由
      */
-    static root:Route = new Route();
+    private static root:Route = new Route();
+
+    /**
+     * 基础路径，实际显示路径为 basePath+routePath
+     */
+    public static basePath:string;
     
     /**
      * 把路径加入跳转列表(准备跳往该路由)
@@ -156,11 +161,12 @@ export class Router {
 
         //如果是history popstate，则不加入history
         if (this.startStyle === 0) {
+            let path1:string = Router.basePath + "/" + path;
             //子路由，替换state
             if (path.startsWith(this.currentPath)) {
-                history.replaceState(path, '', path);
+                history.replaceState(path1, '', path1);
             } else { //路径push进history
-                history.pushState(path, '', path);
+                history.pushState(path1, '', path1);
             }
         }
         //修改currentPath

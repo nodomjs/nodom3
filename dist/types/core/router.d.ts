@@ -8,23 +8,23 @@ export declare class Router {
     /**
      * 路由map
      */
-    static routeMap: Map<number, Route>;
+    private static routeMap;
     /**
      * 当前路径
      */
-    static currentPath: string;
+    private static currentPath;
     /**
      * path等待链表
      */
-    static waitList: Array<string>;
+    private static waitList;
     /**
      * 默认路由进入事件方法
      */
-    static onDefaultEnter: Function;
+    private static onDefaultEnter;
     /**
      * 默认路由离开事件
      */
-    static onDefaultLeave: Function;
+    private static onDefaultLeave;
     /**
      * 启动方式 0:直接启动 1:popstate 启动
      */
@@ -32,15 +32,19 @@ export declare class Router {
     /**
      * 激活Dom map，格式为{moduleId:[]}
      */
-    static activeFieldMap: Map<number, Array<any>>;
+    private static activeFieldMap;
     /**
      * 绑定到module的router指令对应的key，即router容器对应的key，格式为 {moduleId:routerKey,...}
      */
-    static routerKeyMap: Map<number, string>;
+    private static routerKeyMap;
     /**
      * 根路由
      */
-    static root: Route;
+    private static root;
+    /**
+     * 基础路径，实际显示路径为 basePath+routePath
+     */
+    static basePath: string;
     /**
      * 把路径加入跳转列表(准备跳往该路由)
      * @param path 	路径
