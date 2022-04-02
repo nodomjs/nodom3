@@ -6,13 +6,9 @@ import { Route } from "./route";
  */
 export declare class Router {
     /**
-     * 路由map
-     */
-    private static routeMap;
-    /**
      * 当前路径
      */
-    private static currentPath;
+    static currentPath: string;
     /**
      * path等待链表
      */
@@ -36,11 +32,11 @@ export declare class Router {
     /**
      * 绑定到module的router指令对应的key，即router容器对应的key，格式为 {moduleId:routerKey,...}
      */
-    private static routerKeyMap;
+    static routerKeyMap: Map<number, string>;
     /**
      * 根路由
      */
-    private static root;
+    static root: Route;
     /**
      * 基础路径，实际显示路径为 basePath+routePath
      */

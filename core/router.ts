@@ -10,13 +10,9 @@ import { Util } from "./util";
  */
 export class Router {
     /**
-     * 路由map
-     */
-    private static routeMap: Map<number, Route> = new Map();
-    /**
      * 当前路径
      */
-    private static currentPath: string;
+    public static currentPath: string;
 
     /**
      * path等待链表
@@ -45,12 +41,12 @@ export class Router {
     /**
      * 绑定到module的router指令对应的key，即router容器对应的key，格式为 {moduleId:routerKey,...}
      */
-    private static routerKeyMap: Map<number, string> = new Map();
+    public static routerKeyMap: Map<number, string> = new Map();
 
     /**
      * 根路由
      */
-    private static root:Route = new Route();
+    public static root:Route = new Route();
 
     /**
      * 基础路径，实际显示路径为 basePath+routePath
@@ -161,7 +157,7 @@ export class Router {
 
         //如果是history popstate，则不加入history
         if (this.startStyle === 0) {
-            let path1:string = Router.basePath + "/" + path;
+            let path1:string = Router.basePath + path;
             //子路由，替换state
             if (path.startsWith(this.currentPath)) {
                 history.replaceState(path1, '', path1);

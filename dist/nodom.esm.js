@@ -2119,7 +2119,7 @@ class Router {
             }
             //如果是history popstate，则不加入history
             if (this.startStyle === 0) {
-                let path1 = Router.basePath + "/" + path;
+                let path1 = Router.basePath + path;
                 //子路由，替换state
                 if (path.startsWith(this.currentPath)) {
                     history.replaceState(path1, '', path1);
@@ -2373,10 +2373,6 @@ class Router {
         return retArr;
     }
 }
-/**
- * 路由map
- */
-Router.routeMap = new Map();
 /**
  * path等待链表
  */
