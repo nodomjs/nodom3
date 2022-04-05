@@ -177,6 +177,17 @@ export class Module {
         }
     }
     /**
+     * 移除子模块
+     * @param module    子模块
+     */
+    removeChild(module) {
+        let ind = this.children.indexOf(module.id);
+        if (ind !== -1) {
+            module.unactive();
+            this.children.splice(ind, 1);
+        }
+    }
+    /**
      * 激活模块(添加到渲染器)
      * @param type  0 手动， 1父节点setProps激活，默认0
      */

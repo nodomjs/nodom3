@@ -12,7 +12,7 @@ export class ModuleFactory {
     /**
      * 模块类集合 {className:class}
      */
-    public static classes: Map<string, any> = new Map();
+    public static classes: Map<string, Module> = new Map();
 
     /**
      * 主模块

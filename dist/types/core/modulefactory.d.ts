@@ -10,7 +10,7 @@ export declare class ModuleFactory {
     /**
      * 模块类集合 {className:class}
      */
-    static classes: Map<string, any>;
+    static classes: Map<string, Module>;
     /**
      * 主模块
      */

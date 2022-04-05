@@ -138,6 +138,11 @@ export declare class Module {
      */
     addChild(module: number | Module): void;
     /**
+     * 移除子模块
+     * @param module    子模块
+     */
+    removeChild(module: Module): void;
+    /**
      * 激活模块(添加到渲染器)
      * @param type  0 手动， 1父节点setProps激活，默认0
      */
