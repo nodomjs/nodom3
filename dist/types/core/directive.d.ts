@@ -28,6 +28,10 @@ export declare class Directive {
      */
     disabled: boolean;
     /**
+     * 指令参数
+     */
+    params: any;
+    /**
      * 构造方法
      * @param type  	类型名
      * @param value 	指令值

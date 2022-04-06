@@ -105,6 +105,10 @@ export declare class Module {
      */
     private srcElement;
     /**
+     * 编译来源模块id
+     */
+    compileMid: number;
+    /**
      * 构造器
      */
     constructor();

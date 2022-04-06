@@ -136,6 +136,10 @@ export class Module {
     private srcElement:Node;
 
     /**
+     * 编译来源模块id
+     */
+    public compileMid:number;
+    /**
      * 构造器
      */
     constructor() {
@@ -398,16 +402,22 @@ export class Module {
      * @param methodName    方法名
      */
     public invokeMethod(methodName: string,arg1?:any,arg2?:any,arg3?:any) {
-        let foo;
         let m:Module = this;
-        //方法级联向上找，找到第一个则返回
-        while(m){
-            foo = m[methodName];
-            if(foo){
-                break;
+        let foo = m[methodName];
+        if(!foo && m.compileMid){
+            let m:Module = ModuleFactory.get(this.compileMid);
+            if(m){
+                foo = m[methodName];
             }
-            m = m.getParent();
         }
+        //方法级联向上找，找到第一个则返回
+        // while(m){
+        //     foo = m[methodName];
+        //     if(foo){
+        //         break;
+        //     }
+        //     m = m.getParent();
+        // }
 
         if (foo && typeof foo === 'function') {
             let args = [];

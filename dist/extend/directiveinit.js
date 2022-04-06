@@ -33,6 +33,10 @@ export default (function () {
             if (!m) {
                 return true;
             }
+            //设置编译源id
+            if (this.params && this.params.srcId) {
+                m.compileMid = module.id;
+            }
             mid = m.id;
             //保留modelId
             module.objectManager.setDomParam(dom.key, 'moduleId', mid);

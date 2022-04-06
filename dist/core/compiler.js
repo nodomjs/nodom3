@@ -323,6 +323,8 @@ export class Compiler {
         }
         // 模块类判断
         if (ModuleFactory.hasClass(node.tagName)) {
+            const dir = new Directive('module', node.tagName);
+            dir.params = { srcId: this.module.id };
             node.addDirective(new Directive('module', node.tagName));
             node.tagName = 'div';
         }

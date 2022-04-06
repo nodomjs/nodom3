@@ -36,6 +36,11 @@ export  class Directive {
      * 禁用指令
      */
     public disabled:boolean;
+
+    /**
+     * 指令参数
+     */
+    public params:any;
     /**
      * 构造方法
      * @param type  	类型名

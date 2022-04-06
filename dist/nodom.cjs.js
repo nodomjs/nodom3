@@ -3489,6 +3489,8 @@ class Compiler {
         }
         // 模块类判断
         if (ModuleFactory.hasClass(node.tagName)) {
+            const dir = new Directive('module', node.tagName);
+            dir.params = { srcId: this.module.id };
             node.addDirective(new Directive('module', node.tagName));
             node.tagName = 'div';
         }
@@ -5075,16 +5077,22 @@ class Module {
      * @param methodName    方法名
      */
     invokeMethod(methodName, arg1, arg2, arg3) {
-        let foo;
         let m = this;
-        //方法级联向上找，找到第一个则返回
-        while (m) {
-            foo = m[methodName];
-            if (foo) {
-                break;
+        let foo = m[methodName];
+        if (!foo && m.compileMid) {
+            let m = ModuleFactory.get(this.compileMid);
+            if (m) {
+                foo = m[methodName];
             }
-            m = m.getParent();
         }
+        //方法级联向上找，找到第一个则返回
+        // while(m){
+        //     foo = m[methodName];
+        //     if(foo){
+        //         break;
+        //     }
+        //     m = m.getParent();
+        // }
         if (foo && typeof foo === 'function') {
             let args = [];
             for (let i = 1; i < arguments.length; i++) {
@@ -5571,6 +5579,10 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             m = ModuleFactory.get(this.value);
             if (!m) {
                 return true;
+            }
+            //设置编译源id
+            if (this.params && this.params.srcId) {
+                m.compileMid = module.id;
             }
             mid = m.id;
             //保留modelId
