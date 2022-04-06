@@ -35,7 +35,7 @@ export default (function () {
             }
             //设置编译源id
             if (this.params && this.params.srcId) {
-                m.compileMid = module.id;
+                m.compileMid = this.params.srcId;
             }
             mid = m.id;
             //保留modelId

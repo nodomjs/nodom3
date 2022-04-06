@@ -337,7 +337,7 @@ export class Compiler {
         if (ModuleFactory.hasClass(node.tagName)) {
             const dir:Directive = new Directive('module',node.tagName);
             dir.params = {srcId:this.module.id};
-            node.addDirective(new Directive('module',node.tagName));
+            node.addDirective(dir);
             node.tagName = 'div';
         }
     }

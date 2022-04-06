@@ -3490,7 +3490,7 @@ var nodom = (function (exports) {
             if (ModuleFactory.hasClass(node.tagName)) {
                 const dir = new Directive('module', node.tagName);
                 dir.params = { srcId: this.module.id };
-                node.addDirective(new Directive('module', node.tagName));
+                node.addDirective(dir);
                 node.tagName = 'div';
             }
         }
@@ -5084,14 +5084,6 @@ var nodom = (function (exports) {
                     foo = m[methodName];
                 }
             }
-            //方法级联向上找，找到第一个则返回
-            // while(m){
-            //     foo = m[methodName];
-            //     if(foo){
-            //         break;
-            //     }
-            //     m = m.getParent();
-            // }
             if (foo && typeof foo === 'function') {
                 let args = [];
                 for (let i = 1; i < arguments.length; i++) {
@@ -5581,7 +5573,7 @@ var nodom = (function (exports) {
                 }
                 //设置编译源id
                 if (this.params && this.params.srcId) {
-                    m.compileMid = module.id;
+                    m.compileMid = this.params.srcId;
                 }
                 mid = m.id;
                 //保留modelId

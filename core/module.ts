@@ -410,15 +410,6 @@ export class Module {
                 foo = m[methodName];
             }
         }
-        //方法级联向上找，找到第一个则返回
-        // while(m){
-        //     foo = m[methodName];
-        //     if(foo){
-        //         break;
-        //     }
-        //     m = m.getParent();
-        // }
-
         if (foo && typeof foo === 'function') {
             let args = [];
             for(let i=1;i<arguments.length;i++){
