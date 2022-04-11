@@ -1884,7 +1884,9 @@ class Renderer {
                 default: //替换
                     Renderer.renderToHtml(module, item[1], pEl, true);
                     n1 = module.getNode(item[1].key);
-                    pEl.replaceChild(n1, n2);
+                    if (pEl) {
+                        pEl.replaceChild(n1, n2);
+                    }
             }
         }
     }
@@ -5079,8 +5081,8 @@ class Module {
     invokeMethod(methodName, arg1, arg2, arg3) {
         let m = this;
         let foo = m[methodName];
-        if (!foo && m.compileMid) {
-            let m = ModuleFactory.get(this.compileMid);
+        if (!foo && this.compileMid) {
+            m = ModuleFactory.get(this.compileMid);
             if (m) {
                 foo = m[methodName];
             }
@@ -5175,14 +5177,13 @@ class Module {
                 }
             }
             if (change) { //props 发生改变，计算模版，如果模版改变，激活模块
-                let propChanged = false;
-                if (this.originTree) {
-                    propChanged = this.mergeProps(this.originTree, props);
-                }
-                const tmp = this.template(props);
-                if (tmp !== this.oldTemplate || propChanged) {
-                    this.active(1);
-                }
+                // let propChanged = false;
+                // if(this.originTree){
+                //     propChanged = this.mergeProps(this.originTree,props);
+                // }
+                // if(propChanged){
+                this.active(1);
+                // }
             }
         }
         this.props = props;
@@ -5205,7 +5206,7 @@ class Module {
         if (this.props) {
             this.mergeProps(this.originTree, this.props);
         }
-        //源事件传递到子模块根
+        //源事件传递到子模块根dom
         let parentModule = this.getParent();
         if (parentModule) {
             const eobj = parentModule.eventFactory.getEvent(this.srcDom.key);
@@ -5230,11 +5231,7 @@ class Module {
     */
     mergeProps(dom, props) {
         let change = false;
-        const excludes = ['template'];
         for (let k of Object.keys(props)) {
-            if (excludes.includes(k)) {
-                continue;
-            }
             //如果dom自己有k属性，则处理为数组
             if (dom.hasProp(k)) {
                 let pv = dom.getProp(k);

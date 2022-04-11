@@ -230,8 +230,6 @@ export class VirtualDom {
             this.children.splice(index,1);
         }
     }
-
-
     
     /**
      * 添加css class

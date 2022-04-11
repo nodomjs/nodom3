@@ -404,12 +404,13 @@ export class Module {
     public invokeMethod(methodName: string,arg1?:any,arg2?:any,arg3?:any) {
         let m:Module = this;
         let foo = m[methodName];
-        if(!foo && m.compileMid){
-            let m:Module = ModuleFactory.get(this.compileMid);
+        if(!foo && this.compileMid){
+            m = ModuleFactory.get(this.compileMid);
             if(m){
                 foo = m[methodName];
             }
         }
+        
         if (foo && typeof foo === 'function') {
             let args = [];
             for(let i=1;i<arguments.length;i++){
@@ -501,14 +502,14 @@ export class Module {
             }
 
             if(change){  //props 发生改变，计算模版，如果模版改变，激活模块
-                let propChanged = false;
-                if(this.originTree){
-                    propChanged = this.mergeProps(this.originTree,props);
-                }
-                const tmp = this.template(props);
-                if(tmp !== this.oldTemplate || propChanged){
-                    this.active(1);        
-                }
+                
+                // let propChanged = false;
+                // if(this.originTree){
+                //     propChanged = this.mergeProps(this.originTree,props);
+                // }
+                // if(propChanged){
+                    this.active(1);
+                // }
             } 
         }
         this.props = props;
@@ -534,7 +535,7 @@ export class Module {
             this.mergeProps(this.originTree,this.props);
         }
         
-        //源事件传递到子模块根
+        //源事件传递到子模块根dom
         let parentModule = this.getParent();
         if(parentModule){
             const eobj = parentModule.eventFactory.getEvent(this.srcDom.key);
@@ -560,11 +561,7 @@ export class Module {
     */
     private mergeProps(dom:VirtualDom,props:any):boolean{
         let change = false;
-        const excludes = ['template'];
         for(let k of Object.keys(props)){
-            if(excludes.includes(k)){
-                continue;
-            }
             //如果dom自己有k属性，则处理为数组
             if(dom.hasProp(k)){ 
                 let pv = dom.getProp(k);

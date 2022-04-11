@@ -380,7 +380,9 @@ export class Renderer {
                 default: //替换
                     Renderer.renderToHtml(module, item[1], pEl, true);
                     n1 = module.getNode(item[1].key);
-                    pEl.replaceChild(n1, n2);
+                    if (pEl) {
+                        pEl.replaceChild(n1, n2);
+                    }
             }
         }
     }
