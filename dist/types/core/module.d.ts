@@ -182,7 +182,7 @@ export declare class Module {
      * 调用方法
      * @param methodName    方法名
      */
-    invokeMethod(methodName: string, arg1?: any, arg2?: any, arg3?: any): any;
+    invokeMethod(methodName: string, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any, arg6?: any, arg7?: any, arg8?: any): any;
     /**
      * 添加渲染方法
      * @param foo   方法函数

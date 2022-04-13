@@ -36,10 +36,9 @@ EventManager.regist('tap',{
         if (!pos.move && dt < 200) {
             let foo = evtObj.dependEvent.handler;
             if(typeof foo === 'string'){
-                foo = module.getMethod(foo);
-            }
-            if(foo){
-                foo.apply(module,[dom.model, dom,evtObj.dependEvent, e]); 
+                module.invokeMethod(<string>evtObj.dependEvent.handler,dom.model,dom,evtObj.dependEvent,e);
+            }else{
+                foo.apply(module,[dom.model,dom,evtObj.dependEvent,e]);
             }
         }
     }
@@ -109,10 +108,9 @@ EventManager.regist('tap',{
             if (evtObj.dependEvent.name === sname) {
                 let foo = evtObj.dependEvent.handler;
                 if(typeof foo === 'string'){
-                    foo = module.getMethod(foo);
-                }
-                if(foo){
-                    foo.apply(module,[dom.model, dom,evtObj.dependEvent, e]); 
+                    module.invokeMethod(foo,dom.model, dom,evtObj.dependEvent, e);
+                }else if(typeof foo === 'function'){
+                    foo.apply(module,[dom.model,dom,evtObj.dependEvent,e]);
                 }
             }
         }

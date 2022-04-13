@@ -1384,9 +1384,6 @@ var nodom = (function (exports) {
                 if (evts.delg && evts.delg.length === 0) {
                     delete evts.delg;
                 }
-                // if(!evts.own && !evts.delg){
-                //     module.eventFactory.unbind(dom.key,e.type);
-                // }
                 /**
                  * 处理自有事件
                  * @param events
@@ -1400,12 +1397,11 @@ var nodom = (function (exports) {
                     for (let i = 0; i < events.length; i++) {
                         const ev = events[i];
                         if (typeof ev.handler === 'string') {
-                            ev.handler = ev.module.getMethod(ev.handler);
+                            module.invokeMethod(ev.handler, dom.model, dom, ev, e);
                         }
-                        if (!ev.handler) {
-                            return;
+                        else if (typeof ev.handler === 'function') {
+                            ev.handler.apply(module, [dom.model, dom, ev, e]);
                         }
-                        ev.handler.apply((ev.module || module), [dom.model, dom, ev, e]);
                         if (ev.once) { //移除事件
                             events.splice(i--, 1);
                         }
@@ -1428,16 +1424,15 @@ var nodom = (function (exports) {
                     for (let i = 0; i < events.length; i++) {
                         const evo = events[i];
                         const ev = evo.event;
-                        if (typeof ev.handler === 'string') {
-                            ev.handler = ev.module.getMethod(ev.handler);
-                        }
-                        if (!ev.handler) {
-                            return;
-                        }
                         for (let j = 0; j < e.path.length && e.path[j] !== el; j++) {
                             if (e.path[j]['vdom'] === evo.key) {
                                 let dom1 = module.getVirtualDom(evo.key);
-                                ev.handler.apply((ev.module || module), [dom1.model, dom1, ev, e]);
+                                if (typeof ev.handler === 'string') {
+                                    module.invokeMethod(ev.handler, dom.model, dom, ev, e);
+                                }
+                                else if (typeof ev.handler === 'function') {
+                                    ev.handler.apply(module, [dom.model, dom, ev, e]);
+                                }
                                 nopopo = ev.nopopo;
                                 if (ev.once) { //移除代理事件，需要从被代理元素删除
                                     //从当前dom删除
@@ -5077,7 +5072,7 @@ var nodom = (function (exports) {
          * 调用方法
          * @param methodName    方法名
          */
-        invokeMethod(methodName, arg1, arg2, arg3) {
+        invokeMethod(methodName, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
             let m = this;
             let foo = m[methodName];
             if (!foo && this.compileMid) {
@@ -6362,9 +6357,9 @@ var nodom = (function (exports) {
             if (!pos.move && dt < 200) {
                 let foo = evtObj.dependEvent.handler;
                 if (typeof foo === 'string') {
-                    foo = module.getMethod(foo);
+                    module.invokeMethod(evtObj.dependEvent.handler, dom.model, dom, evtObj.dependEvent, e);
                 }
-                if (foo) {
+                else {
                     foo.apply(module, [dom.model, dom, evtObj.dependEvent, e]);
                 }
             }
@@ -6433,9 +6428,9 @@ var nodom = (function (exports) {
                 if (evtObj.dependEvent.name === sname) {
                     let foo = evtObj.dependEvent.handler;
                     if (typeof foo === 'string') {
-                        foo = module.getMethod(foo);
+                        module.invokeMethod(foo, dom.model, dom, evtObj.dependEvent, e);
                     }
-                    if (foo) {
+                    else if (typeof foo === 'function') {
                         foo.apply(module, [dom.model, dom, evtObj.dependEvent, e]);
                     }
                 }

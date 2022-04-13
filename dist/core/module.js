@@ -286,7 +286,7 @@ export class Module {
      * 调用方法
      * @param methodName    方法名
      */
-    invokeMethod(methodName, arg1, arg2, arg3) {
+    invokeMethod(methodName, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
         let m = this;
         let foo = m[methodName];
         if (!foo && this.compileMid) {

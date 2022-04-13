@@ -401,7 +401,7 @@ export class Module {
      * 调用方法
      * @param methodName    方法名
      */
-    public invokeMethod(methodName: string,arg1?:any,arg2?:any,arg3?:any) {
+    public invokeMethod(methodName: string,arg1?:any,arg2?:any,arg3?:any,arg4?:any,arg5?:any,arg6?:any,arg7?:any,arg8?:any) {
         let m:Module = this;
         let foo = m[methodName];
         if(!foo && this.compileMid){
