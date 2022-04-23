@@ -1,9 +1,6 @@
 import { Route } from "./route";
 import { IRouteCfg } from "./types";
 /**
- * 新建store方法
- */
-/**
  * nodom提示消息
  */
 export declare var NodomMessage: any;

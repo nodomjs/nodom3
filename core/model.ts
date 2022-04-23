@@ -38,8 +38,8 @@ export class Model {
                 }
                 let ov = src[key];
                 let r = Reflect.set(src, key, value, receiver); 
-                //非对象，null，非model更新渲染
-                if(value && typeof value === 'object' && !value.$key){
+                //非对象，null，非model设置代理
+                if(value && !value.$key && (value.constructor === Object)){
                     value = new Model(value,module);
                 }
                 ModelManager.update(receiver, key, ov, value);
@@ -47,7 +47,7 @@ export class Model {
             },
             get(src: any, key: string | symbol, receiver){
                 let res = Reflect.get(src, key, receiver);
-                if(res && typeof res === 'object'){
+                if(res && (res.constructor === Object || res.constructor === Array)){
                     if(res.$key){
                         return ModelManager.getModel(res.$key);
                     }else{ //未代理对象，需要创建模型

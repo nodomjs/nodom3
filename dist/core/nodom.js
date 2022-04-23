@@ -17,9 +17,6 @@ import { Router } from "./router";
 import { Scheduler } from "./scheduler";
 import { Util } from "./util";
 /**
- * 新建store方法
- */
-/**
  * nodom提示消息
  */
 export var NodomMessage;
@@ -141,9 +138,13 @@ export function request(config) {
                     let pa;
                     if (Util.isObject(config.params)) {
                         let ar = [];
-                        Util.getOwnProps(config.params).forEach(function (key) {
-                            ar.push(key + '=' + config.params[key]);
-                        });
+                        for (let k of Object.keys(config.params)) {
+                            const v = config.params[k];
+                            if (v === undefined || v === null) {
+                                continue;
+                            }
+                            ar.push(k + '=' + v);
+                        }
                         pa = ar.join('&');
                     }
                     if (pa !== undefined) {
@@ -161,8 +162,12 @@ export function request(config) {
                     }
                     else {
                         let fd = new FormData();
-                        for (let o in config.params) {
-                            fd.append(o, config.params[o]);
+                        for (let k of Object.keys(config.params)) {
+                            const v = config.params[k];
+                            if (v === undefined || v === null) {
+                                continue;
+                            }
+                            fd.append(k, v);
                         }
                         data = fd;
                     }

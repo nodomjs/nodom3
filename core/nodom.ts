@@ -10,9 +10,6 @@ import { IRouteCfg } from "./types";
 import { Util } from "./util";
 
 /**
- * 新建store方法
- */
-/**
  * nodom提示消息
  */
 export var NodomMessage;
@@ -136,9 +133,13 @@ export async function request(config): Promise<any> {
                 let pa: string;
                 if (Util.isObject(config.params)) {
                     let ar: string[] = [];
-                    Util.getOwnProps(config.params).forEach(function (key) {
-                        ar.push(key + '=' + config.params[key]);
-                    });
+                    for(let k of Object.keys(config.params)){
+                        const v = config.params[k];
+                        if(v === undefined || v === null){
+                            continue;
+                        }
+                        ar.push(k + '=' + v);
+                    }
                     pa = ar.join('&');
                 }
                 if (pa !== undefined) {
@@ -155,10 +156,14 @@ export async function request(config): Promise<any> {
                     data = config.params;
                 } else {
                     let fd: FormData = new FormData();
-                    for (let o in config.params) {
-                        fd.append(o, config.params[o]);
+                    for(let k of Object.keys(config.params)){
+                        const v = config.params[k];
+                        if(v === undefined || v === null){
+                            continue;
+                        }
+                        fd.append(k, v);
                     }
-                    data = fd;
+                    data = fd;                  
                 }
                 break;
         }

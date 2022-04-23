@@ -2461,9 +2461,6 @@ var nodom = (function (exports) {
     Scheduler.tasks = [];
 
     /**
-     * 新建store方法
-     */
-    /**
      * nodom提示消息
      */
     exports.NodomMessage = void 0;
@@ -2585,9 +2582,13 @@ var nodom = (function (exports) {
                         let pa;
                         if (Util.isObject(config.params)) {
                             let ar = [];
-                            Util.getOwnProps(config.params).forEach(function (key) {
-                                ar.push(key + '=' + config.params[key]);
-                            });
+                            for (let k of Object.keys(config.params)) {
+                                const v = config.params[k];
+                                if (v === undefined || v === null) {
+                                    continue;
+                                }
+                                ar.push(k + '=' + v);
+                            }
                             pa = ar.join('&');
                         }
                         if (pa !== undefined) {
@@ -2605,8 +2606,12 @@ var nodom = (function (exports) {
                         }
                         else {
                             let fd = new FormData();
-                            for (let o in config.params) {
-                                fd.append(o, config.params[o]);
+                            for (let k of Object.keys(config.params)) {
+                                const v = config.params[k];
+                                if (v === undefined || v === null) {
+                                    continue;
+                                }
+                                fd.append(k, v);
                             }
                             data = fd;
                         }
@@ -4461,6 +4466,7 @@ var nodom = (function (exports) {
             //模型管理器
             let proxy = new Proxy(data, {
                 set(src, key, value, receiver) {
+                    console.log(key, value);
                     //值未变,proxy 不处理
                     if (src[key] === value) {
                         return true;
@@ -4471,8 +4477,8 @@ var nodom = (function (exports) {
                     }
                     let ov = src[key];
                     let r = Reflect.set(src, key, value, receiver);
-                    //非对象，null，非model更新渲染
-                    if (value && typeof value === 'object' && !value.$key) {
+                    //非对象，null，非model设置代理
+                    if (value && !value.$key && (value.constructor === Object)) {
                         value = new Model(value, module);
                     }
                     ModelManager.update(receiver, key, ov, value);
@@ -4480,7 +4486,7 @@ var nodom = (function (exports) {
                 },
                 get(src, key, receiver) {
                     let res = Reflect.get(src, key, receiver);
-                    if (res && typeof res === 'object') {
+                    if (res && (res.constructor === Object || res.constructor === Array)) {
                         if (res.$key) {
                             return ModelManager.getModel(res.$key);
                         }
