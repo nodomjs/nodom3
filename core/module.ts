@@ -17,6 +17,12 @@ import { EventFactory } from "./eventfactory";
  *      方法this：指向module实例
  *      事件参数: model(当前按钮对应model),dom(事件对应虚拟dom),eventObj(事件对象),e(实际触发的html event)
  *      表达式方法：参数按照表达式方式给定即可
+ * 模块事件
+ *      onBeforeFirstRender 首次渲染前
+ *      onFirstRender       首次渲染后
+ *      onBeforeRender      每次渲染前
+ *      onRender            每次渲染后
+ *      onCompile           编译后
  */
 export class Module {
     /**
@@ -71,16 +77,6 @@ export class Module {
     private container: HTMLElement;
 
     /**
-     * 后置渲染序列
-     */
-    private preRenderOps:any[] = [];
-
-    /**
-     * 后置渲染序列
-     */
-    private postRenderOps:any[] = [];
-
-    /**
      * 对象管理器，用于管理虚拟dom节点、指令、表达式、事件对象及其运行时参数
      */
     public objectManager:ObjectManager;
@@ -111,11 +107,6 @@ export class Module {
     private keyVDomMap:Map<string,IRenderedDom> = new Map();
 
     /**
-     * 不允许加入渲染队列标志，在renderdom前设置，避免render前修改数据引发二次渲染
-     */
-    public dontAddToRender:boolean;
-
-    /**
      * 来源dom，子模块对应dom
      */
     public srcDom:IRenderedDom;
@@ -131,14 +122,15 @@ export class Module {
     private oldTemplate:string;
 
     /**
-     * 源节点对应的html element
-     */
-    private srcElement:Node;
-
-    /**
      * 编译来源模块id
      */
     public compileMid:number;
+
+    /**
+     * 是否已渲染过
+     */
+    private hasRendered:boolean;
+    
     /**
      * 构造器
      */
@@ -192,8 +184,6 @@ export class Module {
         if(this.state === EModuleState.UNACTIVE){
             return;
         }
-        
-        this.dontAddToRender = true;
         //检测模版并编译
         let templateStr = this.template(this.props);
         
@@ -205,61 +195,45 @@ export class Module {
         if(!this.originTree){
             return;
         }
-        //执行前置方法
-        this.doRenderOps(0);
+        
         //渲染前事件返回true，则不进行渲染
         if(this.doModuleEvent('onBeforeRender')){
-            this.dontAddToRender = false;
             return;
         }
-        if (!this.renderTree) {
-            this.doFirstRender();
-        } else { //增量渲染
-            //执行每次渲染前事件
-            if (this.model) {
-                let oldTree = this.renderTree;
-                this.renderTree = Renderer.renderDom(this,this.originTree,this.model);
-                this.doModuleEvent('onBeforeRenderToHtml');
-                let changeDoms = [];
-                // 比较节点
-                DiffTool.compare(this.renderTree,oldTree, changeDoms);
-                //执行更改
-                if(changeDoms.length>0){
-                    Renderer.handleChangedDoms(this,changeDoms);
-                }
+        
+        if (!this.hasRendered) {    //首次渲染
+            this.doModuleEvent('onBeforeFirstRender');
+        }
+        const oldTree = this.renderTree;
+        this.renderTree = Renderer.renderDom(this,this.originTree,this.model);
+        if(!this.renderTree){
+            this.unmount();
+            return;
+        }
+        if(this.state === EModuleState.UNMOUNTED){ //未挂载
+            //渲染到html dom
+            Renderer.renderToHtml(this,this.renderTree,null,true);
+            this.mount();
+        }else if(oldTree && this.model) {
+            let changeDoms = [];
+            // 比较节点
+            DiffTool.compare(this.renderTree,oldTree, changeDoms);
+            //执行更改
+            if(changeDoms.length>0){
+                Renderer.handleChangedDoms(this,changeDoms);
             }
+        }
+
+        if(!this.hasRendered) {    //首次渲染
+            this.doModuleEvent('onFirstRender');
+            this.hasRendered = true;
         }
         
         //设置已渲染状态
         this.state = EModuleState.RENDERED;
-        //执行后置方法
-        this.doRenderOps(1);
         //执行每次渲染后事件
         this.doModuleEvent('onRender');
         this.changedModelMap.clear();
-        this.dontAddToRender = false;
-    }
-
-    /**
-     * 执行首次渲染
-     * @param root 	根虚拟dom
-     */
-    private doFirstRender() {
-        
-        this.doModuleEvent('onBeforeFirstRender');
-        //渲染树
-        this.renderTree = Renderer.renderDom(this,this.originTree,this.model);
-        this.doModuleEvent('onBeforeFirstRenderToHTML');
-        //渲染为html element
-        let el:any = Renderer.renderToHtml(this,this.renderTree,null,true);
-        if(this.srcDom){  //子模块
-            this.srcElement = this.getParent().getNode(this.srcDom.key);
-            this.exchange();
-        }else if(this.container){  //路由
-            this.container.appendChild(el);
-        }
-        //执行首次渲染后事件
-        this.doModuleEvent('onFirstRender');
     }
 
     /**
@@ -286,7 +260,7 @@ export class Module {
      * 移除子模块
      * @param module    子模块
      */
-     public removeChild(module: Module) {
+    public removeChild(module: Module) {
         let ind=this.children.indexOf(module.id);
         if (ind !== -1) {
             module.unactive();
@@ -302,11 +276,14 @@ export class Module {
         //如果为手动active，srcdom存在且不在renderTree中，则不active
         if(!type && this.srcDom){
             const pm = this.getParent();
-            if(pm && !pm.findRenderedDom(this.srcDom.key)){
+            if(pm && !pm.getRenderedDom(this.srcDom.key)){
                 return;
             }
         }
-        this.state = EModuleState.INITED;
+        //设置unmount状态
+        if(this.state === EModuleState.UNACTIVE || this.state === EModuleState.INITED){
+            this.state = EModuleState.UNMOUNTED;
+        }
         Renderer.add(this);
     }
 
@@ -317,45 +294,106 @@ export class Module {
         if (ModuleFactory.getMain() === this) {
             return;
         }
-        this.doModuleEvent('beforeUnActive');
+        
+        //解挂
+        this.unmount();
+
         //设置状态
         this.state = EModuleState.UNACTIVE;
-        if(this.renderTree){
-            if(this.container){
-                const el = this.getNode(this.renderTree.key);
-                if(el){
-                    this.container.removeChild(el);
-                }
-            }else{
-                this.exchange(1);
-            }
-        }
-        // delete this.srcDom;
-        //删除渲染树
-        delete this.renderTree;
-
-        // 清理dom key map
-        this.keyNodeMap.clear();
-        this.keyElementMap.clear();
-        this.keyVDomMap.clear();
         
-        //清空event factory
-        this.eventFactory = new EventFactory(this);
-        //unactive事件
-        this.doModuleEvent('unActive');
-
         //处理子模块
         if(this.children){
             //处理子模块
             for(let id of this.children){
                 let m = ModuleFactory.get(id);
                 if(m){
-                    m.unactive();
+                    m.state = EModuleState.UNACTIVE;
                 }
             }
         }
     }
 
+    /**
+     * 挂载到html dom
+     */
+     private mount(){
+        const el = this.getNode('1');
+        if(!el){
+            return;
+        }
+        if(this.container){ //带容器(路由方法加载)
+            this.container.appendChild(el);
+        }else if(this.srcDom){
+            const pm = this.getParent();
+            if(!pm){
+                return;
+            }
+            const srcElement = pm.getNode(this.srcDom.key);
+            if(srcElement){
+                srcElement.parentElement.replaceChild(el,srcElement);
+            }
+            pm.saveNode(this.srcDom.key,el);
+        }
+    }
+
+    /**
+     * 解挂
+     */
+    private unmount(){
+        const el = this.getNode('1');
+        if(!el){
+            return;
+        }
+        
+        //清理dom map
+        this.clearMap();
+        //清空event factory
+        this.eventFactory = new EventFactory(this);
+        //删除渲染树
+        delete this.renderTree;
+        
+        if(this.container){ //带容器(路由方法加载)
+            this.container.removeChild(el);
+        }else if(this.srcDom){
+            const pm = this.getParent();
+            if(!pm){
+                return;
+            }
+            const srcElement = document.createTextNode("");
+            if(el.parentElement){
+                el.parentElement.replaceChild(srcElement,el);    
+            }
+            pm.saveNode(this.srcDom.key,srcElement);
+        }
+        //执行解挂事件
+        this.doModuleEvent('onUnmount');
+        this.state = EModuleState.UNMOUNTED;
+        //处理子模块
+        if(this.children){
+            for(let id of this.children){
+                let m = ModuleFactory.get(id);
+                if(m){
+                    m.unmount();
+                }
+            }
+        }
+    }
+    
+    /**
+     * 清除dom map
+     * @param key   dom key，如果为空，则清空map
+     */
+    private clearMap(key?:string){
+        if(key){
+            this.keyElementMap.delete(key);
+            this.keyNodeMap.delete(key);
+            this.keyVDomMap.delete(key);
+        }else{
+            this.keyElementMap.clear();
+            this.keyNodeMap.clear();
+            this.keyVDomMap.clear();
+        }
+    }
     /**
      * 获取父模块
      * @returns     父模块   
@@ -421,43 +459,6 @@ export class Module {
     }
 
     /**
-     * 添加渲染方法
-     * @param foo   方法函数    
-     * @param flag  标志 0:渲染前执行 1:渲染后执行
-     * @param args  参数
-     * @param once  是否只执行一次，如果为true，则执行后删除
-     */
-    public addRenderOps(foo:Function,flag:number,args?:any[],once?:boolean){
-        if(typeof foo !== 'function'){
-            return;
-        }
-        let arr = flag===0?this.preRenderOps:this.postRenderOps;
-        arr.push({
-            foo:foo,
-            args:args,
-            once:once
-        });
-    }
-
-    /**
-     * 执行渲染方法
-     * @param flag 类型 0:前置 1:后置
-     */
-    private doRenderOps(flag:number){
-        let arr = flag===0?this.preRenderOps:this.postRenderOps;
-        if(arr){
-            for(let i=0;i<arr.length;i++){
-                let o = arr[i];
-                o.foo.apply(this,o.args);
-                // 执行后删除
-                if(o.once){
-                    arr.splice(i--,1);
-                }
-            }
-        }
-    }
-
-    /**
      * 设置props
      * @param props     属性值
      * @param dom       子模块对应节点
@@ -477,7 +478,7 @@ export class Module {
             }
         }
         this.srcDom = dom;
-        if(this.state === EModuleState.INITED || this.state === EModuleState.UNACTIVE){
+        if(this.state !== EModuleState.RENDERED){
             this.active(1);
         }else {  //计算template，如果导致模版改变，需要激活
             let change = false;
@@ -500,17 +501,9 @@ export class Module {
                     }
                 }
             }
-
             if(change){  //props 发生改变，计算模版，如果模版改变，激活模块
-                
-                // let propChanged = false;
-                // if(this.originTree){
-                //     propChanged = this.mergeProps(this.originTree,props);
-                // }
-                // if(propChanged){
-                    this.active(1);
-                // }
-            } 
+                this.active(1);
+            }
         }
         this.props = props;
     }
@@ -641,52 +634,34 @@ export class Module {
     }
 
     /**
-     * 从keyNodeMap移除
+     * 释放node
+     * 包括从dom树解挂，释放对应结点资源
      * @param dom   虚拟dom
-     * @param deep  深度清理
      */
-    public removeNode(dom:IRenderedDom,deep?:boolean){
+    public freeNode(dom:IRenderedDom){
         if(dom.subModuleId){  //子模块
+            //从渲染队列移除
+            Renderer.remove(dom.subModuleId);
             let m = ModuleFactory.get(dom.subModuleId);
             if(m){
-                m.unactive();
+                m.unmount();
             }
         }else{  //非子模块
+            let el = this.getNode(dom.key);
+            if(el && el.parentElement){
+                el.parentElement.removeChild(el);
+            }
             //从map移除
-            this.keyNodeMap.delete(dom.key);
-            this.keyElementMap.delete(dom.key);
-            this.keyVDomMap.delete(dom.key);
+            this.clearMap(dom.key);
             //解绑所有事件
             this.eventFactory.unbindAll(dom.key);
-            if(deep){
-                if(dom && dom.children){
-                    for(let d of dom.children){
-                        this.removeNode(d,true);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * 移除 dom cache
-     * @param key   dom key
-     * @param deep  深度清理
-     */
-    public clearDomCache(dom:IRenderedDom,deep?:boolean){
-        if(deep){
+            
             if(dom.children){
                 for(let d of dom.children){
-                    this.clearDomCache(d,true);
+                    this.freeNode(d);
                 }
             }
         }
-        //从缓存移除节点
-        this.objectManager.clearDomParams(dom.key);
-        //从key node map移除
-        this.keyNodeMap.delete(dom.key);
-        //从virtual dom map移除
-        this.keyVDomMap.delete(dom.key);
     }
 
     /**
@@ -714,44 +689,10 @@ export class Module {
     }
 
     /**
-     * 获取dom key id
-     * @returns     key id
-     */
-    public getDomKeyId():number{
-        return ++this.domKeyId;
-    }
-
-    /**
-     * 子模块节点和源节点相互交换
-     * @param flag  0 子模块替换源节点  1源节点替换子模块
-     */
-    private exchange(flag?:number){
-        if(!this.renderTree || !this.srcElement){
-            return;
-        }
-        const el = this.getNode(this.renderTree.key);
-        if(!el){
-            return;
-        }
-        const pm = this.getParent();
-        if(!flag){  //子模块替换源节点
-            if(this.srcElement.parentElement){
-                this.srcElement.parentElement.replaceChild(el,this.srcElement);
-                pm.saveNode(this.srcDom.key,el);
-            }
-        }else{ //源节点替换子模块
-            if(el.parentElement){
-                el.parentElement.replaceChild(this.srcElement,el);
-                pm.saveNode(this.srcDom.key,this.srcElement);
-            }
-        }
-    }
-
-    /**
-     * 从查询树中查找key对应的渲染节点
+     * 从渲染树中获取key对应的渲染节点
      * @param key   dom key
      */
-    public findRenderedDom(key:string):IRenderedDom{
+     public getRenderedDom(key:string):IRenderedDom{
         if(!this.renderTree){
             return;
         }
@@ -776,5 +717,13 @@ export class Module {
                 }
             }
         }
+    }
+
+    /**
+     * 获取dom key id
+     * @returns     key id
+     */
+    public getDomKeyId():number{
+        return ++this.domKeyId;
     }
 }

@@ -20,6 +20,11 @@ export declare class Renderer {
      */
     static add(module: Module): void;
     /**
+     * 从渲染队列移除
+     * @param moduleId
+     */
+    static remove(moduleId: number): void;
+    /**
      * 队列渲染
      */
     static render(): void;

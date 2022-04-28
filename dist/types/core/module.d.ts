@@ -9,6 +9,12 @@ import { EventFactory } from "./eventfactory";
  *      方法this：指向module实例
  *      事件参数: model(当前按钮对应model),dom(事件对应虚拟dom),eventObj(事件对象),e(实际触发的html event)
  *      表达式方法：参数按照表达式方式给定即可
+ * 模块事件
+ *      onBeforeFirstRender 首次渲染前
+ *      onFirstRender       首次渲染后
+ *      onBeforeRender      每次渲染前
+ *      onRender            每次渲染后
+ *      onCompile           编译后
  */
 export declare class Module {
     /**
@@ -53,14 +59,6 @@ export declare class Module {
      */
     private container;
     /**
-     * 后置渲染序列
-     */
-    private preRenderOps;
-    /**
-     * 后置渲染序列
-     */
-    private postRenderOps;
-    /**
      * 对象管理器，用于管理虚拟dom节点、指令、表达式、事件对象及其运行时参数
      */
     objectManager: ObjectManager;
@@ -85,10 +83,6 @@ export declare class Module {
      */
     private keyVDomMap;
     /**
-     * 不允许加入渲染队列标志，在renderdom前设置，避免render前修改数据引发二次渲染
-     */
-    dontAddToRender: boolean;
-    /**
      * 来源dom，子模块对应dom
      */
     srcDom: IRenderedDom;
@@ -101,13 +95,13 @@ export declare class Module {
      */
     private oldTemplate;
     /**
-     * 源节点对应的html element
-     */
-    private srcElement;
-    /**
      * 编译来源模块id
      */
     compileMid: number;
+    /**
+     * 是否已渲染过
+     */
+    private hasRendered;
     /**
      * 构造器
      */
@@ -132,11 +126,6 @@ export declare class Module {
      */
     render(): boolean;
     /**
-     * 执行首次渲染
-     * @param root 	根虚拟dom
-     */
-    private doFirstRender;
-    /**
      * 添加子模块
      * @param module    模块id或模块
      */
@@ -155,6 +144,19 @@ export declare class Module {
      * 取消激活
      */
     unactive(): void;
+    /**
+     * 挂载到html dom
+     */
+    private mount;
+    /**
+     * 解挂
+     */
+    private unmount;
+    /**
+     * 清除dom map
+     * @param key   dom key，如果为空，则清空map
+     */
+    private clearMap;
     /**
      * 获取父模块
      * @returns     父模块
@@ -183,19 +185,6 @@ export declare class Module {
      * @param methodName    方法名
      */
     invokeMethod(methodName: string, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any, arg6?: any, arg7?: any, arg8?: any): any;
-    /**
-     * 添加渲染方法
-     * @param foo   方法函数
-     * @param flag  标志 0:渲染前执行 1:渲染后执行
-     * @param args  参数
-     * @param once  是否只执行一次，如果为true，则执行后删除
-     */
-    addRenderOps(foo: Function, flag: number, args?: any[], once?: boolean): void;
-    /**
-     * 执行渲染方法
-     * @param flag 类型 0:前置 1:后置
-     */
-    private doRenderOps;
     /**
      * 设置props
      * @param props     属性值
@@ -250,35 +239,24 @@ export declare class Module {
      */
     saveVirtualDom(dom: IRenderedDom, key?: string): void;
     /**
-     * 从keyNodeMap移除
+     * 释放node
+     * 包括从dom树解挂，释放对应结点资源
      * @param dom   虚拟dom
-     * @param deep  深度清理
      */
-    removeNode(dom: IRenderedDom, deep?: boolean): void;
-    /**
-     * 移除 dom cache
-     * @param key   dom key
-     * @param deep  深度清理
-     */
-    clearDomCache(dom: IRenderedDom, deep?: boolean): void;
+    freeNode(dom: IRenderedDom): void;
     /**
      * 从origin tree 获取虚拟dom节点
      * @param key   dom key
      */
     getOrginDom(key: string): VirtualDom;
     /**
+     * 从渲染树中获取key对应的渲染节点
+     * @param key   dom key
+     */
+    getRenderedDom(key: string): IRenderedDom;
+    /**
      * 获取dom key id
      * @returns     key id
      */
     getDomKeyId(): number;
-    /**
-     * 子模块节点和源节点相互交换
-     * @param flag  0 子模块替换源节点  1源节点替换子模块
-     */
-    private exchange;
-    /**
-     * 从查询树中查找key对应的渲染节点
-     * @param key   dom key
-     */
-    findRenderedDom(key: string): IRenderedDom;
 }

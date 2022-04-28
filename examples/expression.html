@@ -20,10 +20,9 @@
 					<div>
 						{{20*((price+2)*discount)}}
 						<div>{{year + '年' + month + '月'}}</div>
-						<!--<div>多级数据：{{ac.age.as}}</div>-->
+						<div>多级数据：{{ac.age.as}}</div>
 						<h2>数据计算</h2>
-						<!--<div>价格：{{Math.round(price * discount) + 'hello'}}</div>-->
-						<!--
+						<div>价格：{{Math.round(price * discount) + 'hello'}}</div>
 						<div>折扣：{{cacDis(price*discount)}}</div>
 						<div>描述：{{30 + addStr('hello' + desc) + 20}}</div>
 						<div>随机折扣:{{(Math.random()*price).toFixed(1)}}</div>
@@ -32,10 +31,7 @@
 						<div>当前时间是:{{genDate(date1,2)}}</div>
 						<div x-if={{Object.keys(goods).length>0}}>商品列表存在则显示</div>
 						<div>路径：{{'/'+'path'+'/'+url}}</div>
-						排序过滤器：
-						<ul>
-							<li x-repeat={{sortArr(rows)}}>{{name}}'s address is {{addr}}</li>
-						</ul>
+						
 						<div>{{!true}}</div>
 						<div>转换为小写字母:{{name.toLowerCase()}}</div>
 						<div>转换为大写字母:{{name.toUpperCase()}}</div>
@@ -55,7 +51,7 @@
 						<div>对象判断：{{{x:1,yyy:2}.constructor.name === 'Object'}}</div>
 						<div>数组方法：{{arr.join(',')}}</div>
 						{{desc + ' ' + this.state}}
-						<div>扩展运算-数组求和：{{sum(...arr)}}</div> -->
+						<div>扩展运算-数组求和：{{sum(...arr)}}</div> 
 					</div>
 				`
 			}

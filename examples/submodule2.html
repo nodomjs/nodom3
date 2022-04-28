@@ -21,18 +21,18 @@
                     <div style='color:red'>
                         <slot/>
                     </div>
-                    <div  style='border:1px solid'>
+                    <!--<div  style='border:1px solid'>
                         <for cond={{rows}}>
                             <slot innerRender/>
                         </for>
-                    </div>
+                    </div>-->
                 </div>
             `;
         }
         data() {
             return {
                 name: "yang",
-                showme: true,
+                // showme: true,
                 x1: 0,
                 x2: 0,
                 rows: [{ name: "nodom1" }, { name: "nodom2" }, { name: "nodom3" }],
@@ -50,16 +50,22 @@
         }
     }
 
+    class ModuleB extends Module{
+        template(){
+            return `<div>moduleb</div>`
+        }
+    }
    
     class Module1 extends Module {
-        modules = [ModuleA];
+        modules = [ModuleA,ModuleB];
         template(props) {
             return `
             <div >
                 <button e-click='change1'>change1</button>
-                <modulea style={{style}}>
+                <modulea style={{style}} x-show={{showma}}>
                     <span>{{name}}</span>
                 </modulea>
+                <moduleb x-show={{!showma}} />
             </div>
         `;
         }
@@ -69,6 +75,7 @@
                 name: "outer",
                 style: "width:600px",
                 show: true,
+                showma:false,
                 rows: [
                     { id: 1, name: "nodom", title: "click1" },
                     { id: 2, name: "noomi", title: "click2" },
@@ -79,6 +86,7 @@
 
         change1(model) {
             model.style='background:#ccc'
+            model.showma = !model.showma;
         }
     }
 		nodom(Module1, "div");

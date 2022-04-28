@@ -10,4 +10,8 @@ export class MdlPMod3 extends Module {
         </div>
         `
     }
+
+    onRender(model){
+        console.log('render',model)
+    }
 }

@@ -41,8 +41,21 @@ export interface IRouteCfg {
  * 模块状态类型
  */
 export declare enum EModuleState {
+    /**
+     * 初始化
+     */
     INITED = 1,
+    /**
+     * 非激活(休眠态)
+     */
     UNACTIVE = 2,
+    /**
+     * 未挂载到html dom
+     */
+    UNMOUNTED = 3,
+    /**
+     * 已渲染到dom树
+     */
     RENDERED = 4
 }
 /**

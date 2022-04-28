@@ -14,6 +14,7 @@ export class MdlMod6 extends Module {
     //     return '<span>路由r2加载的模块</span>'
     // }
     template(){
+        console.log('temp mdl6');
         return `
             <div>
                 vip is:{{d1.vip}}
@@ -47,5 +48,13 @@ export class MdlMod6 extends Module {
 
     clickTest(){
         console.log(this);
+    }
+
+    onCompile(){
+        console.log('cmp mdl6');
+    }
+
+    onRender(){
+        console.log('ren mdl6');
     }
 }

@@ -1,4 +1,4 @@
-import {createRoute} from "../../../dist/nodom.esm.js";
+import {createRoute, Router} from "../../../dist/nodom.esm.js";
 import {MdlRouteDir} from "./mdlroutedir.js";
 import {MdlPMod1} from "./mdlpmod1.js";
 import {MdlPMod2} from "./mdlpmod2.js";
@@ -10,6 +10,7 @@ import {MdlMod7} from "./mdlmod7.js";
 import {MdlMod8} from "./mdlmod8.js";
 
 export function initRoute(){
+    // Router.basePath = '/webroute';
     createRoute([{
         path: '/router',
         module: MdlRouteDir,

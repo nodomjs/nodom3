@@ -332,10 +332,23 @@ export class Router {
                 module.setContainer(<HTMLElement>pm.getNode(Router.routerKeyMap.get(pm.id)));
                 this.setDomActive(pm, route.fullPath);
             } else { //被依赖模块不处于被渲染后状态
-                pm.addRenderOps(function (m, p) {
-                    module.setContainer(<HTMLElement>m.getNode(Router.routerKeyMap.get(m.id)));
-                    me.setDomActive(m, p);
-                }, 1, [pm, route.fullPath], true);
+                if(pm['onRender']){
+                    const foo = pm['onRender'];
+                    pm['onRender'] = (model)=>{
+                        foo(model);
+                        module.setContainer(<HTMLElement>pm.getNode(Router.routerKeyMap.get(pm.id)));
+                        me.setDomActive(pm,route.fullPath);
+                        //还原onRender方法
+                        pm['onRender'] = foo;
+                    }
+                }else{
+                    pm['onRender'] = (model)=>{
+                        module.setContainer(<HTMLElement>pm.getNode(Router.routerKeyMap.get(pm.id)));
+                        me.setDomActive(pm,route.fullPath);
+                        //只执行一次
+                        delete pm['onRender'];
+                    }
+                }
             }
         }
     }

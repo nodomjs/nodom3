@@ -26,18 +26,30 @@ export class Renderer {
      */
     public static add(module:Module) {
         //如果已经在列表中，不再添加
-        if (!module.dontAddToRender && !this.waitList.includes(module.id)) {
+        if (!this.waitList.includes(module.id)) {
             //计算优先级
             this.waitList.push(module.id);
         }
     }
     
     /**
+     * 从渲染队列移除
+     * @param moduleId 
+     */
+    public static remove(moduleId:number){
+        let index;
+        if((index = this.waitList.indexOf(moduleId)) !== -1){
+            this.waitList.splice(index,1);
+        }
+    }
+    /**
      * 队列渲染
      */
     public static render() {
         for(;this.waitList.length>0;){
-            ModuleFactory.get(this.waitList.shift()).render();
+            ModuleFactory.get(this.waitList[0]).render();
+            //渲染后移除
+            this.waitList.shift();
         }
     }
 
@@ -104,7 +116,7 @@ export class Renderer {
                     }
                 }
                 if(!handleDirectives()){
-                    return dst;
+                    return null;
                 }
             }
             
@@ -373,12 +385,8 @@ export class Renderer {
                     Renderer.renderToHtml(module,item[1],null,false);
                     break;
                 case 3: //删除
-                    //从模块移除（考虑子模块）
-                    module.removeNode(item[1],true);
-                    //从html dom树移除
-                    if(pEl && n1 && pEl.contains(n1)){
-                        pEl.removeChild(n1);
-                    }
+                    //从模块移除
+                    module.freeNode(item[1]);
                     break;
                 case 4: //移动
                     if(item[4] ){  //相对节点后
@@ -392,12 +400,12 @@ export class Renderer {
                     }
                     break;
                 default: //替换
-                    Renderer.renderToHtml(module,item[1],<HTMLElement>pEl,true);
-                    n1 = module.getNode(item[1].key);
+                    n1 = Renderer.renderToHtml(module,item[1],null,true);
+                    n2 = module.getNode(item[2].key);
                     if(pEl){
                         pEl.replaceChild(n1,n2);
                     }
-                    
+                    module.freeNode(item[2]);
             }
         }
     }
