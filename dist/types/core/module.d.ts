@@ -241,7 +241,7 @@ export declare class Module {
     /**
      * 释放node
      * 包括从dom树解挂，释放对应结点资源
-     * @param dom   虚拟dom
+     * @param dom       虚拟dom
      */
     freeNode(dom: IRenderedDom): void;
     /**

@@ -83,7 +83,7 @@ export class Renderer {
         }
         //先处理model指令
         if (src.directives && src.directives.length > 0 && src.directives[0].type.name === 'model') {
-            src.directives[0].exec(module, dst, src);
+            src.directives[0].exec(module, dst);
         }
         if (dst.tagName) {
             if (!dst.notChange) {
@@ -153,7 +153,7 @@ export class Renderer {
                 if (d.type.name === 'model') {
                     continue;
                 }
-                if (!d.exec(module, dst, src)) {
+                if (!d.exec(module, dst)) {
                     return false;
                 }
             }

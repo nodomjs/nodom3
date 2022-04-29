@@ -109,6 +109,7 @@ export class Module {
         this.renderTree = Renderer.renderDom(this, this.originTree, this.model);
         if (!this.renderTree) {
             this.unmount();
+            this.hasRendered = true;
             return;
         }
         if (this.state === EModuleState.UNMOUNTED) { //未挂载
@@ -228,6 +229,8 @@ export class Module {
             }
             pm.saveNode(this.srcDom.key, el);
         }
+        //执行挂载事件
+        this.doModuleEvent('onMount');
     }
     /**
      * 解挂
@@ -516,7 +519,7 @@ export class Module {
     /**
      * 释放node
      * 包括从dom树解挂，释放对应结点资源
-     * @param dom   虚拟dom
+     * @param dom       虚拟dom
      */
     freeNode(dom) {
         if (dom.subModuleId) { //子模块
@@ -524,7 +527,7 @@ export class Module {
             Renderer.remove(dom.subModuleId);
             let m = ModuleFactory.get(dom.subModuleId);
             if (m) {
-                m.unmount();
+                m.unactive();
             }
         }
         else { //非子模块

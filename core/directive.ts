@@ -1,6 +1,5 @@
 import { DirectiveManager } from "./directivemanager";
 import { DirectiveType } from "./directivetype";
-import { VirtualDom } from "./virtualdom";
 import { Module } from "./module";
 import { Util } from "./util";
 import { Expression } from "./expression";
@@ -68,10 +67,9 @@ export  class Directive {
      * 执行指令
      * @param module    模块
      * @param dom       渲染目标节点对象
-     * @param src       源节点
      * @returns         true/false
      */
-    public exec(module:Module,dom:IRenderedDom,src:VirtualDom):boolean {
+    public exec(module:Module,dom:IRenderedDom):boolean {
         //禁用，不执行
         if(this.disabled){
             return true;
@@ -79,7 +77,7 @@ export  class Directive {
         if(this.expression){
             this.value = this.expression.val(module,dom.model);
         }
-        return this.type.handle.apply(this,[module,dom,src]);
+        return this.type.handle.apply(this,[module,dom]);
     }
 
     /**

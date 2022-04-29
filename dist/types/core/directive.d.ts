@@ -1,5 +1,4 @@
 import { DirectiveType } from "./directivetype";
-import { VirtualDom } from "./virtualdom";
 import { Module } from "./module";
 import { Expression } from "./expression";
 import { IRenderedDom } from "./types";
@@ -41,10 +40,9 @@ export declare class Directive {
      * 执行指令
      * @param module    模块
      * @param dom       渲染目标节点对象
-     * @param src       源节点
      * @returns         true/false
      */
-    exec(module: Module, dom: IRenderedDom, src: VirtualDom): boolean;
+    exec(module: Module, dom: IRenderedDom): boolean;
     /**
      * 克隆
      */

@@ -1581,7 +1581,7 @@ var nodom = (function (exports) {
             }
             //先处理model指令
             if (src.directives && src.directives.length > 0 && src.directives[0].type.name === 'model') {
-                src.directives[0].exec(module, dst, src);
+                src.directives[0].exec(module, dst);
             }
             if (dst.tagName) {
                 if (!dst.notChange) {
@@ -1651,7 +1651,7 @@ var nodom = (function (exports) {
                     if (d.type.name === 'model') {
                         continue;
                     }
-                    if (!d.exec(module, dst, src)) {
+                    if (!d.exec(module, dst)) {
                         return false;
                     }
                 }
@@ -2705,10 +2705,9 @@ var nodom = (function (exports) {
          * 执行指令
          * @param module    模块
          * @param dom       渲染目标节点对象
-         * @param src       源节点
          * @returns         true/false
          */
-        exec(module, dom, src) {
+        exec(module, dom) {
             //禁用，不执行
             if (this.disabled) {
                 return true;
@@ -2716,7 +2715,7 @@ var nodom = (function (exports) {
             if (this.expression) {
                 this.value = this.expression.val(module, dom.model);
             }
-            return this.type.handle.apply(this, [module, dom, src]);
+            return this.type.handle.apply(this, [module, dom]);
         }
         /**
          * 克隆
@@ -4936,6 +4935,7 @@ var nodom = (function (exports) {
             this.renderTree = Renderer.renderDom(this, this.originTree, this.model);
             if (!this.renderTree) {
                 this.unmount();
+                this.hasRendered = true;
                 return;
             }
             if (this.state === exports.EModuleState.UNMOUNTED) { //未挂载
@@ -5055,6 +5055,8 @@ var nodom = (function (exports) {
                 }
                 pm.saveNode(this.srcDom.key, el);
             }
+            //执行挂载事件
+            this.doModuleEvent('onMount');
         }
         /**
          * 解挂
@@ -5343,7 +5345,7 @@ var nodom = (function (exports) {
         /**
          * 释放node
          * 包括从dom树解挂，释放对应结点资源
-         * @param dom   虚拟dom
+         * @param dom       虚拟dom
          */
         freeNode(dom) {
             if (dom.subModuleId) { //子模块
@@ -5351,7 +5353,7 @@ var nodom = (function (exports) {
                 Renderer.remove(dom.subModuleId);
                 let m = ModuleFactory.get(dom.subModuleId);
                 if (m) {
-                    m.unmount();
+                    m.unactive();
                 }
             }
             else { //非子模块
@@ -5546,7 +5548,8 @@ var nodom = (function (exports) {
          * 用于指定该元素为模块容器，表示子模块
          * 用法 x-module='模块类名'
          */
-        createDirective('module', function (module, dom, src) {
+        createDirective('module', function (module, dom) {
+            const src = dom.vdom;
             let m;
             //存在moduleId，表示已经渲染过，不渲染
             let mid = module.objectManager.getDomParam(dom.key, 'moduleId');
@@ -5607,7 +5610,7 @@ var nodom = (function (exports) {
         /**
          *  model指令
          */
-        createDirective('model', function (module, dom, src) {
+        createDirective('model', function (module, dom) {
             let model = dom.model.$get(this.value);
             if (model) {
                 dom.model = model;
@@ -5618,12 +5621,13 @@ var nodom = (function (exports) {
          * 指令名 repeat
          * 描述：重复指令
          */
-        createDirective('repeat', function (module, dom, src) {
+        createDirective('repeat', function (module, dom) {
             let rows = this.value;
             // 无数据，不渲染
             if (!Util.isArray(rows) || rows.length === 0) {
                 return false;
             }
+            const src = dom.vdom;
             //索引名
             const idxName = src.getProp('$index');
             const parent = dom.parent;
@@ -5661,7 +5665,8 @@ var nodom = (function (exports) {
          * </recur>
          * ```
          */
-        createDirective('recur', function (module, dom, src) {
+        createDirective('recur', function (module, dom) {
+            const src = dom.vdom;
             //当前节点是递归节点存放容器
             if (dom.props.hasOwnProperty('ref')) {
                 //如果出现在repeat中，src为单例，需要在使用前清空子节点，避免沿用上次的子节点
@@ -5706,7 +5711,7 @@ var nodom = (function (exports) {
          * 指令名 if
          * 描述：条件指令
          */
-        createDirective('if', function (module, dom, src) {
+        createDirective('if', function (module, dom) {
             module.objectManager.setDomParam(dom.parent.key, '$if', this.value);
             return this.value;
         }, 5);
@@ -5714,13 +5719,13 @@ var nodom = (function (exports) {
          * 指令名 else
          * 描述：else指令
          */
-        createDirective('else', function (module, dom, src) {
-            return module.objectManager.getDomParam(dom.parent.key, '$if') === false;
+        createDirective('else', function (module, dom) {
+            return !module.objectManager.getDomParam(dom.parent.key, '$if');
         }, 5);
         /**
          * elseif 指令
          */
-        createDirective('elseif', function (module, dom, src) {
+        createDirective('elseif', function (module, dom) {
             let v = module.objectManager.getDomParam(dom.parent.key, '$if');
             if (v === true) {
                 return false;
@@ -5738,25 +5743,23 @@ var nodom = (function (exports) {
         /**
          * elseif 指令
          */
-        createDirective('endif', function (module, dom, src) {
+        createDirective('endif', function (module, dom) {
             module.objectManager.removeDomParam(dom.parent.key, '$if');
-            return true;
+            //endif 不显示
+            return false;
         }, 5);
         /**
          * 指令名 show
          * 描述：显示指令
          */
-        createDirective('show', function (module, dom, src) {
-            if (this.value) {
-                return true;
-            }
-            return false;
+        createDirective('show', function (module, dom) {
+            return this.value ? true : false;
         }, 5);
         /**
          * 指令名 field
          * 描述：字段指令
          */
-        createDirective('field', function (module, dom, src) {
+        createDirective('field', function (module, dom) {
             const type = dom.props['type'] || 'text';
             const tgname = dom.tagName.toLowerCase();
             const model = dom.model;
@@ -5840,13 +5843,13 @@ var nodom = (function (exports) {
                 });
                 GlobalCache.set('$fieldChangeEvent', event);
             }
-            src.addEvent(event);
+            dom.vdom.addEvent(event);
             return true;
         }, 10);
         /**
          * route指令
          */
-        createDirective('route', function (module, dom, src) {
+        createDirective('route', function (module, dom) {
             //a标签需要设置href
             if (dom.tagName.toLowerCase() === 'a') {
                 dom.props['href'] = 'javascript:void(0)';
@@ -5874,13 +5877,13 @@ var nodom = (function (exports) {
                 });
                 GlobalCache.set('$routeClickEvent', event);
             }
-            src.addEvent(event);
+            dom.vdom.addEvent(event);
             return true;
         });
         /**
          * 增加router指令
          */
-        createDirective('router', function (module, dom, src) {
+        createDirective('router', function (module, dom) {
             Router.routerKeyMap.set(module.id, dom.key);
             return true;
         });
@@ -5888,9 +5891,10 @@ var nodom = (function (exports) {
          * 插头指令
          * 用于模块中，可实现同名替换
          */
-        createDirective('slot', function (module, dom, src) {
+        createDirective('slot', function (module, dom) {
             this.value = this.value || 'default';
             let mid = dom.parent.subModuleId;
+            const src = dom.vdom;
             //父dom有module指令，表示为替代节点，替换子模块中的对应的slot节点；否则为子模块定义slot节点
             if (mid) {
                 let m = ModuleFactory.get(mid);
@@ -5929,7 +5933,7 @@ var nodom = (function (exports) {
          * 指令名
          * 描述：动画指令
          */
-        createDirective('animation', function (module, dom, src) {
+        createDirective('animation', function (module, dom) {
             var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v;
             const confObj = this.value;
             if (!Util.isObject(confObj)) {

@@ -28,7 +28,8 @@ export default (function () {
      */
     createDirective(
         'module',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
+            const src = dom.vdom;
             let m: Module;
             //存在moduleId，表示已经渲染过，不渲染
             let mid = module.objectManager.getDomParam(dom.key, 'moduleId');
@@ -93,7 +94,7 @@ export default (function () {
      */
     createDirective(
         'model',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
             let model: Model = dom.model.$get(this.value);
             if (model) {
                 dom.model = model;
@@ -109,12 +110,13 @@ export default (function () {
      */
     createDirective(
         'repeat',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
             let rows = this.value;
             // 无数据，不渲染
             if (!Util.isArray(rows) || rows.length === 0) {
                 return false;
             }
+            const src = dom.vdom;
             //索引名
             const idxName = src.getProp('$index');
             const parent = dom.parent;
@@ -158,7 +160,8 @@ export default (function () {
      */
     createDirective(
         'recur',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
+            const src = dom.vdom;
             //当前节点是递归节点存放容器
             if (dom.props.hasOwnProperty('ref')) {
                 //如果出现在repeat中，src为单例，需要在使用前清空子节点，避免沿用上次的子节点
@@ -207,7 +210,7 @@ export default (function () {
      * 描述：条件指令
      */
     createDirective('if',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
             module.objectManager.setDomParam(dom.parent.key, '$if', this.value);
             return this.value;
         },
@@ -220,8 +223,8 @@ export default (function () {
      */
     createDirective(
         'else',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
-            return module.objectManager.getDomParam(dom.parent.key, '$if') === false;
+        function (module: Module, dom: IRenderedDom) {
+            return  !module.objectManager.getDomParam(dom.parent.key, '$if');
         },
         5
     );
@@ -230,7 +233,7 @@ export default (function () {
      * elseif 指令
      */
     createDirective('elseif',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
             let v = module.objectManager.getDomParam(dom.parent.key, '$if');
             if (v === true) {
                 return false;
@@ -251,9 +254,10 @@ export default (function () {
      */
     createDirective(
         'endif',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
             module.objectManager.removeDomParam(dom.parent.key, '$if');
-            return true;
+            //endif 不显示
+            return false;
         },
         5
     );
@@ -264,11 +268,8 @@ export default (function () {
      */
     createDirective(
         'show',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
-            if (this.value) {
-                return true;
-            }
-            return false;
+        function (module: Module, dom: IRenderedDom) {
+            return this.value?true:false;
         },
         5
     );
@@ -278,7 +279,7 @@ export default (function () {
      * 描述：字段指令
      */
     createDirective('field',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
             const type: string = dom.props['type'] || 'text';
             const tgname = dom.tagName.toLowerCase();
             const model = dom.model;
@@ -358,7 +359,7 @@ export default (function () {
                 );
                 GlobalCache.set('$fieldChangeEvent', event);
             }
-            src.addEvent(event);
+            dom.vdom.addEvent(event);
             return true;
         },
         10
@@ -368,7 +369,7 @@ export default (function () {
      * route指令
      */
     createDirective('route',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
             //a标签需要设置href
             if (dom.tagName.toLowerCase() === 'a') {
                 dom.props['href'] = 'javascript:void(0)';
@@ -399,7 +400,7 @@ export default (function () {
                 );
                 GlobalCache.set('$routeClickEvent', event);
             }
-            src.addEvent(event);
+            dom.vdom.addEvent(event);
             return true;
         }
     );
@@ -408,7 +409,7 @@ export default (function () {
      * 增加router指令
      */
     createDirective('router',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
             Router.routerKeyMap.set(module.id, dom.key);
             return true;
         }
@@ -419,9 +420,10 @@ export default (function () {
      * 用于模块中，可实现同名替换
      */
     createDirective('slot',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
             this.value = this.value || 'default';
             let mid = dom.parent.subModuleId;
+            const src = dom.vdom;
             //父dom有module指令，表示为替代节点，替换子模块中的对应的slot节点；否则为子模块定义slot节点
             if (mid) {
                 let m = ModuleFactory.get(mid);
@@ -462,7 +464,7 @@ export default (function () {
      * 描述：动画指令
      */
     createDirective('animation',
-        function (module: Module, dom: IRenderedDom, src: VirtualDom) {
+        function (module: Module, dom: IRenderedDom) {
 
             const confObj = this.value
             if (!Util.isObject(confObj)) {
