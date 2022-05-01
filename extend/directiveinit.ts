@@ -430,21 +430,17 @@ export default (function () {
                 if (m) {
                     //缓存当前替换节点
                     m.objectManager.set('$slots.' + this.value, { dom: src, model: dom.model });
-                    //只需添加一次，用后即删除
-                    if(src.parent){
-                        src.parent.remove(src);
-                    }
                 }
             } else { //源slot节点
-                //获取替换节点进行替换
+                //获取替换节点进行替换，如果没有，则渲染子节点
                 const cfg = module.objectManager.get('$slots.' + this.value);
-                if (cfg) {
-                    //避免key重复，更新key
-                    for (let d of cfg.dom.children) {
+                const children = cfg?cfg.dom.children:src.children;
+                if(children){
+                    for (let d of children) {
                         let model;
-                        if (src.hasProp('innerRender')) {  //内部数据渲染
+                        if (src.hasProp('innerRender') ) {  //内部数据渲染
                             model = dom.model;
-                        }else{      //外部数据渲染
+                        }else if(cfg){  //外部数据渲染
                             model = cfg.model;
                             //对象绑定到当前模块
                             ModelManager.bindToModule(cfg.model, module);

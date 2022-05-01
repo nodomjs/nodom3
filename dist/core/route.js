@@ -25,7 +25,7 @@ export class Route {
         }
         this.id = Util.genId();
         //参数赋值
-        for (let o in config) {
+        for (let o of Object.keys(config)) {
             this[o] = config[o];
         }
         this.parent = parent;

@@ -24,7 +24,8 @@ export class Renderer {
     static remove(moduleId) {
         let index;
         if ((index = this.waitList.indexOf(moduleId)) !== -1) {
-            this.waitList.splice(index, 1);
+            //不能破坏watiList顺序，用null替换
+            this.waitList.splice(index, 1, null);
         }
     }
     /**
@@ -32,7 +33,10 @@ export class Renderer {
      */
     static render() {
         for (; this.waitList.length > 0;) {
-            ModuleFactory.get(this.waitList[0]).render();
+            let id = this.waitList[0];
+            if (id) { //存在id为null情况，remove方法造成
+                ModuleFactory.get(id).render();
+            }
             //渲染后移除
             this.waitList.shift();
         }

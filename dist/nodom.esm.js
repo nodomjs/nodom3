@@ -406,7 +406,7 @@ class Util {
         return retObj;
         //处理子对象
         function subObj(obj) {
-            for (let o in obj) {
+            for (let o of Object.keys(obj)) {
                 if (me.isObject(obj[o]) || me.isArray(obj[o])) { //对象或数组
                     retObj[o] = me.clone(retObj[o]);
                 }
@@ -570,12 +570,6 @@ class Util {
      * @param nodes         替换的dom或dom数组
      */
     static replaceNode(srcNode, nodes) {
-        // if (!this.isNode(srcNode)) {
-        //     throw new NError('invoke', 'this.replaceNode', '0', 'Node');
-        // }
-        // if (!this.isNode(nodes) && !this.isArray(nodes)) {
-        //     throw new NError('invoke1', 'this.replaceNode', '1', 'Node', 'Node Array');
-        // }
         let pnode = srcNode.parentNode;
         let bnode = srcNode.nextSibling;
         if (pnode === null) {
@@ -867,7 +861,7 @@ class Expression {
             v = this.execFunc.apply(module, [model]);
         }
         catch (e) {
-            console.error(e);
+            // console.error(e);
         }
         this.value = v;
         return v;
@@ -914,7 +908,7 @@ class ModuleFactory {
      * @param item  模块对象
      */
     static add(item) {
-        // //第一个为主模块
+        // 第一个为主模块
         if (this.modules.size === 0) {
             this.mainModule = item;
         }
@@ -1519,7 +1513,8 @@ class Renderer {
     static remove(moduleId) {
         let index;
         if ((index = this.waitList.indexOf(moduleId)) !== -1) {
-            this.waitList.splice(index, 1);
+            //不能破坏watiList顺序，用null替换
+            this.waitList.splice(index, 1, null);
         }
     }
     /**
@@ -1527,7 +1522,10 @@ class Renderer {
      */
     static render() {
         for (; this.waitList.length > 0;) {
-            ModuleFactory.get(this.waitList[0]).render();
+            let id = this.waitList[0];
+            if (id) { //存在id为null情况，remove方法造成
+                ModuleFactory.get(id).render();
+            }
             //渲染后移除
             this.waitList.shift();
         }
@@ -1922,7 +1920,7 @@ class Route {
         }
         this.id = Util.genId();
         //参数赋值
-        for (let o in config) {
+        for (let o of Object.keys(config)) {
             this[o] = config[o];
         }
         this.parent = parent;
@@ -5015,8 +5013,32 @@ class Module {
         if (ModuleFactory.getMain() === this) {
             return;
         }
-        //解挂
-        this.unmount();
+        //从render列表移除
+        Renderer.remove(this.id);
+        //清空event factory
+        this.eventFactory = new EventFactory(this);
+        //删除渲染树
+        delete this.renderTree;
+        //module根与源el切换
+        const el = this.getNode('1');
+        if (el) {
+            if (this.container) { //带容器(路由方法加载)
+                this.container.removeChild(el);
+            }
+            else if (this.srcDom) {
+                const pm = this.getParent();
+                if (!pm) {
+                    return;
+                }
+                const srcElement = document.createTextNode("");
+                if (el.parentElement) {
+                    el.parentElement.replaceChild(srcElement, el);
+                }
+                pm.saveNode(this.srcDom.key, srcElement);
+            }
+        }
+        //清理dom map
+        this.clearMap();
         //设置状态
         this.state = EModuleState.UNACTIVE;
         //处理子模块
@@ -5025,7 +5047,7 @@ class Module {
             for (let id of this.children) {
                 let m = ModuleFactory.get(id);
                 if (m) {
-                    m.state = EModuleState.UNACTIVE;
+                    m.unactive();
                 }
             }
         }
@@ -5059,42 +5081,10 @@ class Module {
      * 解挂
      */
     unmount() {
-        const el = this.getNode('1');
-        if (!el) {
-            return;
-        }
-        //清理dom map
-        this.clearMap();
-        //清空event factory
-        this.eventFactory = new EventFactory(this);
-        //删除渲染树
-        delete this.renderTree;
-        if (this.container) { //带容器(路由方法加载)
-            this.container.removeChild(el);
-        }
-        else if (this.srcDom) {
-            const pm = this.getParent();
-            if (!pm) {
-                return;
-            }
-            const srcElement = document.createTextNode("");
-            if (el.parentElement) {
-                el.parentElement.replaceChild(srcElement, el);
-            }
-            pm.saveNode(this.srcDom.key, srcElement);
-        }
+        this.unactive();
         //执行解挂事件
         this.doModuleEvent('onUnmount');
         this.state = EModuleState.UNMOUNTED;
-        //处理子模块
-        if (this.children) {
-            for (let id of this.children) {
-                let m = ModuleFactory.get(id);
-                if (m) {
-                    m.unmount();
-                }
-            }
-        }
     }
     /**
      * 清除dom map
@@ -5180,7 +5170,7 @@ class Module {
         delete props.$data;
         //props数据复制到模块model
         if (dataObj) {
-            for (let d in dataObj) {
+            for (let d of Object.keys(dataObj)) {
                 let o = dataObj[d];
                 //如果为对象，需要绑定到模块
                 if (typeof o === 'object' && this.model[d] !== o) {
@@ -5417,6 +5407,63 @@ class Module {
                     let d1 = find(d, key);
                     if (d1) {
                         return d1;
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * 获取模块类名对应的第一个子模块(如果设置deep，则深度优先)
+     * @param className     子模块类名
+     * @param deep          是否深度获取
+     */
+    getModule(className, deep) {
+        if (!this.children) {
+            return;
+        }
+        for (let id of this.children) {
+            let m = ModuleFactory.get(id);
+            if (m && m.constructor) {
+                if (m.constructor.name === className) {
+                    return m;
+                }
+                if (deep) {
+                    let r = m.getModule(className, true);
+                    if (r) {
+                        return r;
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * 获取模块类名对应的所有子模块
+     * @param className     子模块类名
+     * @param deep          深度查询
+     */
+    getModules(className, deep) {
+        if (!this.children) {
+            return;
+        }
+        let arr = [];
+        find(this);
+        return arr;
+        /**
+         * 查询
+         * @param module
+         */
+        function find(module) {
+            if (!module.children) {
+                return;
+            }
+            for (let id of module.children) {
+                let m = ModuleFactory.get(id);
+                if (m && m.constructor) {
+                    if (m.constructor.name === className) {
+                        arr.push(m);
+                    }
+                    if (deep) {
+                        find(m);
                     }
                 }
             }
@@ -5898,23 +5945,19 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             if (m) {
                 //缓存当前替换节点
                 m.objectManager.set('$slots.' + this.value, { dom: src, model: dom.model });
-                //只需添加一次，用后即删除
-                if (src.parent) {
-                    src.parent.remove(src);
-                }
             }
         }
         else { //源slot节点
-            //获取替换节点进行替换
+            //获取替换节点进行替换，如果没有，则渲染子节点
             const cfg = module.objectManager.get('$slots.' + this.value);
-            if (cfg) {
-                //避免key重复，更新key
-                for (let d of cfg.dom.children) {
+            const children = cfg ? cfg.dom.children : src.children;
+            if (children) {
+                for (let d of children) {
                     let model;
                     if (src.hasProp('innerRender')) { //内部数据渲染
                         model = dom.model;
                     }
-                    else { //外部数据渲染
+                    else if (cfg) { //外部数据渲染
                         model = cfg.model;
                         //对象绑定到当前模块
                         ModelManager.bindToModule(cfg.model, module);

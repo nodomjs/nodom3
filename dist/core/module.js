@@ -192,8 +192,32 @@ export class Module {
         if (ModuleFactory.getMain() === this) {
             return;
         }
-        //解挂
-        this.unmount();
+        //从render列表移除
+        Renderer.remove(this.id);
+        //清空event factory
+        this.eventFactory = new EventFactory(this);
+        //删除渲染树
+        delete this.renderTree;
+        //module根与源el切换
+        const el = this.getNode('1');
+        if (el) {
+            if (this.container) { //带容器(路由方法加载)
+                this.container.removeChild(el);
+            }
+            else if (this.srcDom) {
+                const pm = this.getParent();
+                if (!pm) {
+                    return;
+                }
+                const srcElement = document.createTextNode("");
+                if (el.parentElement) {
+                    el.parentElement.replaceChild(srcElement, el);
+                }
+                pm.saveNode(this.srcDom.key, srcElement);
+            }
+        }
+        //清理dom map
+        this.clearMap();
         //设置状态
         this.state = EModuleState.UNACTIVE;
         //处理子模块
@@ -202,7 +226,7 @@ export class Module {
             for (let id of this.children) {
                 let m = ModuleFactory.get(id);
                 if (m) {
-                    m.state = EModuleState.UNACTIVE;
+                    m.unactive();
                 }
             }
         }
@@ -236,42 +260,10 @@ export class Module {
      * 解挂
      */
     unmount() {
-        const el = this.getNode('1');
-        if (!el) {
-            return;
-        }
-        //清理dom map
-        this.clearMap();
-        //清空event factory
-        this.eventFactory = new EventFactory(this);
-        //删除渲染树
-        delete this.renderTree;
-        if (this.container) { //带容器(路由方法加载)
-            this.container.removeChild(el);
-        }
-        else if (this.srcDom) {
-            const pm = this.getParent();
-            if (!pm) {
-                return;
-            }
-            const srcElement = document.createTextNode("");
-            if (el.parentElement) {
-                el.parentElement.replaceChild(srcElement, el);
-            }
-            pm.saveNode(this.srcDom.key, srcElement);
-        }
+        this.unactive();
         //执行解挂事件
         this.doModuleEvent('onUnmount');
         this.state = EModuleState.UNMOUNTED;
-        //处理子模块
-        if (this.children) {
-            for (let id of this.children) {
-                let m = ModuleFactory.get(id);
-                if (m) {
-                    m.unmount();
-                }
-            }
-        }
     }
     /**
      * 清除dom map
@@ -357,7 +349,7 @@ export class Module {
         delete props.$data;
         //props数据复制到模块model
         if (dataObj) {
-            for (let d in dataObj) {
+            for (let d of Object.keys(dataObj)) {
                 let o = dataObj[d];
                 //如果为对象，需要绑定到模块
                 if (typeof o === 'object' && this.model[d] !== o) {
@@ -594,6 +586,63 @@ export class Module {
                     let d1 = find(d, key);
                     if (d1) {
                         return d1;
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * 获取模块类名对应的第一个子模块(如果设置deep，则深度优先)
+     * @param className     子模块类名
+     * @param deep          是否深度获取
+     */
+    getModule(className, deep) {
+        if (!this.children) {
+            return;
+        }
+        for (let id of this.children) {
+            let m = ModuleFactory.get(id);
+            if (m && m.constructor) {
+                if (m.constructor.name === className) {
+                    return m;
+                }
+                if (deep) {
+                    let r = m.getModule(className, true);
+                    if (r) {
+                        return r;
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * 获取模块类名对应的所有子模块
+     * @param className     子模块类名
+     * @param deep          深度查询
+     */
+    getModules(className, deep) {
+        if (!this.children) {
+            return;
+        }
+        let arr = [];
+        find(this);
+        return arr;
+        /**
+         * 查询
+         * @param module
+         */
+        function find(module) {
+            if (!module.children) {
+                return;
+            }
+            for (let id of module.children) {
+                let m = ModuleFactory.get(id);
+                if (m && m.constructor) {
+                    if (m.constructor.name === className) {
+                        arr.push(m);
+                    }
+                    if (deep) {
+                        find(m);
                     }
                 }
             }

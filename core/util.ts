@@ -207,7 +207,7 @@ export class Util {
         return retObj;
         //处理子对象
         function subObj(obj) {
-            for (let o in obj) {
+            for (let o of Object.keys(obj)) {
                 if (me.isObject(obj[o]) || me.isArray(obj[o])) { //对象或数组
                     retObj[o] = me.clone(retObj[o]);
                 }
@@ -380,13 +380,6 @@ export class Util {
      * @param nodes         替换的dom或dom数组
      */
     public static replaceNode(srcNode: Node, nodes: Node | Array<Node>) {
-        // if (!this.isNode(srcNode)) {
-        //     throw new NError('invoke', 'this.replaceNode', '0', 'Node');
-        // }
-
-        // if (!this.isNode(nodes) && !this.isArray(nodes)) {
-        //     throw new NError('invoke1', 'this.replaceNode', '1', 'Node', 'Node Array');
-        // }
         let pnode: Node = srcNode.parentNode;
         let bnode: Node = srcNode.nextSibling;
         if (pnode === null) {

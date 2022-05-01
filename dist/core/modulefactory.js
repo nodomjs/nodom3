@@ -7,7 +7,7 @@ export class ModuleFactory {
      * @param item  模块对象
      */
     static add(item) {
-        // //第一个为主模块
+        // 第一个为主模块
         if (this.modules.size === 0) {
             this.mainModule = item;
         }

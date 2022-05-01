@@ -255,6 +255,18 @@ export declare class Module {
      */
     getRenderedDom(key: string): IRenderedDom;
     /**
+     * 获取模块类名对应的第一个子模块(如果设置deep，则深度优先)
+     * @param className     子模块类名
+     * @param deep          是否深度获取
+     */
+    getModule(className: string, deep?: boolean): Module;
+    /**
+     * 获取模块类名对应的所有子模块
+     * @param className     子模块类名
+     * @param deep          深度查询
+     */
+    getModules(className: string, deep?: boolean): Module[];
+    /**
      * 获取dom key id
      * @returns     key id
      */

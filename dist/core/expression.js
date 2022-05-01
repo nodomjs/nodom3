@@ -109,7 +109,7 @@ export class Expression {
             v = this.execFunc.apply(module, [model]);
         }
         catch (e) {
-            console.error(e);
+            // console.error(e);
         }
         this.value = v;
         return v;
