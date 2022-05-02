@@ -4931,6 +4931,8 @@ class Module {
             this.doModuleEvent('onBeforeFirstRender');
         }
         const oldTree = this.renderTree;
+        //合并属性
+        this.mergeProps();
         this.renderTree = Renderer.renderDom(this, this.originTree, this.model);
         if (!this.renderTree) {
             this.unmount();
@@ -5183,6 +5185,7 @@ class Module {
                 this.model[d] = o;
             }
         }
+        //保留src dom
         this.srcDom = dom;
         if (this.state !== exports.EModuleState.RENDERED) {
             this.active(1);
@@ -5231,8 +5234,12 @@ class Module {
             return;
         }
         this.originTree = new Compiler(this).compile(this.oldTemplate);
-        if (this.props) {
-            this.mergeProps(this.originTree, this.props);
+        this.originProps = new Map();
+        //复制保存根dom props
+        if (this.originTree.props) {
+            for (let p of this.originTree.props) {
+                this.originProps.set(p[0], p[1]);
+            }
         }
         //源事件传递到子模块根dom
         let parentModule = this.getParent();
@@ -5252,38 +5259,26 @@ class Module {
         this.doModuleEvent('onCompile');
     }
     /**
-    * 合并属性
+    * 合并根节点属性
     * @param dom       dom节点
     * @param props     属性集合
     * @returns         是否改变
     */
-    mergeProps(dom, props) {
-        let change = false;
-        for (let k of Object.keys(props)) {
+    mergeProps() {
+        if (!this.props || !this.originProps) {
+            return;
+        }
+        let dom = this.originTree;
+        for (let k of Object.keys(this.props)) {
             //如果dom自己有k属性，则处理为数组
-            if (dom.hasProp(k)) {
-                let pv = dom.getProp(k);
-                if (Array.isArray(pv)) { //是数组，表示已传值，此次进行修改
-                    if (pv[1] !== props[k]) {
-                        dom.setProp(k, [pv[0], props[k]]);
-                        change = true;
-                    }
-                }
-                else { //首次传值
-                    dom.setProp(k, [pv, props[k]]);
-                    change = true;
-                }
+            if (this.originProps.has(k)) {
+                dom.setProp(k, [this.props[k], this.originProps.get(k)]);
             }
             else { //dom自己无此属性
-                dom.setProp(k, props[k]);
-                change = true;
+                dom.setProp(k, this.props[k]);
             }
         }
-        //修改staticNum
-        if (change) {
-            dom.staticNum = 1;
-        }
-        return change;
+        dom.staticNum = 1;
     }
     /**
      * 获取node

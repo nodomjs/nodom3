@@ -130,6 +130,11 @@ export class Module {
      * 是否已渲染过
      */
     private hasRendered:boolean;
+
+    /**
+     * 编译后的根结点 props
+     */
+    private originProps:Map<string,any>;
     
     /**
      * 构造器
@@ -200,17 +205,21 @@ export class Module {
         if(this.doModuleEvent('onBeforeRender')){
             return;
         }
-        
         if (!this.hasRendered) {    //首次渲染
             this.doModuleEvent('onBeforeFirstRender');
         }
         const oldTree = this.renderTree;
+        //合并属性
+        this.mergeProps();
+
         this.renderTree = Renderer.renderDom(this,this.originTree,this.model);
+
         if(!this.renderTree){
             this.unmount();
             this.hasRendered = true;
             return;
         }
+        
         
         if(this.state === EModuleState.UNMOUNTED){ //未挂载
             //渲染到html dom
@@ -220,6 +229,7 @@ export class Module {
             let changeDoms = [];
             // 比较节点
             DiffTool.compare(this.renderTree,oldTree, changeDoms);
+            
             //执行更改
             if(changeDoms.length>0){
                 Renderer.handleChangedDoms(this,changeDoms);
@@ -471,7 +481,10 @@ export class Module {
                 this.model[d] = o;
             }
         }
+
+        //保留src dom
         this.srcDom = dom;
+
         if(this.state !== EModuleState.RENDERED){
             this.active(1);
         }else {  //计算template，如果导致模版改变，需要激活
@@ -518,8 +531,12 @@ export class Module {
             return;
         }
         this.originTree = new Compiler(this).compile(this.oldTemplate);
-        if(this.props){
-            this.mergeProps(this.originTree,this.props);
+        this.originProps = new Map();
+        //复制保存根dom props
+        if(this.originTree.props){
+            for(let p of this.originTree.props){
+                this.originProps.set(p[0],p[1]);
+            }
         }
         
         //源事件传递到子模块根dom
@@ -541,36 +558,25 @@ export class Module {
     }
 
     /**
-    * 合并属性
+    * 合并根节点属性
     * @param dom       dom节点 
     * @param props     属性集合
     * @returns         是否改变
     */
-    private mergeProps(dom:VirtualDom,props:any):boolean{
-        let change = false;
-        for(let k of Object.keys(props)){
+    private mergeProps():boolean{
+        if(!this.props || !this.originProps){
+            return;
+        }
+        let dom = this.originTree;
+        for(let k of Object.keys(this.props)){
             //如果dom自己有k属性，则处理为数组
-            if(dom.hasProp(k)){ 
-                let pv = dom.getProp(k);
-                if(Array.isArray(pv)){  //是数组，表示已传值，此次进行修改
-                    if(pv[1] !== props[k]){
-                        dom.setProp(k,[pv[0],props[k]]);    
-                        change = true;
-                    }
-                }else{  //首次传值
-                    dom.setProp(k,[pv,props[k]]);
-                    change = true;
-                }
+            if(this.originProps.has(k)){ 
+                dom.setProp(k,[this.props[k],this.originProps.get(k)]);
             }else{  //dom自己无此属性
-                dom.setProp(k,props[k]);
-                change = true;
+                dom.setProp(k,this.props[k]);
             }
         }
-        //修改staticNum
-        if(change){
-            dom.staticNum = 1;
-        }
-        return change;
+        dom.staticNum = 1;
     }
 
     /**

@@ -103,6 +103,10 @@ export declare class Module {
      */
     private hasRendered;
     /**
+     * 编译后的根结点 props
+     */
+    private originProps;
+    /**
      * 构造器
      */
     constructor();
@@ -196,7 +200,7 @@ export declare class Module {
      */
     compile(): void;
     /**
-    * 合并属性
+    * 合并根节点属性
     * @param dom       dom节点
     * @param props     属性集合
     * @returns         是否改变
