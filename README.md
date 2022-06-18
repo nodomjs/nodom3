@@ -1,8 +1,8 @@
 nodom是一款基于数据驱动的web mvvm框架。用于搭建单页应用(SPA)。  
 
 ## 源码
-1. gitee:  https://gitee.com/weblabsw/nodom  
-2. github: https://github.com/nodomjs/nodom
+1. gitee:  https://gitee.com/weblabsw/nodom3  
+2. github: https://github.com/nodomjs/nodom3
 
 ## 目录结构
 1. 核心库目录：./core  
