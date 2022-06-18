@@ -145,44 +145,70 @@ export class ModelManager {
      * @param key       属性
      * @param oldValue  旧值
      * @param newValue  新值
-     * @param force     强制渲染
      */
-    static update(model, key, oldValue, newValue, force) {
+    static update(model, key, oldValue, newValue) {
         const modules = this.getModuleIds(model);
         if (!modules) {
             return;
         }
-        //第一个module为watcher对应module
+        //所有module渲染
         for (let mid of modules) {
             const m = ModuleFactory.get(mid);
             if (m) {
                 Renderer.add(m);
             }
         }
-        //监听器
-        if (model.$watchers) {
-            //对象监听器
-            if (model.$watchers.$this) {
-                for (let cfg of model.$watchers.$this) {
-                    for (let mid of cfg.modules) {
-                        const m = ModuleFactory.get(mid);
-                        if (m) {
-                            cfg.f.call(m, model, oldValue, newValue);
-                        }
+        //触发监听器
+        if (this.watcherMap.has(model.$key)) {
+            if (!this.watcherMap.get(model.$key).has(key)) {
+                return;
+            }
+            let foos = this.watcherMap.get(model.$key).get(key);
+            for (let v of foos) {
+                for (let mid of v[1]) {
+                    const m = ModuleFactory.get(mid);
+                    if (m) {
+                        v[0].call(m, model, key, oldValue, newValue);
                     }
                 }
             }
-            //属性监听器
-            if (model.$watchers[key]) {
-                for (let cfg of model.$watchers[key]) {
-                    for (let mid of cfg.modules) {
-                        const m = ModuleFactory.get(mid);
-                        if (m) {
-                            cfg.f.call(m, model, oldValue, newValue);
-                        }
-                    }
-                }
-            }
+        }
+    }
+    /**
+     * 添加watch
+     * @param model 被watch模型
+     * @param key   watch键
+     * @param foo   触发方法
+     */
+    static watch(model, key, foo, mids) {
+        if (!this.watcherMap.has(model.$key)) {
+            this.watcherMap.set(model.$key, new Map());
+        }
+        let map = this.watcherMap.get(model.$key);
+        if (!map.has(key)) {
+            map.set(key, new Map());
+        }
+        map.get(key).set(foo, mids);
+    }
+    /**
+     * 移除watch
+     * @param model model
+     * @param key   watch键
+     * @param foo   待移除的watch方法，如果不设置，则表示移除该属性所有watch方法
+     */
+    static unwatch(model, key, foo) {
+        if (!this.watcherMap.has(model.$key)) {
+            return;
+        }
+        let map = this.watcherMap.get(model.$key);
+        if (!map.has(key)) {
+            return;
+        }
+        if (!foo) {
+            map.delete(key);
+        }
+        else if (map.get(key).has(foo)) {
+            map.get(key).delete(foo);
         }
     }
 }
@@ -196,4 +222,14 @@ export class ModelManager {
  *      modules为该数据对象绑定的模块id数组
  */
 ModelManager.modelMap = new Map();
+/**
+ * watcher map
+ * 用于存放所有watcher 方法
+ * key为model
+ * value为{item:{foo:moduleIds}，其中：
+ *      item为被watch的属性，
+ *      foo为方法
+ *      moduleIds为待触发的模块id数组，
+ */
+ModelManager.watcherMap = new Map();
 //# sourceMappingURL=modelmanager.js.map

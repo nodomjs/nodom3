@@ -312,7 +312,7 @@ export class Module {
         this.eventFactory = new EventFactory(this);
         //删除渲染树
         delete this.renderTree;
-
+        
         //module根与源el切换
         const el = this.getNode('1');
         if (el) {

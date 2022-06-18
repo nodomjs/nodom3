@@ -9,7 +9,6 @@ import { Renderer } from "../core/renderer";
 import { Router } from "../core/router";
 import { IRenderedDom } from "../core/types";
 import { Util } from "../core/util";
-import { VirtualDom } from "../core/virtualdom";
 
 export default (function () {
 

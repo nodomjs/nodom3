@@ -17,9 +17,10 @@
         template(){
             return `
             <div>
-                <button e-click='changeName'>change</button>
+                <button e-click='change'>change</button>
+                <button e-click='change1'>change1</button>
                 <button e-click='delProp'>delProp</button>
-                <button e-click='uncancel'>uncancel</button>
+                <button e-click='unwatch'>cancel watch</button>
                 <div>{{name}}</div>
                 <for cond={{rows}}>{{name}}</for>
                 <div>{{x.y.z}}</div>
@@ -107,7 +108,7 @@
             }
         }
         
-        changeName(model) {
+        change(model) {
             // model.name1 = {first:'yang'};
             // model.name='yang';
             // // model.datas = [{a:3,b:3}];
@@ -119,26 +120,38 @@
             // console.log(model);
             model.datas[0].a = 2;
             model.name='123'
-
-            
         }
+
+        change1(model){
+            model.name='aaa';
+            model.user.name.lastName='yyyy';
+        }
+
         delProp(model){
             delete model.name;
         }   
-
-        uncancel(){
+        /**
+         * 取消监听
+         */ 
+        unwatch(){
             this.cancer();
         }
+
         onBeforeFirstRender(model){
-            this.cancer = model.$watch(['datas','name'],(m,oldValue,newValue)=>{
-                console.log(this,m,oldValue,newValue)
-            })
+            /**
+             * 非深度监听，执行change1时，第二条不会触发监听事件
+             */ 
+            // this.cancer = model.$watch(['user','name'],(m,key,oldValue,newValue)=>{
+            //     console.log(this,m,key,oldValue,newValue)
+            // },null)
 
-            
-
-            // model.$watch('name',(m,oldValue,newValue)=>{
-            //     console.log(m,oldValue,newValue)
-            // })
+            /**
+             * 深度监听，执行change1时，第二条会触发监听事件
+             */ 
+            this.cancer = model.$watch(['user','name','datas'],(m,key,oldValue,newValue)=>{
+                console.log(this,m,key,oldValue,newValue)
+            },null,true);
+    
         }
     }
 

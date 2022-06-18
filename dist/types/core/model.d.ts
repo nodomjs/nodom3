@@ -14,7 +14,6 @@ export declare class Model {
      *      keyName: [listener1,listener2,...]，属性名监听器，允许多个监听
      * }
      */
-    $watchers: any;
     /**
      * @param data 		数据
      * @param module 	模块对象
@@ -28,12 +27,13 @@ export declare class Model {
      */
     private arrayOverload;
     /**
-     * 观察(取消观察)某个数据项
+     * 观察某个数据项
      * @param key       数据项名或数组
      * @param operate   数据项变化时执行方法
+     * @param module    指定模块，如果指定，则表示该model绑定的所有module都会触发watch事件，在model父(模块)传子(模块)传递的是对象时会导致多个watch出发
      * @param deep      是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
      */
-    $watch(key: string | string[], operate: Function, deep?: boolean): Function;
+    $watch(key: string | string[], operate: Function, module?: Module, deep?: boolean): Function;
     /**
      * 查询子属性
      * @param key   子属性，可以分级，如 name.firstName

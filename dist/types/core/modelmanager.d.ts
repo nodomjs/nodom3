@@ -16,6 +16,16 @@ export declare class ModelManager {
      */
     private static modelMap;
     /**
+     * watcher map
+     * 用于存放所有watcher 方法
+     * key为model
+     * value为{item:{foo:moduleIds}，其中：
+     *      item为被watch的属性，
+     *      foo为方法
+     *      moduleIds为待触发的模块id数组，
+     */
+    private static watcherMap;
+    /**
      * 添加到 dataNModelMap
      * @param data      数据对象
      * @param model     模型
@@ -72,7 +82,20 @@ export declare class ModelManager {
      * @param key       属性
      * @param oldValue  旧值
      * @param newValue  新值
-     * @param force     强制渲染
      */
-    static update(model: Model, key: string, oldValue?: any, newValue?: VirtualDom, force?: boolean): void;
+    static update(model: Model, key: string, oldValue?: any, newValue?: VirtualDom): void;
+    /**
+     * 添加watch
+     * @param model 被watch模型
+     * @param key   watch键
+     * @param foo   触发方法
+     */
+    static watch(model: Model, key: string, foo: Function, mids: number[]): void;
+    /**
+     * 移除watch
+     * @param model model
+     * @param key   watch键
+     * @param foo   待移除的watch方法，如果不设置，则表示移除该属性所有watch方法
+     */
+    static unwatch(model: Model, key: string, foo: Function): void;
 }

@@ -1,61 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<title>show</title>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>show</title>
+		<style>
+			.code {
+				margin: 20px;
+			}
 
-    <style>
-        .code {
-            margin: 20px;
-        }
+			.tip {
+				color: darkorange;
+			}
 
-        .tip {
-            color: darkorange;
-        }
+			.red {
+				color: red;
+			}
 
-        .red {
-            color: red;
-        }
+			.bold {
+				font-weight: bold;
+			}
+		</style>
+	</head>
 
-        .bold {
-            font-weight: bold;
-        }
-    </style>
-</head>
-
-<body>
-    <div>
-        
-    </div>
-</body>
-    <script type='module'>
-		import{nodom,Module} from '../dist/nodom.esm.js'
-		class Module1 extends Module{
-			template(){
+	<body>
+		<div></div>
+	</body>
+	<script type="module">
+		import { nodom, Module } from "../dist/nodom.esm.js";
+		class Module1 extends Module {
+			template() {
 				return `
 					<div>
-                        <button e-click='change'>change</button>
-						<div x-show={{show}}>价格：{{price}}</div>
+                        <button e-click='change'>change</button></button>
+						<!--<div x-show={{show}}>价格：{{price}}</div>-->
+                        {{num[0]}}
+                        {{num[1]}}
+                        {{num[2]}}
+                        {{num[3]}}
+                        {{num[4]}}
 	                </div>
-                `
-            }
+                `;
+			}
 
-            data(){
-                    return{
-                    show:true,
-                    price:2000
-                }
-            }
-            
-            change(model){
-                model.show = !model.show;
-            }
-        }
+			data() {
+				return {
+					show: true,
+					price: 2000,
+					a: [{ num: 1 }, { num: 2 }, { num: 3 }, { num: 4 }, { num: 5 }],
+				};
+			}
 
-        nodom(Module1,'div')
+			change(model) {
+				// model.show = !model.show;
+				let temp = model.a.shift();
+				model.a.push(temp);
+			}
+		}
 
-</script>
-
+		nodom(Module1, "div");
+	</script>
 </html>

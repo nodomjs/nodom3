@@ -22,8 +22,12 @@ export class DiffTool {
         }
         else {
             //相同子模块节点不比较
-            if (src.subModuleId && src.subModuleId === dst.subModuleId) {
-                return;
+            if (src.subModuleId || dst.subModuleId) {
+                if (src.subModuleId === dst.subModuleId) {
+                    return;
+                }
+                //子模块id不同或dst没有子模块，直接替换
+                addChange(5, src, null, dst.parent);
             }
             //element节点
             if (src.tagName !== dst.tagName) { //节点类型不同

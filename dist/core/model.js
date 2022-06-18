@@ -5,6 +5,13 @@ import { Util } from "./util";
  */
 export class Model {
     /**
+     * 监听器
+     * 存储样式{
+     *      $this: [listener1,listener2,...]，对象改变监听器,允许多个监听
+     *      keyName: [listener1,listener2,...]，属性名监听器，允许多个监听
+     * }
+     */
+    /**
      * @param data 		数据
      * @param module 	模块对象
      * @returns         模型代理对象
@@ -47,8 +54,9 @@ export class Model {
                 if (src[key] && src[key].$key && !(Array.isArray(src) && /^\d+$/.test(key))) {
                     ModelManager.delFromMap(src[key].$key);
                 }
+                let oldValue = src[key];
                 delete src[key];
-                ModelManager.update(src, key, null, null, true);
+                ModelManager.update(src, key, oldValue, undefined);
                 return true;
             }
         });
@@ -105,13 +113,15 @@ export class Model {
         };
     }
     /**
-     * 观察(取消观察)某个数据项
+     * 观察某个数据项
      * @param key       数据项名或数组
      * @param operate   数据项变化时执行方法
+     * @param module    指定模块，如果指定，则表示该model绑定的所有module都会触发watch事件，在model父(模块)传子(模块)传递的是对象时会导致多个watch出发
      * @param deep      是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
      */
-    $watch(key, operate, deep) {
-        let mids = ModelManager.getModuleIds(this);
+    $watch(key, operate, module, deep) {
+        let mids = module ? [module.id] : ModelManager.getModuleIds(this);
+        //撤销watch数组，数据项为{m:model,k:监听属性,f:触发方法}
         let arr = [];
         if (Array.isArray(key)) {
             for (let k of key) {
@@ -123,44 +133,34 @@ export class Model {
         }
         //返回取消watch函数
         return () => {
-            for (let f of arr) {
-                const foos = f.m.$watchers[f.k];
-                if (foos) {
-                    for (let i = 0; i < foos.length; i++) {
-                        //方法相同则撤销watch
-                        if (foos[i].f === f.f) {
-                            foos.splice(i, 1);
-                            if (foos.length === 0) {
-                                delete f.m.$watchers[f.k];
-                            }
-                        }
-                    }
+            if (arr) {
+                for (let f of arr) {
+                    ModelManager.unwatch(f.m, f.k, f.f);
                 }
             }
             //释放arr
             arr = null;
         };
+        /**
+         * 监听一个
+         * @param model     当前model
+         * @param key       监听键
+         * @param operate   操作方法
+         * @returns
+         */
         function watchOne(model, key, operate) {
             let index = -1;
             //如果带'.'，则只取最里面那个对象
             if ((index = key.lastIndexOf('.')) !== -1) {
-                model = this.$get(key.substring(0, index));
+                model = model.$get(key.substring(0, index));
                 key = key.substring(index + 1);
             }
             if (!model) {
                 return;
             }
-            const listener = { modules: mids, f: operate };
-            if (!model.$watchers) {
-                model.$watchers = {};
-            }
-            if (!model.$watchers[key]) {
-                model.$watchers[key] = [listener];
-            }
-            else {
-                model.$watchers[key].push(listener);
-            }
-            //保存用于撤销watch
+            //添加到modelmanager watch
+            ModelManager.watch(model, key, operate, mids);
+            //添加到撤销数组
             arr.push({ m: model, k: key, f: operate });
             //对象，监听整个对象
             if (deep && typeof model[key] === 'object') {
