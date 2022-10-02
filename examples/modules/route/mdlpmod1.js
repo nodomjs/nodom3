@@ -19,19 +19,10 @@ export class MdlPMod1 extends Module {
             home: true,
             list: false,
             data: false,
-            // route2:'/router/route2/rparam/home/1'
+            route2:'/router/route2/rparam/home/1'
         }
     }
     
-    onBeforeFirstRender(model){
-        setTimeout(()=>{
-            model.route2 = '/router/route2/rparam/home/1';
-        },0)
-    }
-
-    onFirstRender () {
-        // console.log(this);
-    }
     redirect(){
         Router.redirect("/router/route3/r1/r2");
     }

@@ -26,13 +26,9 @@
 					<button e-click='show'>show</button>
 					<button e-click='change'>change</button>
 					<button e-click='change1'>change1</button>
-					<!-- e-swipedown='swipedown' touch设备下测试-->
-					<div  x-show={{show}}> 
-                        <!--  -->
 					<ul e-click='clickP:once'>
-						<li x-repeat={{edus}} e-click='clickItem:delg'><span>{{eduName}}</span></li>
+						<li x-repeat={{edus}} e-click='clickItem:delg' e-dblclick='dblClick'><span>{{eduName}}</span></li>
 					</ul>
-					</div>
 				</div>
 				`;
 			}
@@ -59,6 +55,11 @@
 				console.log("child", model);
 				model.checked = true;
 			}
+
+			dblClick(model,dom,evo,e){
+				console.log("dblclick child",model);
+			}
+
 			show(model, dom, evo, e) {
 				console.log(model.show);
 				model.show = !model.show;

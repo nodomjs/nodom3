@@ -120,7 +120,9 @@ export class Router {
             // 清理map映射
             this.activeFieldMap.delete(module.id);
             //module置为不激活
-            module.unactive();
+            // module.unactive();
+            // 取消挂载
+            module.unmount();
         }
         if (diff[2].length === 0) { //路由相同，参数不同
             let route: Route = diff[0];
@@ -317,8 +319,6 @@ export class Router {
      */
     private static dependHandle(module: Module, route: Route, pm: Module) {
         const me = this;
-        //深度激活
-        module.active();
         //设置参数
         let o = {
             path: route.path
@@ -328,25 +328,31 @@ export class Router {
         }
         module.model['$route'] = o;
         if(pm){
-            if(pm.state === EModuleState.RENDERED){  //被依赖模块处于渲染后状态
-                module.setContainer(<HTMLElement>pm.getNode(Router.routerKeyMap.get(pm.id)));
+            if(pm.state === EModuleState.MOUNTED){  //被依赖已挂载在html dom树中
+                module.setContainer(<HTMLElement>pm.getElement(Router.routerKeyMap.get(pm.id)));
+                //激活
+                module.active();
                 this.setDomActive(pm, route.fullPath);
             } else { //被依赖模块不处于被渲染后状态
-                if(pm['onRender']){
-                    const foo = pm['onRender'];
-                    pm['onRender'] = (model)=>{
+                if(pm['onMount']){
+                    const foo = pm['onMount'];
+                    pm['onMount'] = (model)=>{
                         foo(model);
-                        module.setContainer(<HTMLElement>pm.getNode(Router.routerKeyMap.get(pm.id)));
+                        module.setContainer(<HTMLElement>pm.getElement(Router.routerKeyMap.get(pm.id)));
+                        //激活
+                        module.active();
                         me.setDomActive(pm,route.fullPath);
-                        //还原onRender方法
-                        pm['onRender'] = foo;
+                        //还原onMount方法
+                        pm['onMount'] = foo;
                     }
                 }else{
-                    pm['onRender'] = (model)=>{
-                        module.setContainer(<HTMLElement>pm.getNode(Router.routerKeyMap.get(pm.id)));
+                    pm['onMount'] = (model)=>{
+                        module.setContainer(<HTMLElement>pm.getElement(Router.routerKeyMap.get(pm.id)));
+                        //激活
+                        module.active();
                         me.setDomActive(pm,route.fullPath);
                         //只执行一次
-                        delete pm['onRender'];
+                        delete pm['onMount'];
                     }
                 }
             }

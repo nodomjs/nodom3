@@ -1,4 +1,4 @@
-import {Module} from '../../dist/nodom.esm.min.js'
+import {Module} from '../../dist/nodom.esm.js'
 export class MRepeat extends Module{
     template(){
         return `
@@ -12,7 +12,7 @@ export class MRepeat extends Module{
             <div class="tip">基本使用</div>
             <div class="code">
                 菜单：
-                <for cond={{foods}} $index='idx'>
+                <for cond={{foods}} $index='idx' class='item'>
                     <span>菜名：{{name}}，价格：{{price}}</span>
                 </for>
             </div>
@@ -136,6 +136,7 @@ export class MRepeat extends Module{
                 price: 30
             }
         )
+        console.log(model.foods);
     }
     clear(model){
         delete model.foods;

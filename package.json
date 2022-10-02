@@ -1,6 +1,6 @@
 {
   "name": "nodom3",
-  "version": "0.2.0-beta20",
+  "version": "0.2.1-beta1",
   "private": false,
   "main": "index.ts",
   "scripts": {
@@ -16,7 +16,7 @@
   "browser": "dist/nodom.global.js",
   "repository": {
     "type": "git",
-    "url": "https://gitee.com/weblabsw/nodom3"
+    "url": "https://github.com/nodomjs/nodom3"
   },
   "keywords": [
     "nodom",
@@ -27,9 +27,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://gitee.com/weblabsw/nodom3/issues"
+    "url": "https://github.com/nodomjs/nodom3/issues"
   },
-  "homepage": "https://gitee.com/weblabsw/nodom3",
+  "homepage": "https://github.com/nodomjs/nodom3",
   "description": "nodom是一款基于数据驱动的web mvvm框架,用于搭建单页应用(SPA)",
   "dependencies": {}
 }

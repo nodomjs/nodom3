@@ -477,7 +477,7 @@ export class VirtualDom {
      * @returns         对应的html dom
      */
     public getEl(module: Module): Node {
-        return module.getNode(this.key);
+        return module.getElement(this.key);
     }
 
     /**

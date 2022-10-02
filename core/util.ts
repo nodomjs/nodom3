@@ -1,8 +1,5 @@
 import { NError } from "./error";
-import { NEvent } from "./event";
-import { Module } from "./module";
-import { ModuleFactory } from "./modulefactory";
-import { NodomMessage_en as NodomMessage } from "./locales/msg_en";
+import { NodomMessage } from "./nodom";
 import { IRenderedDom } from "./types";
 import { VirtualDom } from "./virtualdom";
 /**
@@ -411,57 +408,51 @@ export class Util {
     /******日期相关******/
     /**
      * 日期格式化
-     * @param srcDate    时间戳串
+     * @param timestamp  时间戳
      * @param format     日期格式
      * @returns          日期串
      */
-    public static formatDate(srcDate: string | number, format: string): string {
-        //时间戳
-        let timeStamp: number;
-        if (this.isString(srcDate)) {
+    public static formatDate(timeStamp: string | number, format: string): string {
+        if (this.isString(timeStamp)) {
             //排除日期格式串,只处理时间戳
             let reg = /^\d+$/;
-            if (reg.test(<string>srcDate) === true) {
-                timeStamp = parseInt(<string>srcDate);
+            if (reg.test(<string>timeStamp)) {
+                timeStamp = Number(<string>timeStamp);
+            } else {
+                throw new NError('invoke', 'Util.formatDate', '0', 'date string', 'date');
             }
-        } else if (this.isNumber(srcDate)) {
-            timeStamp = <number>srcDate;
-        } else {
-            throw new NError('invoke', 'this.formatDate', '0', 'date string', 'date');
-        }
+        } 
         //得到日期
         let date: Date = new Date(timeStamp);
         // invalid date
         if (isNaN(date.getDay())) {
-            return '';
+            throw new NError('invoke', 'Util.formatDate', '0', 'date string', 'date');
         }
 
         let o = {
             "M+": date.getMonth() + 1, //月份
             "d+": date.getDate(), //日
-            "h+": date.getHours() % 12 === 0 ? 12 : date.getHours() % 12, //小时
+            "h+": date.getHours(), //小时
             "H+": date.getHours(), //小时
             "m+": date.getMinutes(), //分
             "s+": date.getSeconds(), //秒
-            "q+": Math.floor((date.getMonth() + 3) / 3), //季度
             "S": date.getMilliseconds() //毫秒
         };
 
+        let re;
         //年
-        if (/(y+)/.test(format)) {
-            format = format.replace(RegExp.$1, (date.getFullYear() + "").substring(4 - RegExp.$1.length));
+        if (re=/(y+)/.exec(format)) {
+            format = format.replace(re[0], (date.getFullYear() + "").substring(4 - re[0].length));
         }
         //月日
         this.getOwnProps(o).forEach(function (k) {
-            if (new RegExp("(" + k + ")").test(format)) {
-                format = format.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substring(("" + o[k]).length)));
+            if (re=new RegExp("(" + k + ")").exec(format)) {
+                format = format.replace(re[0], re[0].length===1?o[k]:("00" + o[k]).substring((o[k]+'').length));
             }
         });
 
         //星期
-        if (/(E+)/.test(format)) {
-            format = format.replace(RegExp.$1, ((RegExp.$1.length > 1) ? (RegExp.$1.length > 2 ? "/u661f/u671f" : "/u5468") : "") + NodomMessage.WeekDays[date.getDay() + ""]);
-        }
+        format = format.replace(/(E+)/, NodomMessage.WeekDays[date.getDay() + ""]);
         return format;
     }
 

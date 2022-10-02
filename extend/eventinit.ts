@@ -122,3 +122,34 @@ EventManager.regist('swipeleft',EventManager.get('swipe'));
 EventManager.regist('swiperight',EventManager.get('swipe'));
 EventManager.regist('swipeup',EventManager.get('swipe'));
 EventManager.regist('swipedown',EventManager.get('swipe'));
+
+/**
+ * double click
+ */
+EventManager.regist('dblclick',{
+    click(dom:IRenderedDom,module:Module,evtObj:NEvent,e: MouseEvent) {
+        let firstClick = evtObj.dependEvent.getParam(module,dom,'firstClick');
+        if(firstClick){
+            let t = Date.now();
+            //两次点击在300ms内，视为双击
+            if(t - firstClick < 300){
+                let foo = evtObj.dependEvent.handler;
+                if(typeof foo === 'string'){
+                    module.invokeMethod(<string>evtObj.dependEvent.handler,dom.model,dom,evtObj.dependEvent,e);
+                }else{
+                    foo.apply(module,[dom.model,dom,evtObj.dependEvent,e]);
+                }
+            }
+        }else{
+            evtObj.dependEvent.setParam(module,dom,'firstClick', Date.now());
+        }
+        
+        //延迟清理firstClick
+        setTimeout(()=>{
+            evtObj.dependEvent.removeParam(module,dom,'firstClick')
+        },500);
+        
+        
+    },
+    
+});

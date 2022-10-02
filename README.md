@@ -1,8 +1,8 @@
 nodom是一款基于数据驱动的web mvvm框架。用于搭建单页应用(SPA)。  
 
 ## 源码
-1. gitee:  https://gitee.com/weblabsw/nodom3  
-2. github: https://github.com/nodomjs/nodom3
+1. gitee:  https://gitee.com/weblabsw/nodom  
+2. github: https://github.com/nodomjs/nodom
 
 ## 目录结构
 1. 核心库目录：./core  
@@ -2031,7 +2031,14 @@ nodom(Main,"#app");
 
 #### $set()
 
-Nodom在`Model`上提供了一个`$set()`方法，来应对一些特殊情况。例如,需要往`Model`上设置一个深层次的对象。
+Nodom在提供了一个`$set()`方法，该方法可以往`Model`上设置一个深层次的对象。
+##### 参数说明
+model: Model, key: string, value:any
+参数名|类型|参数说明
+-|-|-
+model | Model | 模型
+key | string或string[] | 属性
+value | any | 值
 
 ```js
 data(){
@@ -2047,27 +2054,52 @@ change(model){
 	// 会报错，因为data1为undefined
 	model.data1.data2.data3 = { a:'a' };
 	// 使用$set可以避免该问题，如果不存在这么深层次的对象$set会帮你创建。
-	model.$set("data1.data2.data3",{a:'a'});
+	$set(model,"data1.data2.data3",{a:'a'});
 }
 ```
 
-#### $watch()
-
-Nodom在`Model`里提供了`$watch`方法来监视`Model`里的数据变化，当数据变化时执行指定的操作。  
+#### $get()
+Nodom在提供了一个`$get()`方法，可以从`Model`上获取一个深层次的对象值，当不知道对象具体层次时有效。
 ##### 参数说明
-key: string|string[], operate: Function,module?:Module,deep?:boolean
+model: Model, key: string, value:any
 参数名|类型|参数说明
 -|-|-
+model | Model | 模型
+key | string或string[] | 属性
+
+
+```js
+data(){
+	return {
+		data:{
+			a:1,
+			b:'b'
+		}
+	}
+}
+
+getValue(model){
+	// 等同于 model.data.a
+	console.log($get(model,"data.a"));
+}
+
+#### watch()
+
+Nodom提供了`watch`方法来监视`Model`里的数据变化，当数据变化时执行指定的操作。  
+##### 参数说明
+model: Model, key: string|string[], operate: Function,module?:Module,deep?:boolean
+参数名|类型|参数说明
+-|-|-
+model | Model | 监听对象
 key | string或string[] | 监听属性
-operate | Function | 监听触发方法，默认参数为(model,key,oldValue,newValue)
+operate | Function | 监听触发方法，默认参数为(model,key,oldValue,newValue)，其中model为被监听的model，key为监听的键，oldValue为旧值，newValue为新值
 module | Module | 监听模块，如果设置，则触发时，只针对该模块进行操作，否则如果model绑定了多个模块，则每个模块都会触发operate方法
 deep | boolean | 如果设置为true，当key对应项为对象时，对象的所有属性、子孙对象所有属性都会watch，慎重使用该参数，避免watch过多造成性能缺陷。
 
 ##### 取消watch
-$watch 方法会返回一个函数，当不需要watch时，执行该函数即可取消watch。
+watch 方法会返回一个函数，当不需要watch时，执行该函数即可取消watch。
 
 ##### 示例
-
 详细使用请参考 examples/model.html。
 
 ```js
@@ -2088,7 +2120,8 @@ class Main extends Module{
 	}
 	
 	watch(model){
-		model.$watch('count',(oldVal,newVal)=>{
+		//m 被监听为model,key为监听属性,oldVal为旧值,newVal为新值
+		watch(model,'count',(m,key,oldVal,newVal)=>{
 			console.log('检测到数据变化');
 			console.log('oldVal：',oldVal);
 			console.log('newVal：',newVal);
@@ -2102,9 +2135,19 @@ class Main extends Module{
 
 nodom(Main,"#app");
 ```
+#### getmkey()
+该方法用于获取model key
+##### 参数说明
+model: Model
+
+参数名|类型|参数说明
+-|-|-
+model | Model | 模型对象
+ 
+ ##### 返回值
+ 模型 key（全局唯一）
 
 ### 渲染
-
 Nodom的渲染是基于数据驱动的，也就是说只有Model内的数据发生了改变，当前模块才会进行重新渲染的操作。渲染时，Nodom将新旧两次渲染产生的虚拟Dom树进行对比，找到变化的节点，实现最小操作真实Dom的目的。
 
 ```js

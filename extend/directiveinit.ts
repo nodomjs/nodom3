@@ -11,7 +11,6 @@ import { IRenderedDom } from "../core/types";
 import { Util } from "../core/util";
 
 export default (function () {
-
     /**
      * 指令类型初始化
      * 每个指令类型都有一个名字、处理函数和优先级，处理函数不能用箭头函数
@@ -94,7 +93,7 @@ export default (function () {
     createDirective(
         'model',
         function (module: Module, dom: IRenderedDom) {
-            let model: Model = dom.model.$get(this.value);
+            let model: Model = ModelManager.get(dom.model,this.value);
             if (model) {
                 dom.model = model;
             }
@@ -125,12 +124,15 @@ export default (function () {
             //避免在渲染时对src设置了model，此处需要删除
             delete src.model;
             for (let i = 0; i < rows.length; i++) {
+                if(!rows[i]){
+                    continue;
+                }
                 if (idxName) {
                     rows[i][idxName] = i;
                 }
                 //渲染一次-1，所以需要+1
                 src.staticNum++;
-                let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].$key + '');
+                let d = Renderer.renderDom(module, src, rows[i], parent, ModelManager.getModelKey(rows[i]) + '');
                 //删除$index属性
                 if (idxName) {
                     delete d.props['$index'];
@@ -184,7 +186,7 @@ export default (function () {
                 //recur子节点不为数组，依赖子层数据，否则以来repeat数据
                 if (!Array.isArray(m)) {  
                     node1.model = m;
-                    Util.setNodeKey(node1, m.$key, true);
+                    Util.setNodeKey(node1, ModelManager.getModelKey(m)+'', true);
                 }
                 src.children = [node1];
                 node1.parent = src;
@@ -210,6 +212,9 @@ export default (function () {
      */
     createDirective('if',
         function (module: Module, dom: IRenderedDom) {
+            if(!dom.parent){
+                return;
+            }
             module.objectManager.setDomParam(dom.parent.key, '$if', this.value);
             return this.value;
         },
@@ -223,6 +228,9 @@ export default (function () {
     createDirective(
         'else',
         function (module: Module, dom: IRenderedDom) {
+            if(!dom.parent){
+                return;
+            }
             return  !module.objectManager.getDomParam(dom.parent.key, '$if');
         },
         5
@@ -233,6 +241,9 @@ export default (function () {
      */
     createDirective('elseif',
         function (module: Module, dom: IRenderedDom) {
+            if(!dom.parent){
+                return;
+            }
             let v = module.objectManager.getDomParam(dom.parent.key, '$if');
             if (v === true) {
                 return false;
@@ -254,6 +265,9 @@ export default (function () {
     createDirective(
         'endif',
         function (module: Module, dom: IRenderedDom) {
+            if(!dom.parent){
+                return;
+            }
             module.objectManager.removeDomParam(dom.parent.key, '$if');
             //endif 不显示
             return false;
@@ -268,7 +282,62 @@ export default (function () {
     createDirective(
         'show',
         function (module: Module, dom: IRenderedDom) {
-            return this.value?true:false;
+            //show指令参数 {origin:通过style设置的初始display属性,rendered:是否渲染过}
+            let showParam = module.objectManager.getDomParam(dom.key, '$show');
+            //为false且未渲染过，则不渲染
+            if(!this.value && (!showParam || !showParam.rendered)){
+                return false;
+            }
+            if(!showParam){
+                showParam = {};
+                module.objectManager.setDomParam(dom.key, '$show',showParam);
+            }
+            let style = dom.props['style'];
+            const reg =  /display\s*\:[\w\-]+/;
+            let regResult;
+            let display;
+            if(style){
+                regResult = reg.exec(style);
+                //保存第一个style display属性
+                if(regResult !== null){
+                    let ra = regResult[0].split(':');
+                    display = ra[1].trim();
+                    //保存第一个display属性
+                    if(!showParam.origin && display !== 'none'){
+                        showParam.origin = display;
+                    }
+                }
+            }
+
+            // 渲染标识，value为false且尚未进行渲染，则不渲染
+            if(!this.value){  
+                if(style){
+                    if(display){
+                        //把之前的display替换为none
+                        if(display!=='none'){
+                            style = style.substring(0,regResult.index) + 'display:none' + style.substring(regResult.index + regResult[0].length);
+                        }
+                    }else{
+                        style += ';display:none';
+                    }
+                }else{
+                    style = 'display:none';
+                }
+            }else{
+                //设置渲染标志
+                showParam.rendered = true;
+                if(display === 'none'){
+                    if(showParam.origin){
+                        style = style.substring(0,regResult.index) + 'display:' + showParam.origin + style.substring(regResult.index + regResult[0].length);
+                    }else{
+                        style = style.substring(0,regResult.index) + style.substring(regResult.index + regResult[0].length);
+                    }
+                }
+            }
+            if(style){
+                dom.props['style'] = style;
+            }
+            return true;
         },
         5
     );
@@ -285,7 +354,7 @@ export default (function () {
             if (!model) {
                 return true;
             }
-            let dataValue = model.$get(this.value);
+            let dataValue = ModelManager.get(model,this.value);
             if (type === 'radio') {
                 let value = dom.props['value'];
                 if (dataValue == value) {
@@ -318,7 +387,7 @@ export default (function () {
             if (!event) {
                 event = new NEvent(null, 'change',
                     function (model, dom) {
-                        let el = <any>this.getNode(dom.key);
+                        const el = <any>this.getElement(dom.key);
                         if (!el) {
                             return;
                         }
@@ -401,7 +470,8 @@ export default (function () {
             }
             dom.vdom.addEvent(event);
             return true;
-        }
+        },
+        10
     );
 
     /**
@@ -411,7 +481,8 @@ export default (function () {
         function (module: Module, dom: IRenderedDom) {
             Router.routerKeyMap.set(module.id, dom.key);
             return true;
-        }
+        },
+        10
     );
 
     /**
@@ -440,9 +511,10 @@ export default (function () {
                         if (src.hasProp('innerRender') ) {  //内部数据渲染
                             model = dom.model;
                         }else if(cfg){  //外部数据渲染
-                            model = cfg.model;
+                            model = new Model(cfg.model,module);
+                            
                             //对象绑定到当前模块
-                            ModelManager.bindToModule(cfg.model, module);
+                            // ModelManager.bindToModule(model, module);
                         }
                         //key以s结尾，避免重复，以dom key作为附加key
                         Renderer.renderDom(module, d, model, dom.parent, dom.key+'s');
@@ -502,7 +574,7 @@ export default (function () {
 
             // 定义动画或者过渡结束回调。
             let handler = () => {
-                const el: HTMLElement = <HTMLElement>module.getNode(dom.key)
+                const el: HTMLElement = <HTMLElement>module.getElement(dom.key)
                 // 离开动画结束之后隐藏元素
                 if (!tigger) {
                     if (isAppear) {
@@ -535,7 +607,7 @@ export default (function () {
             }
 
             // 获得真实dom
-            let el: HTMLElement = <HTMLElement>module.getNode(dom.key);
+            let el: HTMLElement = <HTMLElement>module.getElement(dom.key);
 
             if (!tigger) {
                 // tigger为false 播放Leave动画
@@ -566,7 +638,7 @@ export default (function () {
                     // 下一帧
                     setTimeout(() => {
                         // el已经渲染出来，取得el 根据动画/过渡的类型来做不同的事
-                        let el: HTMLElement = <HTMLElement>module.getNode(dom.key)
+                        let el: HTMLElement = <HTMLElement>module.getElement(dom.key)
                         if (isAppear) {
                             // 动画/过渡 是进入离开动画/过渡，并且当前是需要让他隐藏所以我们不播放动画，直接隐藏。
                             el.classList.add(`${nameLeave}-leave-to`)
@@ -611,7 +683,7 @@ export default (function () {
                     // 下一帧
                     setTimeout(() => {
                         // 等虚拟dom把元素更新上去了之后，取得元素
-                        let el: HTMLElement = <HTMLElement>module.getNode(dom.key)
+                        let el: HTMLElement = <HTMLElement>module.getElement(dom.key)
                         if (isAppear) {
                             // 这里必须将这个属性加入到dom中,否则该模块其他数据变化触发增量渲染时,diff会将这个节点重新渲染,导致显示异常
                             // 这里添加添加属性是为了避免diff算法重新渲染该节点
@@ -876,6 +948,6 @@ export default (function () {
                 return [width, height];
             }
         },
-        9
+        10
     );
 }());

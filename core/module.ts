@@ -13,7 +13,7 @@ import { EventFactory } from "./eventfactory";
 
 /**
  * 模块类
- * 模块方法说明：模版内使用的方法，包括事件，都直接在模块内定义
+ * 模块方法说明：模板内使用的方法，包括事件，都直接在模块内定义
  *      方法this：指向module实例
  *      事件参数: model(当前按钮对应model),dom(事件对应虚拟dom),eventObj(事件对象),e(实际触发的html event)
  *      表达式方法：参数按照表达式方式给定即可
@@ -23,6 +23,8 @@ import { EventFactory } from "./eventfactory";
  *      onBeforeRender      每次渲染前
  *      onRender            每次渲染后
  *      onCompile           编译后
+ *      onMount             挂载到html dom树后(onRender后执行)
+ *      onUnmount           从html dom树解挂后
  */
 export class Module {
     /**
@@ -36,7 +38,7 @@ export class Module {
     public model:Model;
 
     /**
-     * 子模块类集合，模版中引用的模块类需要声明
+     * 子模块类集合，模板中引用的模块类需要声明
      * 如果类已经通过registModule注册过，这里不再需要定义，只需import即可
      */
     public modules: any;
@@ -45,6 +47,21 @@ export class Module {
      * 父模块通过dom节点传递的属性
      */
     public props:any;
+
+    /**
+     * 编译后的根结点props
+     */
+    private originProps:Map<string,any> = new Map<string,any>();
+
+    /**
+     * 更改后的props
+     */
+     private changedProps:any;
+
+    /**
+     * 不渲染的属性（这些属性用于生产模板，不作为属性渲染到模块根节点）
+     */
+    private excludedProps:string[];
 
     /**
      * 编译后的dom树
@@ -87,25 +104,9 @@ export class Module {
     public eventFactory:EventFactory;
 
     /**
-     * 更改model的map，用于记录增量渲染时更改的model
+     *  key:html node映射
      */
-    public changedModelMap:Map<number,boolean>;
-
-    /**
-     * 用于保存每个key对应的html node
-     */
-    private keyNodeMap:Map<string,Node> = new Map();
-
-    /**
-     * 用户自定义key htmlelement映射
-     */
-    private keyElementMap:Map<string,HTMLElement> = new Map();
-
-    /**
-     * key virtualdom map 
-     */
-    private keyVDomMap:Map<string,IRenderedDom> = new Map();
-
+    private elementMap:Map<string,Node> = new Map();
     /**
      * 来源dom，子模块对应dom
      */
@@ -117,7 +118,7 @@ export class Module {
     private domKeyId:number;
 
     /**
-     * 旧模版串
+     * 旧模板串
      */
     private oldTemplate:string;
 
@@ -132,17 +133,11 @@ export class Module {
     private hasRendered:boolean;
 
     /**
-     * 编译后的根结点 props
-     */
-    private originProps:Map<string,any>;
-    
-    /**
      * 构造器
      */
     constructor() {
         this.id = Util.genId();
         this.objectManager = new ObjectManager(this);
-        this.changedModelMap = new Map();
         this.eventFactory = new EventFactory(this);
         //加入模块工厂
         ModuleFactory.add(this);
@@ -152,8 +147,6 @@ export class Module {
      * 初始化
      */
     public init() {
-        // 设置状态为初始化
-        this.state = EModuleState.INITED;
         //初始化model
         this.model = new Model(this.data()||{} , this);
         //注册子模块
@@ -163,12 +156,15 @@ export class Module {
             }
             delete this.modules;
         }
+        // 设置状态为准备好
+        this.state = EModuleState.READY;
+        
     }
 
     /**
-     * 模版串方法，使用时重载
-     * @param props     props对象，在模版容器dom中进行配置，从父模块传入
-     * @returns         模版串
+     * 模板串方法，使用时重载
+     * @param props     props对象，在模板容器dom中进行配置，从父模块传入
+     * @returns         模板串
      */
     public template(props?:any):string{
         return null;
@@ -186,17 +182,18 @@ export class Module {
      * 模型渲染
      */
     public render(): boolean {
-        if(this.state === EModuleState.UNACTIVE){
+        if(this.state === EModuleState.UNMOUNTED){
             return;
         }
-        //检测模版并编译
+        //检测模板并编译
         let templateStr = this.template(this.props);
         
         if(templateStr !== this.oldTemplate){
             this.oldTemplate = templateStr;
             this.compile();
         }
-        //不存在，不渲染
+        
+        //不存在originTree，不渲染
         if(!this.originTree){
             return;
         }
@@ -209,43 +206,31 @@ export class Module {
             this.doModuleEvent('onBeforeFirstRender');
         }
         const oldTree = this.renderTree;
-        //合并属性
-        this.mergeProps();
-
         this.renderTree = Renderer.renderDom(this,this.originTree,this.model);
-
         if(!this.renderTree){
             this.unmount();
             this.hasRendered = true;
             return;
         }
-        
-        
-        if(this.state === EModuleState.UNMOUNTED){ //未挂载
-            //渲染到html dom
-            Renderer.renderToHtml(this,this.renderTree,null,true);
-            this.mount();
-        }else if(oldTree && this.model) {
-            let changeDoms = [];
-            // 比较节点
-            DiffTool.compare(this.renderTree,oldTree, changeDoms);
-            
-            //执行更改
-            if(changeDoms.length>0){
-                Renderer.handleChangedDoms(this,changeDoms);
-            }
-        }
-
         if(!this.hasRendered) {    //首次渲染
             this.doModuleEvent('onFirstRender');
             this.hasRendered = true;
         }
-        
-        //设置已渲染状态
-        this.state = EModuleState.RENDERED;
-        //执行每次渲染后事件
+        //执行渲染后事件
         this.doModuleEvent('onRender');
-        this.changedModelMap.clear();
+        //挂载处理
+        if(this.state === EModuleState.MOUNTED){ //已经挂载
+            if(oldTree && this.model){
+                // 比较节点
+                let changeDoms = DiffTool.compare(this.renderTree,oldTree);
+                //执行更改
+                if(changeDoms.length>0){
+                    Renderer.handleChangedDoms(this,changeDoms);
+                }
+            }
+        }else { //未挂载
+            this.mount();
+        }
     }
 
     /**
@@ -275,35 +260,54 @@ export class Module {
     public removeChild(module: Module) {
         let ind=this.children.indexOf(module.id);
         if (ind !== -1) {
-            module.unactive();
+            module.unmount();
             this.children.splice(ind,1);
         }
     }
 
     /**
-     * 激活模块(添加到渲染器)
+     * 激活模块(准备渲染)
      * @param type  0 手动， 1父节点setProps激活，默认0
      */
-    public active(type?:number) {
-        //如果为手动active，srcdom存在且不在renderTree中，则不active
-        if(!type && this.srcDom){
-            const pm = this.getParent();
-            if(pm && !pm.getRenderedDom(this.srcDom.key)){
-                return;
-            }
-        }
-        //设置unmount状态
-        if(this.state === EModuleState.UNACTIVE || this.state === EModuleState.INITED){
-            this.state = EModuleState.UNMOUNTED;
+    public active() {
+        //如果为unmounted，则设置渲染为准备好状态
+        if(this.state === EModuleState.UNMOUNTED){
+            this.state = EModuleState.READY;
         }
         Renderer.add(this);
     }
 
     /**
-     * 取消激活
+     * 挂载到html dom
      */
-    public unactive() {
-        if (ModuleFactory.getMain() === this) {
+     private mount(){
+        //渲染到html dom
+        const el = Renderer.renderToHtml(this,this.renderTree,null,true);
+        if(this.container){ //自带容器（主模块或路由模块）
+            this.container.appendChild(el);
+        }else if(this.srcDom){
+            const pm = this.getParent();
+            if(!pm){
+                return;
+            }
+            //替换占位符
+            const srcElement = pm.getElement(this.srcDom.key);
+            if(srcElement){
+                srcElement.parentElement.replaceChild(el,srcElement);
+            }
+            pm.saveElement(this.srcDom.key,el);
+        }
+        this.state = EModuleState.MOUNTED;
+        //执行挂载事件
+        this.doModuleEvent('onMount');
+    }
+
+    /**
+     * 解挂，从htmldom 移除
+     */
+    public unmount(){
+        // 主模块或状态为unmounted的模块不用处理
+        if (this.state === EModuleState.UNMOUNTED || ModuleFactory.getMain() === this) {
             return;
         }
         //从render列表移除
@@ -314,88 +318,48 @@ export class Module {
         delete this.renderTree;
         
         //module根与源el切换
-        const el = this.getNode('1');
+        const el = this.getElement('1');
         if (el) {
             if (this.container) { //带容器(路由方法加载)
                 this.container.removeChild(el);
-            }
-            else if (this.srcDom) {
+            } else if (this.srcDom) {
                 const pm = this.getParent();
                 if (!pm) {
                     return;
                 }
+                //设置模块占位符
                 const srcElement = document.createTextNode("");
                 if (el.parentElement) {
                     el.parentElement.replaceChild(srcElement, el);
                 }
-                pm.saveNode(this.srcDom.key, srcElement);
+                pm.saveElement(this.srcDom.key, srcElement);
             }    
         }
         //清理dom map
-        this.clearMap();
+        this.clearElementMap();
         
         //设置状态
-        this.state = EModuleState.UNACTIVE;
-        //处理子模块
+        this.state = EModuleState.UNMOUNTED;
+        //子模块递归卸载
         if (this.children) {
-            //处理子模块
             for (let id of this.children) {
                 let m = ModuleFactory.get(id);
                 if (m) {
-                    m.unactive();
+                    m.unmount();
                 }
             }
         }
     }
-
-    /**
-     * 挂载到html dom
-     */
-     private mount(){
-        const el = this.getNode('1');
-        if(!el){
-            return;
-        }
-        if(this.container){ //带容器(路由方法加载)
-            this.container.appendChild(el);
-        }else if(this.srcDom){
-            const pm = this.getParent();
-            if(!pm){
-                return;
-            }
-            const srcElement = pm.getNode(this.srcDom.key);
-            if(srcElement){
-                srcElement.parentElement.replaceChild(el,srcElement);
-            }
-            pm.saveNode(this.srcDom.key,el);
-        }
-        //执行挂载事件
-        this.doModuleEvent('onMount');
-    }
-
-    /**
-     * 解挂
-     */
-    private unmount(){
-        this.unactive();
-        //执行解挂事件
-        this.doModuleEvent('onUnmount');
-        this.state = EModuleState.UNMOUNTED;
-    }
     
     /**
-     * 清除dom map
+     * 清除html element map 节点
      * @param key   dom key，如果为空，则清空map
      */
-    private clearMap(key?:string){
+    private clearElementMap(key?:string){
         if(key){
-            this.keyElementMap.delete(key);
-            this.keyNodeMap.delete(key);
-            this.keyVDomMap.delete(key);
+            this.elementMap.delete(key);
         }else{
-            this.keyElementMap.clear();
-            this.keyNodeMap.clear();
-            this.keyVDomMap.clear();
+            this.elementMap.clear();
         }
     }
     /**
@@ -403,10 +367,9 @@ export class Module {
      * @returns     父模块   
      */
     public getParent(): Module {
-        if (!this.parentId) {
-            return;
+        if (this.parentId) {
+            return ModuleFactory.get(this.parentId);
         }
-        return ModuleFactory.get(this.parentId);
     }
 
     /**
@@ -469,14 +432,15 @@ export class Module {
      */
     public setProps(props:any,dom:IRenderedDom){
         let dataObj = props.$data;
+        this.changedProps = {};
         delete props.$data;
         //props数据复制到模块model
         if(dataObj){
             for(let d of Object.keys(dataObj)){
                 let o = dataObj[d];
                 //如果为对象，需要绑定到模块
-                if(typeof o === 'object' && this.model[d] !== o){
-                    ModelManager.bindToModule(o,this);
+                if(o && typeof o === 'object' && this.model[d] !== o){
+                    o = new Model(o,this);
                 }
                 this.model[d] = o;
             }
@@ -485,33 +449,34 @@ export class Module {
         //保留src dom
         this.srcDom = dom;
 
-        if(this.state !== EModuleState.RENDERED){
-            this.active(1);
-        }else {  //计算template，如果导致模版改变，需要激活
-            let change = false;
-            if(!this.props){
-                change = true;
-            }else{
-                const keys = Object.getOwnPropertyNames(props);
-                let len1 = keys.length;
-                const keys1 = this.props?Object.getOwnPropertyNames(this.props):[];
-                let len2 = keys1.length;
-                if(len1 !== len2){
+        //如果不存在旧的props，则change为true，否则初始化为false
+        let change:boolean = false;
+        
+        if(!this.props){
+            this.changedProps = props;
+            change = true;
+        }else{
+            for(let k of Object.keys(props)){
+                // object 默认改变
+                if(props[k] !== this.props[k]){
                     change = true;
-                }else{
-                    for(let k of keys){
-                        // object 默认改变
-                        if(props[k] !== this.props[k]){
-                            change = true;
-                            break;
-                        }
-                    }
+                    //保留更改的属性
+                    this.changedProps[k] = props[k];
                 }
             }
-            if(change){  //props 发生改变，计算模版，如果模版改变，激活模块
-                this.active(1);
-            }
         }
+
+        //合并根dom属性
+        if(change){
+            this.mergeProps(this.changedProps);
+        }
+        
+        //props发生改变或unmounted，激活模块
+        if(change || this.state === EModuleState.UNMOUNTED){
+            this.active();
+        }
+
+        //保存props
         this.props = props;
     }
 
@@ -531,13 +496,15 @@ export class Module {
             return;
         }
         this.originTree = new Compiler(this).compile(this.oldTemplate);
-        this.originProps = new Map();
-        //复制保存根dom props
+        
+        //保存originProps(由编译后的节点属性确认)
         if(this.originTree.props){
             for(let p of this.originTree.props){
                 this.originProps.set(p[0],p[1]);
             }
         }
+        
+        this.mergeProps(this.props);
         
         //源事件传递到子模块根dom
         let parentModule = this.getParent();
@@ -558,79 +525,55 @@ export class Module {
     }
 
     /**
+     * 设置不渲染到根dom的属性集合
+     * @param props     待移除的属性名属组
+     */
+    public setExcludeProps(props:string[]){
+        this.excludedProps = props;
+    }
+    /**
     * 合并根节点属性
     * @param dom       dom节点 
     * @param props     属性集合
     * @returns         是否改变
     */
-    private mergeProps():boolean{
-        if(!this.props || !this.originProps){
+    private mergeProps(props){
+        if(!props || !this.originTree){
             return;
         }
-        let dom = this.originTree;
-        for(let k of Object.keys(this.props)){
-            //如果dom自己有k属性，则处理为数组
-            if(this.originProps.has(k)){ 
-                dom.setProp(k,[this.props[k],this.originProps.get(k)]);
-            }else{  //dom自己无此属性
-                dom.setProp(k,this.props[k]);
+        this.originTree.staticNum = 1;    
+        //设置根属性
+        for(let k of Object.keys(props)){
+            //排除的props不添加到属性
+            if(!this.excludedProps || !this.excludedProps.includes(k)){
+                //如果dom自己有k属性，则处理为数组
+                if(this.originProps.has(k)){ 
+                    this.originTree.setProp(k,[props[k],this.originProps.get(k)]);
+                }else{  //dom自己无此属性
+                    this.originTree.setProp(k,props[k]);
+                }
             }
         }
-        dom.staticNum = 1;
     }
 
+    
+
     /**
-     * 获取node
+     * 获取html node
      * @param key   dom key 
      * @returns     html node
      */
-    public getNode(key:string):Node{
-        return this.keyNodeMap.get(key);
+    public getElement(key:string):Node{
+        return this.elementMap.get(key);
     }
 
     /**
-     * save node
+     * save html node
      * @param key   dom key
      * @param node  html node
      */
-    public saveNode(key:string,node:Node){
-        this.keyNodeMap.set(key,node);
-    }
-
-    /**
-     * 获取用户key定义的html
-     * @param key   用户自定义key
-     * @returns     html element
-     */
-    public getElement(key:string):HTMLElement{
-        return this.keyElementMap.get(key);
-    }
-
-    /**
-     * 保存用户key对应的htmlelement
-     * @param key   自定义key
-     * @param node  htmlelement
-     */
-    public saveElement(key:string,node:HTMLElement){
-        this.keyElementMap.set(key,node);
-    }
-
-    /**
-     * 获取key对应的virtual dom
-     * @param key   vdom key
-     * @returns     virtual dom
-     */
-    public getVirtualDom(key:string):IRenderedDom{
-        return this.keyVDomMap.get(key);
-    }
-
-    /**
-     * 保存key对应的virtual dom
-     * @param dom   virtual dom
-     * @param key   vdom key
-     */
-    public saveVirtualDom(dom:IRenderedDom,key?:string){
-        this.keyVDomMap.set(key || dom.key,dom);
+    public saveElement(key:string,node:Node){
+        this.elementMap.set(key,node);
     }
 
     /**
@@ -640,22 +583,16 @@ export class Module {
      */
     public freeNode(dom:IRenderedDom){
         if(dom.subModuleId){  //子模块
-            //从渲染队列移除
-            Renderer.remove(dom.subModuleId);
             let m = ModuleFactory.get(dom.subModuleId);
             if(m){
-                m.unactive();
+                m.unmount();
             }
-        }else{  //非子模块
-            let el = this.getNode(dom.key);
-            if(el && el.parentElement){
-                el.parentElement.removeChild(el);
-            }
+        }else{      //普通节点
             //从map移除
-            this.clearMap(dom.key);
+            this.clearElementMap(dom.key);
             //解绑所有事件
             this.eventFactory.unbindAll(dom.key);
-            
+            //子节点递归操作
             if(dom.children){
                 for(let d of dom.children){
                     this.freeNode(d);
@@ -668,7 +605,7 @@ export class Module {
      * 从origin tree 获取虚拟dom节点
      * @param key   dom key
      */
-    public getOrginDom(key:string):VirtualDom{
+    public getOriginDom(key:string):VirtualDom{
         if(!this.originTree){
             return null;
         }
@@ -723,8 +660,9 @@ export class Module {
      * 获取模块类名对应的第一个子模块(如果设置deep，则深度优先)
      * @param className     子模块类名
      * @param deep          是否深度获取
+     * @param attrs         属性集合
      */
-    public getModule(className:string,deep?:boolean):Module{
+    public getModule(className:string,deep?:boolean,attrs?:any):Module{
         if(!this.children){
             return;
         }
@@ -732,10 +670,24 @@ export class Module {
             let m:Module = ModuleFactory.get(id);
             if(m && m.constructor){
                 if(m.constructor.name === className){
-                    return m;
+                    if(attrs){  //属性集合不为空
+                        //全匹配标识
+                        let matched:boolean = true;
+                        for(let k of Object.keys(attrs)){
+                            if(!m.props || m.props[k] !== attrs[k]){
+                                matched = false;
+                                break;
+                            }
+                        }
+                        if(matched){
+                            return m;
+                        }
+                    }else{
+                        return m;
+                    }
                 }
                 if(deep){
-                    let r = m.getModule(className,true);
+                    let r = m.getModule(className,true,attrs);
                     if(r){
                         return r;
                     }

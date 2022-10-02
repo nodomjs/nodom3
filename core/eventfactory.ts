@@ -63,7 +63,7 @@ export class EventFactory{
                 }else{
                     let arr = obj.toDelg;
                     //事件不重复添加
-                    if(arr.findIndex(item=>item === event) === -1){
+                    if(arr.find(item=>item === event)){
                         arr.push(event);
                     }
                 }
@@ -73,7 +73,7 @@ export class EventFactory{
                 }else{
                     let arr = obj.own;
                     //事件不重复添加
-                    if(arr.findIndex(item=>item === event) === -1){
+                    if(arr.find(item=>item === event)){
                         arr.push(event);
                     }
                 }
@@ -163,7 +163,7 @@ export class EventFactory{
         }else if(eobj.bindMap.has(eventName)){   //已绑定，不再绑
             return false;
         }
-        const el = this.module.getNode(key);
+        const el = this.module.getElement(key);
         
         if(el){
             el.addEventListener(eventName,handler,capture);
@@ -188,7 +188,7 @@ export class EventFactory{
         if(!eobj.bindMap || !eobj.has(eventName)){
             return;
         }
-        const el = this.module.getNode(key);
+        const el = this.module.getElement(key);
         const cfg = eobj.bindMap.get(eventName);
         //从html element解绑
         if(el && cfg){
@@ -209,7 +209,7 @@ export class EventFactory{
         if(!eobj.bindMap){
             return;
         }
-        const el = this.module.getNode(key);
+        const el = this.module.getElement(key);
         if(el){
             for(let evt of eobj.bindMap){
                 el.removeEventListener(evt[0],evt[1].handler,evt[1].capture);

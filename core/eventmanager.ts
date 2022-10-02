@@ -51,7 +51,7 @@ export class EventManager {
         function handler(e) {
             //从事件element获取事件
             let el = e.currentTarget;
-            const dom = module.getVirtualDom(el['vdom']);
+            const dom = el.$vdom;
             const eobj = module.eventFactory.getEvent(dom.key);
             if(!dom || !eobj || !eobj.has(e.type)){
                 return;
@@ -116,14 +116,14 @@ export class EventManager {
                     const ev = evo.event;
                     
                     for(let j=0;j<e.path.length&&e.path[j]!==el;j++){
-                        if(e.path[j]['vdom'] === evo.key){
-                            let dom1 = module.getVirtualDom(evo.key);
+                        if(e.path[j].$vdom && e.path[j].$vdom.key === evo.key){
+                            const dom1 = e.path[j].$vdom;
                             if(typeof ev.handler === 'string'){
                                 module.invokeMethod(ev.handler,dom.model, dom,ev, e);
                             }else if(typeof ev.handler === 'function'){
                                 ev.handler.apply(module,[dom.model,dom,ev,e]);
                             }
-                            
+                            // 保留nopopo
                             nopopo = ev.nopopo;
                             if(ev.once){  //移除代理事件，需要从被代理元素删除
                                 //从当前dom删除

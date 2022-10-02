@@ -55,23 +55,5 @@ export const NodomMessage_en = {
         wrongTemplate:"wrong template"
     },
 
-    /**
-     * form info
-     */
-    FormMsgs:{
-        type:"please input valid {0}",
-        unknown:"input error",
-        required:"is required",
-        min:"min value is {0}",
-        max:"max value is {0}"
-    },
-    WeekDays:{
-		"0" : "Sun",
-		"1" : "Mon",
-		"2" : "Tue",
-		"3" : "Wed",
-		"4" : "Thu",
-		"5" : "Fri",
-		"6" : "Sat"
-	}
+    WeekDays:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
 }

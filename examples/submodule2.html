@@ -10,7 +10,7 @@
     <div></div>
 </body>
 <script type='module'>
-    import {nodom,Module,GlobalCache,ModuleFactory} from '../dist/nodom.esm.min.js'
+    import {nodom,Module,GlobalCache,ModuleFactory,$set} from '../dist/nodom.esm.js'
     
     class ModuleA extends Module{
         template(props){
@@ -52,22 +52,63 @@
 
     class ModuleB extends Module{
         template(){
-            return `<div>moduleb</div>`
+            return `<div>
+                <button e-click='change'>修改a.b.c</button>
+                moduleb is {{a.b.c}}
+            </div>`
+        }
+
+        change(){
+            this.model.a.b.c = 'not ok';
+            console.log(this.getParent().model);
+        }
+    }
+
+    class ModuleC extends Module{
+        template(){
+            return `<div>
+                <button e-click='change'>c修改a.c</button>
+                <div> c is render:{{ok}}</div>
+                <slot />
+            </div>`
+        }
+
+        data(){
+            return {
+                ok:'ok'       
+            }   
+        }
+        change(){
+            console.log(this.model)
+
         }
     }
    
     class Module1 extends Module {
-        modules = [ModuleA,ModuleB];
+        modules = [ModuleA,ModuleB,ModuleC];
         template(props) {
             return `
-            <div >
-                <button e-click='change1'>change1</button>
-                <modulea style={{style}} x-show={{showma}}>
-                    <span>{{name}}</span>
-                </modulea>
-                <moduleb x-show={{!showma}} />
-            </div>
-        `;
+                <div >
+                    <p>隐藏</p>
+                    <button e-click='change1'>change1</button>
+                    <modulea style={{style}} x-show={{showma}}>
+                        <span>{{name}}</span>
+                    </modulea>
+                    <p>通过数据传对象到子模块，可反向修改</p>
+                    <div >parent tob.b.c value is {{tob.b.c}}</div>
+                    <p>第一个moduleb</p>
+                    <moduleb $a={{tob}}/>
+                    <p>第二个moduleb</p>
+                    <moduleb $a={{tob}} />
+                    <p>slot</p>
+                    <button e-click='changetoc' >修改toc</button>
+                    <modulec x-model='toc'>
+                        <div e-click='updc'>this is {{toc.c}}</div>
+                    </modulec>
+                    
+                </div>
+            `;
+            
         }
         data() {
             return {
@@ -76,6 +117,13 @@
                 style: "width:600px",
                 show: true,
                 showma:false,
+                tob:{
+                    
+                },
+                toc:{
+                    toc:{c:'cslot'}
+                    
+                },
                 rows: [
                     { id: 1, name: "nodom", title: "click1" },
                     { id: 2, name: "noomi", title: "click2" },
@@ -87,6 +135,15 @@
         change1(model) {
             model.style='background:#ccc'
             model.showma = !model.showma;
+            $set(model,'tob.b.c','nodom')
+        }
+
+        changetoc(){
+            this.model.toc.toc.c='change slot'
+        }
+
+        updc(m){
+            m.toc.c = 'changed'
         }
     }
 		nodom(Module1, "div");

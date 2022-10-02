@@ -6,20 +6,10 @@
 		<title>show</title>
 
 		<style>
-			.code {
-				margin: 20px;
-			}
-
-			.tip {
-				color: darkorange;
-			}
-
-			.red {
-				color: red;
-			}
-
-			.bold {
-				font-weight: bold;
+			.cls1{
+				color:blue;
+				display:block;
+				font-weight:bold;
 			}
 		</style>
 	</head>
@@ -33,27 +23,27 @@
 			template() {
 				return `
 					<div>
-                        <button e-click='change'>change</button></button>
-						<!--<div x-show={{show}}>价格：{{price}}</div>-->
-                        {{num[0]}}
-                        {{num[1]}}
-                        {{num[2]}}
-                        {{num[3]}}
-                        {{num[4]}}
+                        <button e-click='change'>change</button>
+						<p>带style</p>
+						<div x-show={{show}} style='display:block;color:red'>价格：{{price}}</div>
+						<p>不带style</p>
+                        <div x-show={{show}} >价格：{{price}}</div>
+						<p>带class</p>
+						<div x-show={{!show}} class='cls1'>价格：{{price}}</div>
 	                </div>
                 `;
 			}
 
 			data() {
 				return {
-					show: true,
+					show: false,
 					price: 2000,
 					a: [{ num: 1 }, { num: 2 }, { num: 3 }, { num: 4 }, { num: 5 }],
 				};
 			}
 
 			change(model) {
-				// model.show = !model.show;
+				model.show = !model.show;
 				let temp = model.a.shift();
 				model.a.push(temp);
 			}

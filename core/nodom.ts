@@ -1,6 +1,10 @@
 import { DirectiveManager } from "./directivemanager";
 import { NError } from "./error";
 import { NodomMessage_en } from "./locales/msg_en";
+import { NodomMessage_zh } from "./locales/msg_zh";
+import { Model } from "./model";
+import { ModelManager } from "./modelmanager";
+import { Module } from "./module";
 import { ModuleFactory } from "./modulefactory";
 import { Renderer } from "./renderer";
 import { Route } from "./route";
@@ -17,13 +21,21 @@ export var NodomMessage;
  * 新建一个App
  * @param clazz     模块类
  * @param el        el选择器
+ * @param language  语言（zh,en），默认zh
  */
-export function nodom(clazz:any,el:string){
+export async function nodom(clazz:any,el:string,language?:string){
+    //设置nodom语言
+    switch(language||'zh'){
+        case 'zh':
+            NodomMessage = NodomMessage_zh;
+            break;
+        case 'en':
+            NodomMessage = NodomMessage_en;
+    }
     //渲染器启动渲染
     Scheduler.addTask(Renderer.render, Renderer);
     //启动调度器
     Scheduler.start();
-    NodomMessage = NodomMessage_en;
     let mdl = ModuleFactory.get(clazz);
     mdl.setContainer(document.querySelector(el));
     mdl.active();
@@ -186,4 +198,47 @@ export async function request(config): Promise<any> {
                 throw new NError("jsonparse");
         }
     });
+}
+
+/**
+ * 观察某个数据项
+ * @param model     带watch的model
+ * @param key       数据项名或数组
+ * @param operate   数据项变化时执行方法
+ * @param module    指定模块，如果指定，则表示该model绑定的所有module都会触发watch事件，在model父(模块)传子(模块)传递的是对象时会导致多个watch出发
+ * @param deep      是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
+ * 
+ * @returns         unwatch函数
+ */
+export function watch(model:Model,key: string|string[], operate: Function,module?:Module,deep?:boolean):Function {
+    return ModelManager.watch(model,key,operate,module,deep);
+}
+
+/**
+ * 获取模型key
+ * @param model     模型 
+ * @returns         模型key
+ */
+export function getmkey(model:Model):number{
+    return ModelManager.getModelKey(model);
+}
+
+/**
+ * 设置值
+ * @param model     模型
+ * @param key       子属性，可以分级，如 name.firstName
+ * @param value     属性值
+ */
+export function $set(model:Model,key:string,value:any){
+    return ModelManager.set(model,key,value);
+}
+
+/**
+ * 查询model子属性
+ * @param model     模型
+ * @param key       属性名，可以分级，如 name.firstName，如果为null，则返回自己
+ * @returns         属性对应model proxy
+ */
+export function $get(model:Model, key: string):any {
+    return ModelManager.get(model,key);
 }

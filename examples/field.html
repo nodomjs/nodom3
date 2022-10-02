@@ -9,7 +9,7 @@
 		<div></div>
 	</body>
 	<script type="module">
-		import { nodom, Module, Util, ModuleFactory } from "../dist/nodom.esm.js";
+		import { nodom, Module, Util, ModuleFactory,watch } from "../dist/nodom.esm.js";
 
 		class Module1 extends Module {
 			template() {
@@ -86,7 +86,7 @@
 			}
 
 			onBeforeFirstRender(model){
-				model.$watch('edu',(model,ov,nv)=>{
+				watch(model,'edu',(model,ov,nv)=>{
 					console.log(ov,nv);
 				});
 			}

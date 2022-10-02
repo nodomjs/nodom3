@@ -1,4 +1,4 @@
-import { NodomMessage_en } from "./locales/msg_en";
+import { NodomMessage } from "./nodom";
 
 /**
  * 异常处理类
@@ -7,7 +7,7 @@ import { NodomMessage_en } from "./locales/msg_en";
 export  class NError extends Error{
     constructor(errorName:string,p1?:string,p2?:string,p3?:string,p4?:string){
         super(errorName);
-        let msg:string = NodomMessage_en.ErrorMsgs[errorName];
+        let msg:string = NodomMessage.ErrorMsgs[errorName];
         if(msg === undefined){
             this.message = "未知错误";
             return;

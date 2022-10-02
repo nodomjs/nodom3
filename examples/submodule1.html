@@ -10,11 +10,11 @@
     <div></div>
 </body>
 <script type='module'>
-    import {nodom,Module,GlobalCache,ModuleFactory,DefineElement,DefineElementManager} from '../dist/nodom.esm.min.js'
+    import {nodom,Module,GlobalCache,ModuleFactory,DefineElement,DefineElementManager} from '../dist/nodom.esm.js'
     
 	class ModuleA extends Module{
         template(props){
-            let s;
+			let s;
             if(!this.model.rows1 || this.model.rows1.length === 0){
                 s = `
                     <div class='modulea'>
@@ -33,6 +33,7 @@
 				</div>
 			`;
 			}
+			console.log(s);
 			return s;
 		}
 		data() {
@@ -48,8 +49,8 @@
 			console.log("keyup");
 		}
 		clickShow(model) {
-			// model.showme = !model.showme;
-			console.log(this.getElement("ul1"));
+			model.showme = !model.showme;
+			
 		}
 		clickme(model) {
 			console.log(model);
@@ -131,8 +132,6 @@
 				<button e-click='add'>add</button>
 				<button e-click='setRows1'>setRows1</button>
 				<button e-click='clearRows1'>clearRows1</button>
-				<button e-click='active1'>active</button>
-				<button e-click='unactive1'>unactive</button>
 				<button e-click='hideOrShow'>hideOrShow</button>
 				<button e-click='change1'>change1</button>
 				<button e-click='change2'>change2</button>
@@ -141,9 +140,9 @@
 				<input x-field='name1' />
 					
 				<!--useDomModel表示用当前dom对应的model直接覆盖子模块的model-->
-				<modulea class={{genCls()}} x-show={{show}} $rows1={{rows1}} style={{style}}>
-					<for tag='uibutton' e-click='clickBtn' title={{name}} cond={{rows}}/>
-					<ModuleB style='font-size:18px;' useDomModel x-repeat={{rows}} $index='idx' />
+				<modulea class={{genCls()}} $dd={{dd}} $rows1={{rows1}} style={{style}}>
+					<for tag='uibutton' e-click='clickBtn' title={{name}} cond={{rows}} />
+					<ModuleB style='font-size:18px;' useDomModel x-repeat={{rows}} $index='idx' idx={{idx}}/>
 				</modulea>
 			</div>
 		`;
@@ -153,6 +152,7 @@
 				xxx: 1,
 				name1: "outer",
 				style: "width:600px",
+				dd:{show:true},
 				show: true,
 				rows: [
 					{ id: 1, name: "nodom", title: "click1" },
@@ -163,6 +163,9 @@
 			};
 		}
 
+		hideme(){
+			this.model.show = false;
+		}
 		setRows1(model) {
 			model.rows1 = [{ title: "field" }, { title: "nodom" }];
 		}
@@ -186,34 +189,20 @@
 			GlobalCache.set("userName", "yang");
 		}
 		clickBtn(model, dom) {
-			// console.log(this,model);
-			console.log("click");
+			console.log(this,model);
 		}
 
 		hideOrShow(model) {
 			model.show = !model.show;
 		}
 
-		unactive1() {
-			let m = ModuleFactory.get(this.children[0]);
-			m.unactive();
-		}
-		active1() {
-			let m = ModuleFactory.get(this.children[0]);
-			m.active();
-		}
-
 		change1(model) {
-			// model.xxx = 2;
 			model.style='background:#ccc'
-			// model.rows.pop();
-			
 		}
 		change2(model) {
-			// model.xxx = 2;
-			model.style='font-weight:bold'
-			// model.rows.pop();
-			
+			//model.xxx = 2;
+			//model.style='font-weight:bold'
+			model.rows.pop();
 		}
 	}
 	nodom(Module1, "div");
