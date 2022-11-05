@@ -12,11 +12,15 @@ import { EventFactory } from "./eventfactory";
  * 模块事件
  *      onBeforeFirstRender 首次渲染前
  *      onFirstRender       首次渲染后
- *      onBeforeRender      每次渲染前
- *      onRender            每次渲染后
+ *      onBeforeRender      增量渲染前
+ *      onRender            增量渲染后
  *      onCompile           编译后
- *      onMount             挂载到html dom树后(onRender后执行)
+ *      onBeforeMount       挂载到html dom树前（onFirstRender渲染后）
+ *      onMount             挂载到html dom树后(首次渲染到html树后)
+ *      onBeforeUnMount     从html dom树解挂前
  *      onUnmount           从html dom树解挂后
+ *      onBeforeUpdate      更新到html dom树前（onRender后，针对增量渲染）
+ *      onUpdate            更新到html dom树后（针对增量渲染）
  */
 export declare class Module {
     /**
@@ -145,7 +149,7 @@ export declare class Module {
     /**
      * 挂载到html dom
      */
-    private mount;
+    mount(): void;
     /**
      * 解挂，从htmldom 移除
      */

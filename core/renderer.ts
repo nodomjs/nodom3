@@ -258,6 +258,7 @@ export class Renderer {
                     el[k] = src.assets[k];
                 }    
             }
+            (<HTMLElement>el).setAttribute('key',src.key);
         }else{  //文本节点
             (<any>el).textContent = src.textContent;
         }
@@ -271,7 +272,7 @@ export class Renderer {
      * @param parentEl 	        父html
      * @param isRenderChild     是否渲染子节点
      */
-    public static renderToHtml(module: Module,src:IRenderedDom, parentEl:HTMLElement,isRenderChild?:boolean):Node {
+    public static renderToHtml(module: Module,src:IRenderedDom, parentEl:Node,isRenderChild?:boolean):Node {
         let el;
         if(src.tagName){
             el = newEl(src);
@@ -303,6 +304,7 @@ export class Renderer {
             el['$vdom'] = dom;
             //把el引用与key关系存放到cache中
             module.saveElement(dom.key,el);
+            el.setAttribute('key',dom.key);
             //保存自定义key对应element
             if(dom.props['key']){
                 module.saveElement(dom.props['key'],el);
@@ -364,91 +366,57 @@ export class Renderer {
     /**
      * 处理更改的dom节点
      * @param module        待处理模块
-     * @param changeDoms    更改的dom参数数组
+     * @param changeDoms    更改的dom参数数组 [type(add 1, upd 2,del 3,move 4 ,rep 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),loc(位置)]
      */
     public static handleChangedDoms(module:Module,changeDoms:any[]){
+        const arr = [];
         //保留原有html节点
-        for(let item of changeDoms){
-            let o = {};
-            if(item[1]){
-                //新节点
-                o['new'] = module.getElement(item[1].key);
-            }
-            if(item[2]){
-                o['old'] = module.getElement(item[2].key);
-            }
-            if(item[3]){
-                //旧父节点
-                o['p'] = module.getElement(item[3].key);
-            }
-            item.els = o;
-            //从模块移除
-            if(item[0] === 3){
+        for (let item of changeDoms) {
+            if(item[0] === 2){  //修改
+                Renderer.updateToHtml(module, item[1]);
+            }else if (item[0] === 3) {  //删除
+                const pEl = module.getElement(item[3].key);
+                const n1 = module.getElement(item[1].key);
+                if (pEl && n1 && n1.parentElement === pEl) {
+                    pEl.removeChild(n1);
+                }
                 module.freeNode(item[1]);
-            }else if(item[0] === 5){
+            }else if (item[0] === 5) {  //替换
+                const pEl = module.getElement(item[3].key);
+                const n2 = module.getElement(item[2].key);
+                const n1 = Renderer.renderToHtml(module, item[1], null, true);
+                if (pEl && n2) {
+                    pEl.replaceChild(n1, n2);
+                }
                 module.freeNode(item[2]);
-            }
-        }
-        //第二轮待处理数组
-        const secondArr = [];
-        for(let item of changeDoms){
-            //父htmlelement，新html节点，旧html节点
-            let pEl,n1,n2;
-            switch(item[0]){
-                case 1: //添加
-                    pEl = item.els.p;
-                    n1 = Renderer.renderToHtml(module,item[1],null,true);
-                    if(pEl.children && pEl.children.length-1>item[4]){
-                        pEl.insertBefore(n1,pEl.children[item[4]]);
-                    }else{
-                        pEl.appendChild(n1);
-                    }
-                    break;
-                case 2: //修改
-                    Renderer.updateToHtml(module,item[1]);
-                    break;
-                case 3: //删除
-                    pEl = item.els.p;
-                    n1 = item.els.new;
-                    if(pEl && n1 && n1.parentElement === pEl){
-                        pEl.removeChild(n1);
-                    }
-                    break;
-                case 4: //移动
-                    //移动时可能存在节点尚未添加，对应目标index不可及，需要加入第二轮处理
-                    pEl = item.els.p;    
-                    n1 = module.getElement(item[1].key);
-                    // 插入节点时，可能存在move的位置与现节点相同
-                    if(n1 && n1 !== pEl.children[item[4]]){
-                        if(pEl.children.length>item[4]){
-                            pEl.insertBefore(n1,pEl.children[item[4]]);
-                        }else if(pEl.children.length === item[4]){  //刚好放在最后
-                            pEl.appendChild(n1);
-                        }else{ //index不可及，放入第二轮
-                            secondArr.push(item);
-                        }
-                    }
-                    break;
-                case 5: //替换
-                    pEl = item.els.p;
-                    n2 = item.els.old;
-                    n1 = Renderer.renderToHtml(module,item[1],null,true);
-                    if(pEl && n2){
-                        pEl.replaceChild(n1,n2);
-                    }
+            }else{ //仅对添加和移动的节点进行二次操作
+                arr.push(item);
             }
         }
 
-        //处理剩余的move节点
-        for(let i=0;i<secondArr.length;i++){
-            const item = secondArr[i];
-            const pEl = <HTMLElement>module.getElement(item[3].key);    
-            const n1 = module.getElement(item[1].key);
-            if(n1 && n1 !== pEl.children[item[4]]){
-                if(pEl.children.length>item[4]){
-                    pEl.insertBefore(n1,pEl.children[item[4]]);
-                }else{
+        //按index排序
+        if(arr.length > 0){
+            arr.sort((a,b)=>a[4]>b[4]?1:-1);
+        }
+        
+        for(let item of arr){
+            const pEl = <HTMLElement>module.getElement(item[3].key);
+            if(item[0] === 1){ //添加
+                const n1 = Renderer.renderToHtml(module, item[1], null, true);
+                if (pEl.children && pEl.children.length - 1 > item[4]) {
+                    pEl.insertBefore(n1, pEl.children[item[4]]);
+                }
+                else {
                     pEl.appendChild(n1);
+                }
+            }else{  //移动
+                const n1 = module.getElement(item[1].key);
+                if (n1 && n1 !== pEl.children[item[4]]) {
+                    if (pEl.children.length-1 > item[4]) {
+                        pEl.insertBefore(n1, pEl.children[item[4]]);
+                    }else if(n1 !== pEl.children[pEl.children.length-1]){ //最后一个与当前节点不相同，则放在最后
+                        pEl.appendChild(n1);
+                    }
                 }
             }
         }

@@ -52,11 +52,11 @@ export declare class Renderer {
      * @param parentEl 	        父html
      * @param isRenderChild     是否渲染子节点
      */
-    static renderToHtml(module: Module, src: IRenderedDom, parentEl: HTMLElement, isRenderChild?: boolean): Node;
+    static renderToHtml(module: Module, src: IRenderedDom, parentEl: Node, isRenderChild?: boolean): Node;
     /**
      * 处理更改的dom节点
      * @param module        待处理模块
-     * @param changeDoms    更改的dom参数数组
+     * @param changeDoms    更改的dom参数数组 [type(add 1, upd 2,del 3,move 4 ,rep 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),loc(位置)]
      */
     static handleChangedDoms(module: Module, changeDoms: any[]): void;
 }

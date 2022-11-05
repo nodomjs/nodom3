@@ -11,8 +11,7 @@ export class MRepeat extends Module{
             
             <div class="tip">基本使用</div>
             <div class="code">
-                菜单：
-                <for cond={{foods}} $index='idx' class='item'>
+                <for cond={{foods}} class='item'>
                     <span>菜名：{{name}}，价格：{{price}}</span>
                 </for>
             </div>
@@ -41,7 +40,6 @@ export class MRepeat extends Module{
                     <ol>
                         <li x-repeat={{rows}}>食材：{{title}}，重量：{{weight}}</li>
                     </ol>
-                    
                 </div>
             </div>-->
 

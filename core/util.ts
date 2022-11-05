@@ -233,32 +233,29 @@ export class Util {
      * @param dst   目标对象 
      * @returns     值相同则返回true，否则返回false 
      */
-    public static compare(src:any,dst:any,deep?:boolean):boolean{
-        if(!src && !dst){
-            return true;
-        }
-        if (typeof src !== 'object' || typeof dst !== 'object') {
-            return false;
-        }
-        const keys = Object.getOwnPropertyNames(src);
-        if(keys.length !== Object.getOwnPropertyNames(dst).length){
-            return false;
-        }
-        for(let k of keys){
-            if(src[k] !== dst[k]){
+    public static compare(src:any,dst:any):boolean{
+        return cmp(src,dst);
+        function cmp(o1,o2){
+            if(o1 === o2){
+                return true;
+            }
+            let keys1 = Object.keys(o1);
+            let keys2 = Object.keys(o2);
+            if(keys1.length !== keys2.length){
                 return false;
             }
-        }
-        //深度比较
-        if(deep){
-            for(let k of keys){
-                let r = this.compare(src[k],dst[k]);
-                if(!r){
+            for(let k of keys1){
+                if(typeof o1[k] === 'object' && typeof o2[k] === 'object'){
+                    let r = cmp(o1[k],o2[k]);
+                    if(!r){
+                        return false;
+                    }
+                }else if(o1[k] !== o2[k]){
                     return false;
                 }
-            }   
+            }
+            return true;
         }
-        return true;
     }
     /**
      * 获取对象自有属性

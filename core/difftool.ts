@@ -37,7 +37,7 @@ export class DiffTool{
                     addChange(5,src,dst, dst.parent);
                 }else{
                     //节点类型相同，但有一个不是静态节点，进行属性比较
-                    if(src.staticNum || dst.staticNum && isChange(src,dst)){
+                    if((src.staticNum || dst.staticNum) && isChange(src,dst)){
                         addChange(2,src,null,dst.parent);
                     }
                     if(!src.subModuleId){  //子模块不比较子节点
@@ -118,7 +118,7 @@ export class DiffTool{
                     }
 
                     //多余新节点，需要添加
-                    if (newStartIdx<=newEndIdx) {
+                    if(newStartIdx<=newEndIdx) {
                         for (let i = newStartIdx; i <= newEndIdx; i++) {
                             // 添加到dst.children[i]前面
                             addChange(1,src.children[i], null ,dst,i);

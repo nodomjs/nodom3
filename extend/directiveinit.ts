@@ -36,7 +36,11 @@ export default (function () {
                 m = ModuleFactory.get(mid);
                 handle = !dom.props['renderOnce'];
             } else {
-                m = ModuleFactory.get(this.value);
+                let cls = this.value;
+                if(typeof cls === 'string'){
+                    cls = cls.toLocaleLowerCase();
+                }
+                m = ModuleFactory.get(cls);
                 if (!m) {
                     return true;
                 }
@@ -56,6 +60,7 @@ export default (function () {
                     delete dom.props['useDomModel'];
                 }
             }
+            
             //保存到dom上，提升渲染性能
             dom.subModuleId = mid;
             //变成文本节点，作为子模块占位符，子模块渲染后插入到占位符前面

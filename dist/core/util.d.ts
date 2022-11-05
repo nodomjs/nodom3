@@ -53,7 +53,7 @@ export declare class Util {
      * @param dst   目标对象
      * @returns     值相同则返回true，否则返回false
      */
-    static compare(src: any, dst: any, deep?: boolean): boolean;
+    static compare(src: any, dst: any): boolean;
     /**
      * 获取对象自有属性
      * @param obj   需要获取属性的对象

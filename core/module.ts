@@ -7,7 +7,6 @@ import { ObjectManager } from "./objectmanager";
 import { Renderer } from "./renderer";
 import { Util } from "./util";
 import { DiffTool } from "./difftool";
-import { ModelManager } from "./modelmanager";
 import { EModuleState, IRenderedDom } from "./types";
 import { EventFactory } from "./eventfactory";
 
@@ -20,11 +19,15 @@ import { EventFactory } from "./eventfactory";
  * 模块事件
  *      onBeforeFirstRender 首次渲染前
  *      onFirstRender       首次渲染后
- *      onBeforeRender      每次渲染前
- *      onRender            每次渲染后
+ *      onBeforeRender      增量渲染前
+ *      onRender            增量渲染后
  *      onCompile           编译后
- *      onMount             挂载到html dom树后(onRender后执行)
+ *      onBeforeMount       挂载到html dom树前（onFirstRender渲染后）
+ *      onMount             挂载到html dom树后(首次渲染到html树后)
+ *      onBeforeUnMount     从html dom树解挂前
  *      onUnmount           从html dom树解挂后
+ *      onBeforeUpdate      更新到html dom树前（onRender后，针对增量渲染）
+ *      onUpdate            更新到html dom树后（针对增量渲染）
  */
 export class Module {
     /**
@@ -215,17 +218,20 @@ export class Module {
         if(!this.hasRendered) {    //首次渲染
             this.doModuleEvent('onFirstRender');
             this.hasRendered = true;
+        }else{
+            this.doModuleEvent('onRender');
         }
-        //执行渲染后事件
-        this.doModuleEvent('onRender');
         //挂载处理
         if(this.state === EModuleState.MOUNTED){ //已经挂载
             if(oldTree && this.model){
                 // 比较节点
                 let changeDoms = DiffTool.compare(this.renderTree,oldTree);
+                this.doModuleEvent('onBeforeUpdate');
                 //执行更改
                 if(changeDoms.length>0){
                     Renderer.handleChangedDoms(this,changeDoms);
+                        //执行更新到html事件
+                        this.doModuleEvent('onUpdate');
                 }
             }
         }else { //未挂载
@@ -280,11 +286,19 @@ export class Module {
     /**
      * 挂载到html dom
      */
-     private mount(){
-        //渲染到html dom
-        const el = Renderer.renderToHtml(this,this.renderTree,null,true);
+    public mount(){
+        //执行挂载事件
+        this.doModuleEvent('onBeforeMount');
+        //渲染到fragment
+        let rootEl = new DocumentFragment();
+        const el = Renderer.renderToHtml(this,this.renderTree,rootEl,true);
+        //执行挂载事件
+        this.doModuleEvent('onMount');
+        //渲染子节点
+        renderChildren(this);
+        
         if(this.container){ //自带容器（主模块或路由模块）
-            this.container.appendChild(el);
+            this.container.appendChild(rootEl);
         }else if(this.srcDom){
             const pm = this.getParent();
             if(!pm){
@@ -292,14 +306,24 @@ export class Module {
             }
             //替换占位符
             const srcElement = pm.getElement(this.srcDom.key);
-            if(srcElement){
-                srcElement.parentElement.replaceChild(el,srcElement);
+            if (srcElement) {
+                srcElement.parentElement.replaceChild(el, srcElement);
             }
-            pm.saveElement(this.srcDom.key,el);
+            pm.saveElement(this.srcDom.key, el);
         }
         this.state = EModuleState.MOUNTED;
-        //执行挂载事件
-        this.doModuleEvent('onMount');
+        /**
+         * 渲染子节点
+         * @param module 
+         */
+        function renderChildren(module){
+            // //子模块渲染
+            for(let id of module.children){
+                const m = ModuleFactory.get(id);
+                m.render();
+                renderChildren(m);
+            }
+        }
     }
 
     /**
@@ -316,7 +340,7 @@ export class Module {
         this.eventFactory = new EventFactory(this);
         //删除渲染树
         delete this.renderTree;
-        
+        this.doModuleEvent('onBeforeUnMount');
         //module根与源el切换
         const el = this.getElement('1');
         if (el) {
@@ -337,9 +361,9 @@ export class Module {
         }
         //清理dom map
         this.clearElementMap();
-        
         //设置状态
         this.state = EModuleState.UNMOUNTED;
+        this.doModuleEvent('onUnMount');
         //子模块递归卸载
         if (this.children) {
             for (let id of this.children) {

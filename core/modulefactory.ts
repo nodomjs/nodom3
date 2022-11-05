@@ -77,7 +77,7 @@ export class ModuleFactory {
      * @param props         模块外部属性
      */
     private static getInstance(clazz: any): Module {
-        let className = (typeof clazz === 'string') ? clazz : clazz.name.toLowerCase();
+        let className = (typeof clazz === 'string') ? clazz.toLowerCase() : clazz.name.toLowerCase();
         let cls;
         // 初始化模块
         if (!this.classes.has(className) && typeof clazz === 'function') {
