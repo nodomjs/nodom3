@@ -41,7 +41,7 @@ export class Router {
     /**
      * 绑定到module的router指令对应的key，即router容器对应的key，格式为 {moduleId:routerKey,...}
      */
-    public static routerKeyMap: Map<number, string> = new Map();
+    public static routerKeyMap: Map<number, number> = new Map();
 
     /**
      * 根路由
@@ -98,19 +98,30 @@ export class Router {
         let diff = this.compare(this.currentPath, path);
         // 当前路由依赖的容器模块
         let parentModule: Module;
-        if (diff[0] === null) {
+        if (diff[0] === null) {  //不存在上一级模块
+            //默认为主模块
             parentModule = ModuleFactory.getMain();
+
+            // 当router key map不为空且主模块无router容器时，则取第一个key对应的模块为父模块
+            if(this.routerKeyMap.size>0){
+                const mid = this.routerKeyMap.keys().next().value;
+                if(mid !== parentModule.id){
+                    const m = ModuleFactory.get(mid);
+                    if(m){
+                        parentModule = m;
+                    }
+                }
+            }
         } else {
             parentModule = await this.getModule(diff[0]);
         }
-
         //onleave事件，从末往前执行
         for (let i = diff[1].length - 1; i >= 0; i--) {
             const r = diff[1][i];
             if (!r.module) {
                 continue;
             }
-            let module: Module = await this.getModule(r);
+            const module: Module = await this.getModule(r);
             if (Util.isFunction(this.onDefaultLeave)) {
                 this.onDefaultLeave(module.model);
             }
@@ -119,30 +130,25 @@ export class Router {
             }
             // 清理map映射
             this.activeFieldMap.delete(module.id);
-            //module置为不激活
-            // module.unactive();
             // 取消挂载
             module.unmount();
         }
         if (diff[2].length === 0) { //路由相同，参数不同
             let route: Route = diff[0];
             if (route !== null) {
-                let module: Module = await this.getModule(route);
+                const module: Module = await this.getModule(route);
                 // 模块处理
                 this.dependHandle(module, route, diff[3] ? diff[3].module : null);
             }
         } else { //路由不同
             //加载模块
             for (let ii = 0; ii < diff[2].length; ii++) {
-                let route: Route = diff[2][ii];
-
+                const route: Route = diff[2][ii];
                 //路由不存在或路由没有模块（空路由）
                 if (!route || !route.module) {
                     continue;
                 }
-
-                let module: Module = await this.getModule(route);
-
+                const module: Module = await this.getModule(route);
                 // 模块处理
                 this.dependHandle(module, route, parentModule);
                 //默认全局路由enter事件
@@ -192,23 +198,15 @@ export class Router {
         if (typeof module === 'object') {
             return module;
         }
-        //非模块类，是加载函数
-        if (!module.__proto__.name) {
-            const m = await module();
-            //通过import的模块，查找模块类
-            for(let k of Object.keys(m)){
-                if(m[k].name){
-                    module = m[k];
-                    break;
-                }
-            }
+        //模块路径
+        if(typeof module === 'string'){
+            module = await ModuleFactory.load(module);
         }
         //模块类
         if (typeof module === 'function') {
-            module = ModuleFactory.get(module);
+            route.module = ModuleFactory.get(module);
         }
-        route.module = module;
-        return module;
+        return route.module;
     }
     /**
      * 比较两个路径对应的路由链
@@ -387,12 +385,10 @@ export class Router {
         }
         let pathArr: string[] = path.split('/');
         let node: Route = this.root;
-
         let paramIndex: number = 0;      //参数索引
         let retArr: Array<Route> = [];
         let fullPath: string = '';       //完整路径
         let preNode: Route = this.root;  //前一个节点
-
         for (let i = 0; i < pathArr.length; i++) {
             let v: string = pathArr[i].trim();
             if (v === '') {
@@ -428,7 +424,6 @@ export class Router {
                 }
             }
         }
-
         //最后一个节点
         if (node !== this.root) {
             node.fullPath = fullPath;

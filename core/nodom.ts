@@ -7,6 +7,7 @@ import { ModelManager } from "./modelmanager";
 import { Module } from "./module";
 import { ModuleFactory } from "./modulefactory";
 import { Renderer } from "./renderer";
+import { RequestManager } from "./requestmanager";
 import { Route } from "./route";
 import { Router } from "./router";
 import { Scheduler } from "./scheduler";
@@ -36,7 +37,7 @@ export async function nodom(clazz:any,el:string,language?:string){
     Scheduler.addTask(Renderer.render, Renderer);
     //启动调度器
     Scheduler.start();
-    let mdl = ModuleFactory.get(clazz);
+    let mdl:any = ModuleFactory.get(clazz);
     mdl.setContainer(document.querySelector(el));
     mdl.active();
 }
@@ -98,147 +99,5 @@ export function registModule(clazz:any,name?:string){
  *                  rand|bool|无|否|无|请求随机数，设置则浏览器缓存失效
  */
 export async function request(config): Promise<any> {
-    return new Promise((resolve, reject) => {
-        if (typeof config === 'string') {
-            config = {
-                url: config
-            }
-        }
-        config.params = config.params || {};
-        //随机数
-        if (config.rand) { //针对数据部分，仅在app中使用
-            config.params.$rand = Math.random();
-        }
-        let url: string = config.url;
-        const async: boolean = config.async === false ? false : true;
-        const req: XMLHttpRequest = new XMLHttpRequest();
-        //设置同源策略
-        req.withCredentials = config.withCredentials;
-        //类型默认为get
-        const method: string = (config.method || 'GET').toUpperCase();
-        //超时，同步时不能设置
-        req.timeout = async ? config.timeout : 0;
-
-        req.onload = () => {
-            if (req.status === 200) {
-                let r = req.responseText;
-                if (config.type === 'json') {
-                    try {
-                        r = JSON.parse(r);
-                    } catch (e) {
-                        reject({ type: "jsonparse" });
-                    }
-                }
-                resolve(r);
-            } else {
-                reject({ type: 'error', url: url });
-            }
-        }
-
-        req.ontimeout = () => reject({ type: 'timeout' });
-        req.onerror = () => reject({ type: 'error', url: url });
-        //上传数据
-        let data = null;
-        switch (method) {
-            case 'GET':
-                //参数
-                let pa: string;
-                if (Util.isObject(config.params)) {
-                    let ar: string[] = [];
-                    for(let k of Object.keys(config.params)){
-                        const v = config.params[k];
-                        if(v === undefined || v === null){
-                            continue;
-                        }
-                        ar.push(k + '=' + v);
-                    }
-                    pa = ar.join('&');
-                }
-                if (pa !== undefined) {
-                    if (url.indexOf('?') !== -1) {
-                        url += '&' + pa;
-                    } else {
-                        url += '?' + pa;
-                    }
-                }
-
-                break;
-            case 'POST':
-                if (config.params instanceof FormData) {
-                    data = config.params;
-                } else {
-                    let fd: FormData = new FormData();
-                    for(let k of Object.keys(config.params)){
-                        const v = config.params[k];
-                        if(v === undefined || v === null){
-                            continue;
-                        }
-                        fd.append(k, v);
-                    }
-                    data = fd;                  
-                }
-                break;
-        }
-
-        req.open(method, url, async, config.user, config.pwd);
-        //设置request header
-        if (config.header) {
-            Util.getOwnProps(config.header).forEach((item) => {
-                req.setRequestHeader(item, config.header[item]);
-            })
-        }
-        req.send(data);
-    }).catch((re) => {
-        switch (re.type) {
-            case "error":
-                throw new NError("notexist1", NodomMessage.TipWords['resource'], re.url);
-            case "timeout":
-                throw new NError("timeout");
-            case "jsonparse":
-                throw new NError("jsonparse");
-        }
-    });
-}
-
-/**
- * 观察某个数据项
- * @param model     带watch的model
- * @param key       数据项名或数组
- * @param operate   数据项变化时执行方法
- * @param module    指定模块，如果指定，则表示该model绑定的所有module都会触发watch事件，在model父(模块)传子(模块)传递的是对象时会导致多个watch出发
- * @param deep      是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
- * 
- * @returns         unwatch函数
- */
-export function watch(model:Model,key: string|string[], operate: Function,module?:Module,deep?:boolean):Function {
-    return ModelManager.watch(model,key,operate,module,deep);
-}
-
-/**
- * 获取模型key
- * @param model     模型 
- * @returns         模型key
- */
-export function getmkey(model:Model):number{
-    return ModelManager.getModelKey(model);
-}
-
-/**
- * 设置值
- * @param model     模型
- * @param key       子属性，可以分级，如 name.firstName
- * @param value     属性值
- */
-export function $set(model:Model,key:string,value:any){
-    return ModelManager.set(model,key,value);
-}
-
-/**
- * 查询model子属性
- * @param model     模型
- * @param key       属性名，可以分级，如 name.firstName，如果为null，则返回自己
- * @returns         属性对应model proxy
- */
-export function $get(model:Model, key: string):any {
-    return ModelManager.get(model,key);
+    return await RequestManager.request(config);
 }

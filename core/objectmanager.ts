@@ -41,7 +41,7 @@ export  class ObjectManager {
      * @param value     值
      */
      public set(key:string,value:any){
-        this.cache.set(key,value);
+        this.cache.set(key+'',value);
     }
 
     /**
@@ -49,7 +49,7 @@ export  class ObjectManager {
      * @param key   键，支持"."（多级数据分割）
      * @returns     缓存的值或undefined
      */
-    public get(key){
+    public get(key:string){
         return this.cache.get(key);
     }
 
@@ -57,7 +57,7 @@ export  class ObjectManager {
      * 从cache移除
      * @param key   键，支持"."（多级数据分割）
      */
-    public remove(key){
+    public remove(key:string){
         this.cache.remove(key);
     }
 
@@ -68,7 +68,7 @@ export  class ObjectManager {
      * @param name      参数名  
      * @param value     参数值
      */
-    public setEventParam(id:number,key:String,name:string,value:any){
+    public setEventParam(id:number,key:number,name:string,value:any){
         this.cache.set('$events.' + id + '.$params.' + key + '.' + name,value);
     }
 
@@ -79,7 +79,7 @@ export  class ObjectManager {
      * @param name      参数名
      * @returns         参数值
      */
-    public getEventParam(id:number,key:string,name:string){
+    public getEventParam(id:number,key:number,name:string){
         return this.get('$events.' + id + '.$params.' + key + '.' + name);
     }
 
@@ -89,7 +89,7 @@ export  class ObjectManager {
      * @param key       dom key
      * @param name      参数名
      */
-    public removeEventParam(id:number,key:string,name:string){
+    public removeEventParam(id:number,key:number,name:string){
         this.remove('$events.' + id + '.$params.' + key + '.' + name);
     }
 
@@ -98,7 +98,7 @@ export  class ObjectManager {
      * @param id        事件id
      * @param key       dom key 
      */
-    public clearEventParam(id:number,key?:string){
+    public clearEventParam(id:number,key?:number){
         if(key){    //删除对应dom的事件参数
             this.remove('$events.' + id + '.$params.' + key);    
         }else{      //删除所有事件参数
@@ -112,7 +112,7 @@ export  class ObjectManager {
      * @param name      参数名
      * @param value     参数值
      */
-    public setDomParam(key:string,name:string,value:any){
+    public setDomParam(key:number,name:string,value:any){
         this.set('$domparam.' + key + '.' + name ,value);
     }
 
@@ -122,7 +122,7 @@ export  class ObjectManager {
      * @param name      参数名
      * @returns         参数值
      */
-    public getDomParam(key:string,name:string):any{
+    public getDomParam(key:number,name:string):any{
         return this.get('$domparam.' + key + '.' + name);
     }
 
@@ -131,7 +131,7 @@ export  class ObjectManager {
      * @param key       dom key
      * @param name      参数名
      */
-    public removeDomParam(key:string,name:string){
+    public removeDomParam(key:number,name:string){
         this.remove('$domparam.' + key + '.' + name);
     }
 
@@ -139,7 +139,7 @@ export  class ObjectManager {
      * 清除element 参数集
      * @param key   dom key
      */
-    public clearDomParams(key:string){
+    public clearDomParams(key:number){
         this.remove('$domparam.' + key);
     }
     

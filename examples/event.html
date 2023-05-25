@@ -23,10 +23,41 @@
 			template() {
 				return `
 				<div>
-					<button e-click='show'>show</button>
-					<button e-click='change'>change</button>
-					<button e-click='change1'>change1</button>
+					<h3>说明</h3>
+					<p>	
+						事件配置方法：e-事件名='eventName[:nopopo:delg:capture:once]'
+						<ul>
+							<li>nopopo:禁止冒泡</li>
+							<li>delg:代理到父dom</li>
+							<li>capture:useCapture</li>
+							<li>once:触发一次</li>
+						</ul>
+					</p>
+					
+					<button e-click='add'>添加一条数据</button>
+					
+					<h3>useCapture</h3>
+					<ul e-click='clickP:capture'>
+						<li x-repeat={{edus}} e-click='clickItem' e-dblclick='dblClick'><span>{{eduName}}</span></li>
+					</ul>
+
+					<h3>禁止冒泡（向上） nopopo</h3>
+					<ul e-click='clickP'>
+						<li x-repeat={{edus}} e-click='clickItem:nopopo' e-dblclick='dblClick'><span>{{eduName}}</span></li>
+					</ul>
+
+					<h3>禁止冒泡（向下）capture + nopopo</h3>
+					<ul e-click='clickP:capture:nopopo'>
+						<li x-repeat={{edus}} e-click='clickItem' e-dblclick='dblClick'><span>{{eduName}}</span></li>
+					</ul>
+
+					<h3>执行一次-once</h3>
 					<ul e-click='clickP:once'>
+						<li x-repeat={{edus}} e-click='clickItem' e-dblclick='dblClick'><span>{{eduName}}</span></li>
+					</ul>
+
+					<h3>事件代理</h3>
+					<ul e-click='clickP'>
 						<li x-repeat={{edus}} e-click='clickItem:delg' e-dblclick='dblClick'><span>{{eduName}}</span></li>
 					</ul>
 				</div>
@@ -60,18 +91,12 @@
 				console.log("dblclick child",model);
 			}
 
-			show(model, dom, evo, e) {
-				console.log(model.show);
-				model.show = !model.show;
-			}
-			change(model, dom, evo, e) {
+			add(model, dom, evo, e) {
+				console.log(model,dom)
 				model.edus.push({
 					eduId: 5,
 					eduName: "博士后",
 				});
-			}
-			change1(model, dom, evo, e) {
-				model.edus[0].checked = false;
 			}
 		}
 

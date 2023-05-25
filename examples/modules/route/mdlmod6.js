@@ -2,6 +2,7 @@ import {Module,request} from '../../../dist/nodom.esm.js'
 
 class Module61 extends Module{
     template(props){
+        this.model.name = props.name;
         return '<p style="background:#f00">{{name}}</p>'
     }
 }
@@ -18,7 +19,8 @@ export class MdlMod6 extends Module {
         return `
             <div>
                 vip is:{{d1.vip}}
-                <Module61 x-repeat = {{d1.foods}} useDomModel />
+                <Module61 x-repeat = {{d1.foods}} name={{name}}>
+                </module61>
                 <ul>
                     <li x-repeat={{d1.foods}}>
                         {{name}}

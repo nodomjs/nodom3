@@ -1,6 +1,7 @@
 import {Module,registModule} from '../../dist/nodom.esm.js'
 import {ModuleB} from './moduleb.js'
 export class ModuleA extends Module{
+    modules=[ModuleB];
     template(props){
         if(props.p1){
             return `
@@ -18,20 +19,25 @@ export class ModuleA extends Module{
                 </div>
             `
         }else{
+            // this.model.x1 = this.srcDom.model.xxx;
+            // <div class={{'modulea' + (x1?' cls1':' cls2')}} role='modulea'></div>
+            this.model.x = props.x;
             return `
-                <div class='modulea'>
-                    <div>这是外部数据name:{{n}}</div>
-                    <for cond={{rows}}>
-                        <slot innerRender>
-                            hello plug
-                        </slot>
-                    </for>
-                    <div>这是外部数据x1:{{x1}}</div>
+                <div role='modulea'>
+                    moduleA
+                    <button e-click='change'>修改x.y.z</button>
+                    <div>这是外部数据x.y.z:{{x.y.z}}</div>
+                    <moduleb $ppp={{x.y}}>
+                    </moduleb>
+                    <div>name:{{name.first + ' ' + name.last}}</div>
+                    <slot>
+                    </slot>
+                    <p>---分割线---</p>
+                    <!--
                     <div>
                         <p>这是外部数据x2:{{x2}}</p>
                         <slot name='s2'>第二个slot</slot>
-                    </div>
-                    <button e-click='changeX2'>修改x2</button>
+                    </div>-->
                 </div>
             `
         }
@@ -39,15 +45,16 @@ export class ModuleA extends Module{
     }
     data(){
         return{
-            name:'yang',
+            name:{first:'yang',last:'lei'},
             x1:0,
             x2:0,
             rows:[{name:'nodom1'},{name:'nodom2'},{name:'nodom3'}]
         }
     }
-    changeX2(model){
+    change(model){
         model.x2='hello';
-        console.log(model);
+        model.name.first='li';
+        model.x.y.z='module a changed x.y.z';
     }
     onBeforeFirstRender(){
         // console.log(this);

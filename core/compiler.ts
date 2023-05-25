@@ -1,367 +1,564 @@
-import { DefineElementManager } from "./defineelementmanager";
-import { Directive } from "./directive";
-import { VirtualDom } from "./virtualdom";
-import { NError } from "./error";
-import { NEvent } from "./event";
-import { Expression } from "./expression";
-import { Module } from "./module";
-import { ModuleFactory } from "./modulefactory";
+import { DefineElementManager } from './defineelementmanager'
+import { Directive } from './directive'
+import { NError } from './error'
+import { NEvent } from './event'
+import { Expression } from './expression'
+import { Module } from './module'
+import { ModuleFactory } from './modulefactory'
+import { VirtualDom } from './virtualdom'
 
+const voidTagMap = new Set(
+	'area,base,br,col,embed,hr,img,input,link,meta,param,source,track,wbr'.split(',')
+)
+
+/**
+ * - 模板标签必须闭合
+ */
+/**
+ * - 模板标签必须闭合
+ */
 export class Compiler {
-    /**
-     * 模块
-     */
-    private module:Module;
+	/**
+	 * 模块
+	 */
+	private module: Module
 
-    /**
-     * 根结点
-     */
-    private root:VirtualDom;
-    /**
-     * 构造器
-     * @param module 
-     */
-    constructor(module:Module){
-        this.module = module;
-    }
-    /**
-    * 编译
-    * @param elementStr     待编译html串
-    * @returns              虚拟dom
-    */
-    public compile(elementStr: string): VirtualDom {
-        return this.compileTemplate(elementStr);
-    }
+	/**
+	 * 当前节点
+	 */
+	private current: VirtualDom
 
-    /**
-     * 编译模版串
-     * @param srcStr    源串
-     * @returns         
-     */
-    private compileTemplate(srcStr:string):VirtualDom{
-        const me = this;
-        // 清理comment
-        srcStr = srcStr.replace(/\<\!\-\-[\s\S]*?\-\-\>/g,'');
-        // 正则式分解标签和属性
-        // const regWhole = /((?<!\\)'[\s\S]*?(?<!\\)')|((?<!\\)"[\s\S]*?(?<!\\)")|((?<!\\)`[\s\S]*?(?<!\\)`)|({{{*)|(}*}})|([\w$-]+(\s*=)?)|(<\s*[a-zA-Z][a-zA-Z0-9-_]*)|(\/?>)|(<\/\s*[a-zA-Z][a-zA-Z0-9-_]*>)/g;
-        const regWhole = /('[\s\S]*?')|("[\s\S]*?")|(`[\s\S]*?`)|({{{*)|(}*}})|([\w$-]+(\s*=)?)|(<\s*[a-zA-Z][a-zA-Z0-9-_]*)|(\/?>)|(<\/\s*[a-zA-Z][a-zA-Z0-9-_]*>)/g;
-        //属性名正则式
-        const propReg = /^[a-zA-Z_$][$-\w]*?\s*?=?$/;
-        //不可见字符正则式
-        const regSpace = /^[\s\n\r\t\v]+$/;
-        //dom数组
-        let domArr = [];
-        //已闭合的tag，与domArr对应
-        let closedTag = [];
-        //文本开始index
-        let txtStartIndex = 0;
-        //属性值
-        let propName:string;
-        //pre标签标志
-        let isPreTag:boolean = false;
-        //当前标签名
-        let tagName:string;
-        //表达式开始index
-        let exprStartIndex = 0;
-        //表达式计数器
-        let exprCount = 0;
-        //当前dom节点
-        let dom;
-        //正则式匹配结果
-        let result;
-        while((result = regWhole.exec(srcStr)) !== null){
-            let re = result[0];
-            if(re.startsWith('{{')){  //表达式开始符号
-                //整除2个数
-                if(exprCount === 0){ //表达式开始
-                    exprStartIndex = result.index;
-                }
-                exprCount += re.length/2 | 0;  
-            }else if(re.endsWith('}}')){  //表达式结束
-                exprCount -= re.length/2 | 0;
-                if(exprCount === 0){
-                    handleExpr();
-                }
-            }
-            
-            //不在表达式中
-            if(exprCount === 0){
-                if(re[0] === '<'){ //标签
-                    //处理文本
-                    handleText(srcStr.substring(txtStartIndex,result.index));
-                    if(re[1] === '/'){ //标签结束
-                        finishTag(re);
-                    }else{ //标签开始
-                        tagName = re.substring(1).trim().toLowerCase();
-                        txtStartIndex = undefined;
-                        isPreTag = (tagName === 'pre');
-                        //新建dom节点
-                        dom = new VirtualDom(tagName,this.genKey());
-                        //第一个dom为root
-                        if(!me.root){
-                            me.root = dom;
-                        }
-                        domArr.push(dom);
-                        closedTag.push(false);
-                    }
-                }else if(re === '>'){ //标签头结束
-                    finishTagHead();
-                }else if(re === '/>'){ //标签结束
-                    finishTag();
-                }else if(dom&&dom.tagName){ //属性
-                    if(propReg.test(re)){
-                        if(propName){ //propName=无值 情况，当无值处理
-                            handleProp();
-                        }
-                        if(re.endsWith('=')){ //属性带=，表示后续可能有值
-                            propName = re.substring(0,re.length-1).trim();
-                        }else{ //只有属性，无属性值
-                            propName = re;
-                            handleProp();
-                        }
-                    }else if(propName){ //属性值
-                        handleProp(re);
-                    }
-                }
-            }
-        }
+	/**
+	 * 虚拟dom树
+	 */
+	private domArr: Array<VirtualDom> = []
 
-        //异常情况
-        if(domArr.length>1 || exprCount!==0){
-            throw new NError('wrongTemplate');
-        }
-        return domArr[0];
+	/**
+	 * 文本节点
+	 */
+	private textArr: Array<any> = []
 
-        /**
-         * 标签结束
-         * @param ftag      结束标签
-         */
-        function finishTag(ftag?:string){
-            if(ftag){
-                let finded = false;
-                const tag = ftag.substring(2,ftag.length-1).trim().toLowerCase();
-                //反向查找
-                for(let i=domArr.length-1;i>=0;i--){
-                    if(!closedTag[i] && domArr[i].tagName === tag){
-                        domArr[i].children = domArr.slice(i+1);
-                        //设置parent
-                        for(let d of domArr[i].children){
-                            d.parent = domArr[i];
-                            extraHandle(d);
-                        }
-                        //删除后续节点
-                        domArr.splice(i+1);
-                        //标注该节点已闭合
-                        closedTag.splice(i+1);
-                        finded = true;
-                        break;
-                    }
-                }
-                if(!finded){
-                    throw new NError('wrongTemplate');
-                }
-            }
-            
-            //设置标签关闭
-            let ele = domArr[domArr.length-1];
-            if(ele === me.root){
-                extraHandle(ele);
-            }
-            closedTag[closedTag.length-1] = true;
-            dom = undefined;
-            propName = undefined;
-            txtStartIndex = regWhole.lastIndex;
-            exprCount = 0;
-            exprStartIndex = 0;
-            // ele.allModelField = allModelField;    
-        }
+	/**
+	 * 是否是表达式文本节点
+	 */
+	private isExprText: boolean = false
 
-        /**
-         * 特殊处理
-         * @param dom   待处理节点 
-         */
-        function extraHandle(dom:VirtualDom){
-            //文本不处理
-            if(!dom.tagName){
-                return;
-            }
-            me.postHandleNode(dom);
-            dom.sortDirective();
-            me.handleSlot(dom);
-        }
+	/**
+	 * 当前编译的模板 主要用于报错的时候定位
+	 */
+	private template: string = ''
 
-        /**
-         * 标签头结束
-         */
-        function finishTagHead(){
-            if(dom){
-                txtStartIndex = regWhole.lastIndex;
-            }
-            dom = undefined;
-            propName = undefined;
-            exprCount = 0;
-            exprStartIndex = 0;
-        }
+	/**
+	 * 构造器
+	 * @param module
+	 */
+	constructor(module: Module) {
+		this.module = module
+	}
 
-        /**
-         * 处理属性
-         * @param value     属性值
-         */
-        function handleProp(value?:any){
-            if(!dom || !propName){
-                return;
-            }
-            if(value){
-                let r;
-                //去掉字符串两端
-                if(['"',"'",'`'].includes(value[0]) && ['"',"'",'`'].includes(value[value.length-1])){
-                    value = value.substring(1,value.length-1).trim();
-                }
-            }
-            //指令
-            if (propName.startsWith("x-")) {
-                //不排序
-                dom.addDirective(new Directive(propName.substring(2), value));
-            } else if (propName.startsWith("e-")) { //事件
-                dom.addEvent(new NEvent(me.module,propName.substring(2), value));
-            } else { //普通属性
-                dom.setProp(propName, value);
-            }
-            propName = undefined;
-            
-        }
+	/**
+	 * 编译
+	 * @param elementStr     待编译html串
+	 * @returns              虚拟dom
+	 */
+	public compile(elementStr: string): VirtualDom {
+		// 清除注释
+		this.template = elementStr.replace(/\<\!\-\-[\s\S]*?\-\-\>/g, '').trim()
+		elementStr = this.template
+		// 编译
+		this.compileTemplate(elementStr)
+		if (this.domArr.length === 0) {
+			throw new NError('wrongTemplate')
+		}
+		// 处理<div><div><div>abc这样的模板
+		for (let i = this.domArr.length - 1; i >= 1; i--) {
+			if (!this.domArr[i].isClosed) {
+				if (this.domArr[i].tagName !== undefined) {
+					this.warnStartTagNotClose(this.domArr[i])
+				}
+				if (!this.domArr[i - 1].isClosed) {
+					this.domArr[i].isClosed = true
+					let temp = this.domArr.pop()
+					this.domArr[i - 1].add(temp)
+				}
+			}
+		}
+		if (!this.domArr[this.domArr.length - 1].isClosed) {
+			this.domArr[this.domArr.length - 1].isClosed = true
+			this.warnStartTagNotClose(this.domArr[this.domArr.length - 1])
+		}
+		// 后处理，主要处理没有使用一个容器包裹所有节点的情况
+		// domArr.length > 1  新建一个div节点接收domArr里面的所有节点
+		// domArr.length == 1 如果是文本节点或者是模块，则新建一个div节点接收，其他情况直接使用该节点
+		// domArr.length < 1 模板错误，抛出编译模板报错
+		let dom: VirtualDom
+		if (this.domArr.length > 1) {
+			// 说明没有使用一个容器包裹所有的节点
+			dom = new VirtualDom('div', this.genKey(), this.module)
+			// dom.add([...this.domArr]);
+			this.domArr.forEach((item) => {
+				dom.add(item)
+			})
+			dom.isClosed = true
+		} else if (this.domArr.length == 1) {
+			if (this.domArr[0].tagName && !this.domArr[0].hasDirective('module')) {
+				dom = this.domArr[0]
+			} else {
+				dom = new VirtualDom('div', this.genKey(), this.module)
+				dom.add(this.domArr[0])
+				dom.isClosed = true
+			}
+		} else {
+			throw new NError('wrongTemplate')
+		}
+		return dom
+	}
 
-        /**
-         * 处理表达式
-         */
-        function handleExpr(){
-            //处理表达式前的文本
-            if(txtStartIndex>0 && exprStartIndex>txtStartIndex){
-                handleText(srcStr.substring(txtStartIndex,exprStartIndex));
-            }
-            const s = srcStr.substring(exprStartIndex+2,regWhole.lastIndex-2);
-            exprCount = 0;
-            exprStartIndex = 0;
-            //新建表达式
-            let expr = new Expression(s);
-            if(dom && dom.tagName){ //标签
-                handleProp(expr);
-            }else{ //文本节点
-                setTxtDom(expr);
-                //文本节点，移动txt节点开始位置
-                txtStartIndex = regWhole.lastIndex;
-            }
-            //设置所有字段都在model内标识
-            dom.allModelField = expr.allModelField;
-        }
+	/**
+	 * 产生dom key
+	 * @returns   dom key
+	 */
+	private genKey(): number {
+		return this.module.getDomKeyId()
+	}
 
-        /**
-         * 处理txt为文本节点
-         * @param txt 文本串
-         */
-        function handleText(txt:string):VirtualDom {
-            if(txt === '' || !isPreTag && regSpace.test(txt)){ //非pre 标签且全为不可见字符，不处理
-                return;
-            }
-            txt = me.preHandleText(txt);
-            setTxtDom(txt);
-        }
+	/**
+	 * 编译模板
+	 * @param srcStr 	源串
+	 */
+	private compileTemplate(srcStr: string) {
+		while (srcStr.length !== 0) {
+			if (srcStr.startsWith('<')) {
+				// 标签
+				if (srcStr[1] == '/') {
+					// 结束标签
+					srcStr = this.compileEndTag(srcStr)
+				} else {
+					// 开始标签
+					srcStr = this.compileStartTag(srcStr)
+				}
+			} else {
+				// 文本节点
+				srcStr = this.compileText(srcStr)
+			}
+		}
+	}
 
-        /**
-         * 新建文本节点
-         * @param txt   文本串
-         */
-        function setTxtDom(txt){
-            if(!dom){
-                dom = new VirtualDom(null,me.genKey());
-                domArr.push(dom);
-                closedTag.push(false);
-            }
-            if(dom.expressions){
-                dom.expressions.push(txt);
-            }else{
-                if(typeof txt === 'string'){ //字符串
-                    dom.textContent = txt;
-                }else{ //表达式
-                    if(dom.textContent){ //之前的文本进数组
-                        dom.expressions = [dom.textContent,txt];
-                        delete dom.textContent;
-                    }else{
-                        dom.expressions = [txt];
-                    }
-                }  
-            }
-        }
-    }
-    
-    
-    /**
-     * 处理模块子节点为slot节点
-     * @param dom   dom节点
-     */
-    private handleSlot(dom:VirtualDom){
-        if(!dom.children || dom.children.length === 0 || !dom.hasDirective('module')){
-            return;
-        }
-        let slotCt:VirtualDom;
-        for(let j=0;j<dom.children.length;j++){
-            let c = dom.children[j];
-            if(c.hasDirective('slot')){ //带slot的不处理
-                continue;
-            }
-            if(!slotCt){//第一个直接被slotCt替换
-                slotCt = new VirtualDom('div',this.genKey());
-                slotCt.addDirective(new Directive('slot',null));
-                //当前位置，用slot替代
-                dom.children.splice(j,1,slotCt);
-            }else{
-                //直接删除
-                dom.children.splice(j--,1);
-            }
-            slotCt.add(c);
-        }
-    }
+	/**
+	 * 处理开始节点
+	 * @param srcStr 待编译字符串
+	 * @returns 编译处理后的字符串
+	 */
+	private compileStartTag(srcStr: string): string {
+		// 抓取<div
+		const match = /^<\s*([a-z][^\s\/\>]*)/i.exec(srcStr)
+		// 抓取成功
+		if (match) {
+			// 设置当前正在编译的节点
+			this.current = new VirtualDom(
+				match[1].toLowerCase(),
+				this.genKey(),
+				this.module
+			)
+			// 当前节点入栈
+			this.domArr.push(this.current)
+			// 截断字符串 准备处理属性
+			this.current.tagStartPos = this.template.length - srcStr.length
+			srcStr = srcStr.substring(match.index + match[0].length).trimStart()
+		} else {
+			// <!-- 或者<后跟符号不是字符
+			// 当作text节点
+			this.textArr.push(srcStr[0])
+			return srcStr.substring(1)
+		}
 
-    /**
-     * 后置处理
-     * 包括：模块类元素、自定义元素
-     * @param node  虚拟dom节点
-     */
-    private postHandleNode(node:VirtualDom){
-        // 自定义元素判断
-        let clazz = DefineElementManager.get(node.tagName);
-        if(clazz){ //自定义元素
-            Reflect.construct(clazz,[node,this.module]);
-        }
-        // 模块类判断
-        if (ModuleFactory.hasClass(node.tagName)) {
-            const dir:Directive = new Directive('module',node.tagName);
-            dir.params = {srcId:this.module.id};
-            node.addDirective(dir);
-            node.tagName = 'div';
-        }
-    }
+		// 处理属性
+		srcStr = this.compileAttributes(srcStr)
 
-    /**
-     * 预处理html保留字符 如 &nbsp;,&lt;等
-     * @param str   待处理的字符串
-     * @returns     解析之后的串
-     */
-    private preHandleText(str: string): string {
-        let reg = /&[a-z]+;/;
-        if(reg.test(str)){
-            let div = document.createElement('div');
-            div.innerHTML = str;
-            return div.textContent;
-        }
-        return str;
-    }
+		// 属性处理完成之后 判断是否结束
+		if (srcStr.startsWith('>')) {
+			// 开始标签结束
+			this.current.tagEndPos = this.template.length - srcStr.substring(1).length
+			if (this.isVoidTag(this.current)) {
+				if (!this.current.selfClosed) {
+					this.warnStartTagNotClose(this.current)
+				}
+				this.handleSelfClosingTag()
+			}
+			return srcStr.substring(1).trimStart()
+		} else {
+			// 开始标签没结束>
+			throw new NError('needEndTag', this.current.tagName)
+		}
+	}
 
-    /**
-     * 产生dom key
-     * @returns   dom key
-     */
-    private genKey():string{
-        return this.module.getDomKeyId() + '';
-    }
+	/**
+	 * 处理标签属性
+	 * @param srcStr 待编译字符串
+	 * @returns 编译后字符串
+	 */
+	private compileAttributes(srcStr: string): string {
+		// 确保处理完成之后是>开头
+		while (srcStr.length != 0 && !srcStr.startsWith('>')) {
+			// 抓取形如：a='b' a={{b}} a="b" a=`b` / a 的属性串;
+			const match =
+				/^(\/|\$?[a-z_][\w-]*)(?:\s*=\s*((?:'[^']*')|(?:"[^"]*")|(?:`[^`]*`)|(?:{{[^}}]*}})))?/i.exec(
+					srcStr
+				)
+			// 抓取成功 处理属性
+			if (match) {
+				// HTML在解析 属性的时候会把大写属性名改成小写(数据项除外)，这里为了和html一致 统一把属性名处理成为小写
+				let name = match[1][0]!=='$'?match[1].toLowerCase():match[1];
+				if (name === '/') {
+					// 是自闭合标签
+					this.handleSelfClosingTag()
+					this.current.selfClosed = true
+				} else {
+					// 是普通属性
+					let value: any = !match[2]
+						? undefined
+						: match[2].startsWith(`"`)
+						? match[2].substring(1, match[2].length - 1)
+						: match[2].startsWith(`'`)
+						? match[2].substring(1, match[2].length - 1)
+						: match[2]
+
+					if (value && value.startsWith('{{')) {
+						value = new Expression(value.substring(2, value.length - 2))
+						//表达式 staticNum为-1
+						this.current.staticNum = -1;
+					}
+
+					if (name.startsWith('x-')) {
+						// 指令
+						this.current.addDirective(new Directive(name.substring(2), value))
+					} else if (name.startsWith('e-')) {
+						// 事件
+						this.current.addEvent(
+							new NEvent(this.module, name.substring(2), value)
+						)
+					} else {
+						//普通属性
+						this.current.setProp(name, value)
+					}
+				}
+			}
+			if (match) {
+				srcStr = srcStr.substring(match.index + match[0].length).trimStart()
+			} else {
+				if (this.current) {
+					throw new NError('tagError', this.current.tagName)
+				}
+				throw new NError('wrongTemplate')
+			}
+		}
+		return srcStr
+	}
+
+	/**
+	 * 处理结束标签
+	 * @param srcStr 待编译字符串
+	 * @returns 编译后字符串
+	 */
+	private compileEndTag(srcStr: string): string {
+		// 抓取</div>
+		const match = /^<\/\s*([a-z][^\>]*)/i.exec(srcStr)
+		if (match) {
+			// 抓取成功
+			const name = match[1].toLowerCase().trim()
+			if (this.current && this.current.tagName === name) {
+				// 当前节点与闭合标签名相同 尝试闭合
+				if (this.domArr.length < 1) {
+					// 当前栈空 错误闭合 按照html 测试 a</b>c 的结果丢弃该字符串
+					return srcStr.substring(match.index + match[0].length + 1)
+				} else if (this.domArr.length == 1) {
+					// 当前栈只有一个节点，处理该节点，并且将当前节点指向undefined
+					this.handleCloseTag()
+					this.current = undefined
+				} else {
+					// 当前栈内有多个节点
+					// 1.处理当前节点
+					let temp = this.domArr.pop()
+					this.handleCloseTag()
+					this.current = !this.domArr[this.domArr.length - 1].isClosed
+						? this.domArr[this.domArr.length - 1]
+						: undefined
+
+					this.current ? this.current.add(temp) : this.domArr.push(temp)
+				}
+			} else {
+				//
+				/**
+				 * 没找到闭合标签与当前标签不匹配 ，分两种情况
+				 * 1. 当前结束标签与栈中之前的元素匹配正常闭合只是中间有标签没闭合；
+				 * 2. 当前结束标签与栈中所有元素都不匹配
+				 * */
+				if (this.domArr.length === 0) {
+					this.warnEndTagNotMatch(name, srcStr)
+				} else {
+					// 尝试寻找与其匹配的开始节点
+					let pos = 0
+					for (let i = this.domArr.length - 1; i >= 1; i--) {
+						if (!this.domArr[i].isClosed && name === this.domArr[i].tagName) {
+							pos = i
+							break
+						}
+					}
+					if (pos !== 0) {
+						// warn 用户中间有未闭合的节点
+						for (let i = this.domArr.length - 1; i >= pos; i--) {
+							if (this.domArr[i].tagName !== undefined && i !== pos) {
+								// 不是文本节点
+								this.warnStartTagNotClose(this.domArr[i])
+							}
+							// 如果是空标签那么不能将节点放进去
+							if (!this.domArr[i - 1].isClosed) {
+								this.domArr[i].isClosed = true
+								let temp = this.domArr.pop()
+								this.domArr[i - 1].add(temp)
+							}
+						}
+						this.current = undefined
+					} else {
+						// pos = 0 表示当前栈没有元素与当前闭合标签匹配
+						this.warnEndTagNotMatch(name, srcStr)
+					}
+				}
+
+				return srcStr.substring(match.index + match[0].length + 1)
+			}
+		} else {
+			// 抓取失败
+			throw new NError('needEndTag', this.current.tagName)
+		}
+		return srcStr.substring(match.index + match[0].length + 1).trimStart();
+	}
+
+	/**
+	 * 编译text
+	 * @param srcStr 	源串
+	 * @returns 		
+	 */
+	private compileText(srcStr: string): string {
+		// 字符串最开始变为< 或者字符串消耗完 则退出循环
+		while (!srcStr.startsWith('<') && srcStr.length !== 0) {
+			if (srcStr.startsWith('{')) {
+				// 可能是表达式
+				const matchExp = /^{{([\s\S]*?)}}/i.exec(srcStr)
+				if (matchExp) {
+					// 抓取成功
+					this.textArr.push(new Expression(matchExp[1]))
+					this.isExprText = true
+					srcStr = srcStr.substring(matchExp.index + matchExp[0].length)
+				} else {
+					// 跳过单独的{
+					typeof this.textArr[this.textArr.length] === 'string'
+						? (this.textArr[this.textArr.length] += '{')
+						: this.textArr.push('{')
+					srcStr = srcStr.substring(1)
+				}
+			} else {
+				// 非表达式，处理成普通字符节点
+				const match = /([^\<\{]*)/.exec(srcStr)
+				if (match) {
+					let txt: string
+					if (this.current && this.current.tagName === 'pre') {
+						// 在pre标签里
+						txt = this.preHandleText(
+							srcStr.substring(0, match.index + match[0].length)
+						)
+					} else {
+						txt = this.preHandleText(
+							srcStr.substring(0, match.index + match[0].length)
+						)
+					}
+					this.textArr.push(txt)
+				}
+				srcStr = srcStr.substring(match.index + match[0].length)
+			}
+		}
+		// 最开始是< 或者字符消耗完毕 退出循环
+		let text = new VirtualDom(undefined, this.genKey())
+		if(this.isExprText){
+			text.expressions = [...this.textArr];
+			//动态文本节点，staticNum=-1
+			text.staticNum = -1;
+		}else{
+			text.textContent = this.textArr.join('')
+		}
+		
+		if (this.current) {
+			// 当前节点未闭合
+			if (this.isExprText) {
+				this.current.add(text)
+			} else {
+				if (text.textContent.length !== 0) {
+					this.current.add(text)
+				}
+			}
+		} else {
+			// 当前不存在未闭合节点，说明text是第一个节点 或者 没有用一个容器把所有节点包裹起来。
+			// 如果文本节点不是全空则直接push当前文本节点 ，等到编译完成的时候使用一个统一的div包裹所有的domArr里面的节点。
+			// 如果是全空文本节点则直接丢弃
+			if (this.isExprText) {
+				this.domArr.push(text)
+			} else {
+				if (text.textContent.trim().length !== 0) {
+					this.domArr.push(text)
+				}
+			}
+		}
+		// 文本节点也要闭合
+		/**
+		 *  防止下面的情况出现
+		 * <div>abc</div>
+		 *  something
+		 * <div>abc</div>
+		 */
+		text.isClosed = true
+		// 重置状态
+		this.isExprText = false
+		this.textArr = []
+		// 返回字符串
+		return srcStr
+	}
+
+	/**
+	 * 预处理html保留字符 如 &nbsp;,&lt;等
+	 * @param str   待处理的字符串
+	 * @returns     解析之后的串
+	 */
+	private preHandleText(str: string): string {
+		let reg = /&[a-z]+;/
+		if (reg.test(str)) {
+			let div = document.createElement('div')
+			div.innerHTML = str
+			return div.textContent + ''
+		}
+		return str
+	}
+
+	/**
+	 * 处理当前节点是模块或者自定义节点
+	 */
+	private postHandleNode() {
+		let clazz = DefineElementManager.get(this.current.tagName)
+		if (clazz) {
+			Reflect.construct(clazz, [this.current, this.module])
+		}
+		const node = this.current
+		// 是否是模块类
+		if (ModuleFactory.hasClass(node.tagName)) {
+			const dir: Directive = new Directive('module', node.tagName)
+			dir.params = { srcId: this.module.id }
+			node.addDirective(dir)
+			node.tagName = 'div'
+		}
+	}
+	/**
+	 * 处理插槽
+	 */
+	private handleSlot() {
+		let dom = this.current
+		if (
+			!dom.children ||
+			dom.children.length === 0 ||
+			!dom.hasDirective('module')
+		) {
+			return
+		}
+		let slotCt: VirtualDom
+		for (let j = 0; j < dom.children.length; j++) {
+			let c = dom.children[j]
+			if (c.hasDirective('slot')) {
+				//带slot的不处理
+				continue
+			}
+			//@ts-ignore
+			if (!slotCt) {
+				//第一个直接被slotCt替换
+				slotCt = new VirtualDom('div', this.genKey())
+				slotCt.addDirective(new Directive('slot'))
+				//当前位置，用slot替代
+				dom.children.splice(j, 1, slotCt)
+			} else {
+				//直接删除
+				dom.children.splice(j--, 1)
+			}
+			slotCt.add(c)
+		}
+	}
+
+	/**
+	 * 处理闭合节点
+	 */
+	private handleCloseTag() {
+		this.postHandleNode()
+		this.current.sortDirective()
+		this.handleSlot()
+		this.current.isClosed = true
+	}
+	/**
+	 * 处理自闭合节点
+	 */
+	private handleSelfClosingTag() {
+		this.postHandleNode()
+		this.current.sortDirective()
+		if (this.domArr.length > 1) {
+			this.domArr.pop()
+			this.domArr[this.domArr.length - 1].add(this.current)
+			this.current = this.domArr[this.domArr.length - 1]
+		} else {
+			this.current = undefined
+		}
+	}
+	/**
+	 * 如有闭合标签没有匹配到任何开始标签 给用户警告
+	 * @param name 标签名
+	 * @param srcStr 剩余模板字符串
+	 */
+	private warnEndTagNotMatch(name: string, srcStr: string) {
+		console.warn(
+			`[Nodom warn]: 模块 %c${
+				this.module.constructor.name
+			}%c 中 </${name}> 未匹配到对应的开始标签。
+      \n\t ${this.template.substring(
+				0,
+				this.template.length - srcStr.length
+			)}%c</${name}>%c${srcStr.substring(name.length + 3)}`,
+			'color:red;font-weight:bold;',
+			'',
+			'color:red;font-weight:bold;',
+			``
+		)
+	}
+	/**
+	 * 当前节点没有闭合给用户输出警告
+	 * @param dom 节点
+	 */
+	private warnStartTagNotClose(dom: VirtualDom) {
+		console.warn(
+			`[Nodom warn]: 模块：%c${this.module.constructor.name}%c 中 ${
+				dom.tagName
+			} 标签未闭合！ \n\t ${this.template.substring(
+				0,
+				dom.tagStartPos
+			)}%c${this.template.substring(
+				dom.tagStartPos,
+				dom.tagEndPos
+			)}%c${this.template.substring(dom.tagEndPos)}`,
+			'color:red;font-weight:bold;',
+			'',
+			'color:red;font-weight:bold;',
+			''
+		)
+	}
+	/**
+	 * 判断节点是都是空节点
+	 * @param dom
+	 * @returns
+	 */
+	private isVoidTag(dom: VirtualDom) {
+		return voidTagMap.has(dom.tagName)
+	}
 }

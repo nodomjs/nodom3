@@ -1,3 +1,4 @@
+import { NError } from "./error";
 import { Model } from "./model";
 import { Module } from "./module";
 import { Util } from "./util";
@@ -15,6 +16,11 @@ export class Expression {
      * 执行函数
      */
     execFunc: Function;
+
+    /**
+     * 源表达式串
+     */
+    exprStr: string;
 
     /**
      * 只包含自有model变量
@@ -35,6 +41,7 @@ export class Expression {
         if (!exprStr) {
             return;
         }
+        this.exprStr = exprStr;
         const funStr = this.compile(exprStr);
         this.execFunc = new Function('$model',`return ` + funStr);
     }
@@ -65,7 +72,9 @@ export class Expression {
                 }else if(lch === '(' || lch === ')'){ //函数，非内部函数
                     retS += handleFunc(s);
                 }else { //字段 this $model .field等不做处理
-                    if(s.startsWith('this.') || s==='$model' || s.startsWith('$model.') || Util.isKeyWord(s) || (s[0] === '.' && s[1]!=='.')){ //非model属性
+                    if(s.startsWith('this.') 
+                        || Util.isKeyWord(s) 
+                        || (s[0] === '.' && s[1]!=='.')){ //非model属性
                         retS += s; 
                     }else{  //model属性
                         let s1 = '';
@@ -74,7 +83,6 @@ export class Expression {
                             s = s.substring(3);
                         }
                         retS += s1 +'$model.' + s;
-                        
                         //存在‘.’，则变量不全在在当前模型中
                         if(s.indexOf('.') !== -1){
                             this.allModelField = false;
@@ -87,7 +95,6 @@ export class Expression {
         if(index < exprStr.length){
             retS += exprStr.substring(index);
         }
-        
         return retS;
 
         /**
@@ -96,28 +103,20 @@ export class Expression {
          * @returns     处理后的串
          */
         function handleFunc(str):string{
-            let ind = str.indexOf('.');
-                    
-            //中间无'.'
-            if(ind === -1){
-                let ind1 = str.lastIndexOf('(');
-                let fn = str.substring(0,ind1);
-                //末尾字符
-                if(!Util.isKeyWord(fn)){
-                    let lch = str[str.length-1];
-                    if(lch !== ')'){ //有参数
-                        return 'this.invokeMethod("' + fn + '",';
-                    }else{ //无参数
-                        return 'this.invokeMethod("' + fn + '")';
-                    }
-                }
-            }else if(str[0] !== '.'){  //第一个为点不处理
-                let fn = str.substring(0,ind);
-                if(!Util.isKeyWord(fn)){ //首字段非关键词，则为属性
-                    return '$model.' + str;
-                }
+            const ind1 = str.lastIndexOf('(');
+            const ind2 = str.indexOf('.');
+            //第一段
+            const fn1 = (ind2 !== -1?str.substring(0,ind2):str.substring(0,ind1)).trim();
+            //保留字或第一个为.
+            if(Util.isKeyWord(fn1) || str[0] === '.'){
+                return str;
             }
-            return str;
+            //中间无'.'，模块方法
+            if(ind2 === -1){
+                return 'this.' + fn1 + str.substring(fn1.length);
+            }else{  //变量原型方法
+                return '$model.' + str;
+            }
         }
     }
 
@@ -130,18 +129,12 @@ export class Expression {
     public val(module:Module,model: Model) {
         let v;
         try {
-            v = this.execFunc.apply(module,[model]);
+            v = this.execFunc.call(module,model);
         } catch (e) {
-            // console.error(e);
+            console.error(new NError("wrongExpression",this.exprStr).message);
+            console.error(e);
         }
         this.value = v;
         return v;
-    }
-
-    /**
-     * 克隆
-     */
-     public clone() {
-        return this;
     }
 }

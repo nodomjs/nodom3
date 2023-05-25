@@ -2,14 +2,14 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>show</title>
 
 		<style>
-			.cls1{
-				color:blue;
-				display:block;
-				font-weight:bold;
+			.cls1 {
+				color: blue;
+				display: block;
+				font-weight: bold;
 			}
 		</style>
 	</head>
@@ -18,7 +18,7 @@
 		<div></div>
 	</body>
 	<script type="module">
-		import { nodom, Module } from "../dist/nodom.esm.js";
+		import { nodom, Module } from '../dist/nodom.esm.js'
 		class Module1 extends Module {
 			template() {
 				return `
@@ -30,8 +30,9 @@
                         <div x-show={{show}} >价格：{{price}}</div>
 						<p>带class</p>
 						<div x-show={{!show}} class='cls1'>价格：{{price}}</div>
+						<input type="number" value={{pageNo}} x-field='pageNo' min='1' max={{this.__pageCount}} />
 	                </div>
-                `;
+                `
 			}
 
 			data() {
@@ -39,16 +40,16 @@
 					show: false,
 					price: 2000,
 					a: [{ num: 1 }, { num: 2 }, { num: 3 }, { num: 4 }, { num: 5 }],
-				};
+				}
 			}
 
 			change(model) {
-				model.show = !model.show;
-				let temp = model.a.shift();
-				model.a.push(temp);
+				model.show = !model.show
+				let temp = model.a.shift()
+				model.a.push(temp)
 			}
 		}
 
-		nodom(Module1, "div");
+		nodom(Module1, 'div')
 	</script>
 </html>

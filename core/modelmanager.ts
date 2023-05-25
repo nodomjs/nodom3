@@ -1,7 +1,6 @@
-import { VirtualDom } from "./virtualdom";
+import { ModuleFactory } from "./modulefactory";
 import { Model } from "./model";
 import { Module } from "./module";
-import { ModuleFactory } from "./modulefactory";
 import { Renderer } from "./renderer";
 import { Util } from "./util";
 
@@ -9,66 +8,61 @@ import { Util } from "./util";
  * 模型工厂
  */
 export class ModelManager {
-    
+    /**
+     * 所属模块
+     */
+    public module:Module;
+
     /**
      * 数据map
-     * {data:model}，
+     * {data:{model:model,key:key}
      * 其中：
      *      data:       初始数据对象
      *      model:      model对象
-     *      
      */
-    private static dataMap: WeakMap<object,Model> = new WeakMap();
+    private dataMap: WeakMap<object,any> = new WeakMap();
 
     /**
-     * 模型map
-     * {model:{key:,modules:,watchers:}}
-     * 其中：
-     *  key:        model key
-     *  modules:    该model对象绑定的模块id数组
-     *  watchers:   model对应监听器map {prop:{foo:modules}}
-     *               其中：prop为被监听属性，foo为监听器方法，modules为被监听属性所影响的模块数组
+     * 存储模型对应属性名，如果为父传子，则需要保存属于该模型的属性名
+     * key: model
+     * value: model名字
      */
-    public static modelMap:Map<object,any> = new Map();
+    private nameMap:WeakMap<object,any> = new WeakMap();
+    /** 
+     * model对应监听器map 
+     *  key:model
+     *  value:{key1:{f:foo1,deep:true/false},key2:,...}
+     *        其中：prop为被监听属性，foo为监听器方法，deep为是否深度监听
+     */
+    private watchMap:WeakMap<object,any> = new WeakMap();
 
     /**
-     * 用于保存bindToModule时的子对象对应mids
-     * {data:[mids]}
-     * 其中：
-     *  data:   data object
-     *  mids:   moduleid 数组
+     * 是否存在深度watcher
      */
-    private static tempMap:WeakMap<object,number[]> = new WeakMap();
+    private hasDeepWatch:boolean = false;
+
     /**
-     * 获取model map
-     * @returns  model map
+     * 绑定module map，slot引用外部数据时有效
+     * {model:[moduleid1,moduleid2,...]}
      */
-    public static getMap():Map<object,any>{
-        return this.modelMap;
+    public bindMap:WeakMap<object,number[]> = new WeakMap();
+
+    
+    /**
+     * 构造器
+     * @param module    模块
+     */
+    constructor(module:Module){
+        this.module = module;
     }
+
     /**
      * 获取model，不存在则新建
      * @param data      数据
-     * @param module    所属模块
      * @returns         model
      */
-    public static getModel(data:any,receiver?:Model):Model{
-        // let model;
-        if(this.dataMap.has(data)){
-            const mdl = this.dataMap.get(data);
-            //存在暂存的数据模块绑定，需要添加到model模块绑定
-            if(this.tempMap.has(data)){
-                const mids = this.getModuleIds(mdl);
-                const newIds = this.tempMap.get(data);
-                this.tempMap.delete(data);
-                for(let id of newIds){
-                    if(mids.indexOf(id) === -1){
-                        mids.push(id);
-                    }
-                }
-            }
-            return mdl;
-        }
+    public getModel(data:any):Model{
+        return this.dataMap.has(data)?this.dataMap.get(data).model:undefined;
     }
 
     /**
@@ -76,85 +70,80 @@ export class ModelManager {
      * @param model     model对象
      * @returns         model对应key
      */
-    public static getModelKey(model:Model):number{
-        if(this.modelMap.has(model)){
-            return this.modelMap.get(model).key;
+    public getModelKey(data:any):number{
+        return this.dataMap.has(data)?this.dataMap.get(data).key:undefined;
+    }
+
+    /**
+     * 设置模型名
+     * @param model 模型 
+     * @param name  名
+     */
+    public setModelName(model:any,name:string){
+        if(!this.nameMap.has(model)){
+            this.nameMap.set(model,name);
         }
+    }    
+
+    /**
+     * 获取模型名
+     * @param model 模型 
+     * @returns     模型名
+     */
+    public getModelName(model:any):string{
+        return this.nameMap.get(model);
     }
 
     /**
      * 添加数据到map
-     * @param data 
+     * @param data      原始数据
+     * @param model     模型
      */
-    public static add(data,model,receiver?:Model){
-        this.dataMap.set(data,model);
-        // 复制父model模块
-        let mids = [];
-        if(receiver){
-            mids = this.getModuleIds(receiver).slice(0);
-            
+    public add(data,model){
+        //避免重复添加
+        if(this.dataMap.has(data)){
+            return;
         }
-        this.modelMap.set(model,{key:Util.genId(),modules:mids});
+        this.dataMap.set(data,{model:model,key:model.__key || Util.genId()});
     }
     
     /**
-     * 绑定model到module
+     * 添加绑定
      * @param model     模型 
-     * @param module    模块
-     * @param isSecond  是否为第二次绑定（通常为传递给子模块的数据对象） 
-     * @returns 
+     * @param moduleId  模块id
      */
-    public static bindToModule(model:Model,module:Module,isSecond?:boolean){
-        if(!this.modelMap.has(model)){
-            this.modelMap.set(model,{key:Util.genId()});
+    public bindModel(model:any,module:Module){
+        if(!model){
+            return;
         }
-        let obj = this.modelMap.get(model);
-        
-        if(!obj.modules){
-            obj.modules = [module.id];
-        }else{
-            if(obj.modules.indexOf(module.id) === -1){
-                obj.modules.push(module.id);
+        bind(this.bindMap,model,module);
+        /**
+         * 绑定
+         * @param bindMap 
+         * @param model 
+         * @param module 
+         */
+        function bind(bindMap,model,module){
+            if(model.__module === module){
+                return;
             }
-        }
-        /**
-         * 第二次为增量绑定，需要对子对象进行处理
-         */
-        if(isSecond){
-            saveChildren(model,this.tempMap);
-        }
-
-        /**
-         * 保存子对象的模块绑定到临时map中
-         * @param mdl   模型
-         * @param map   临时map
-         */
-        function saveChildren(mdl:Model,map:WeakMap<object,number[]>){
-            for(let key of Object.keys(mdl)){
-                if(mdl[key] && typeof mdl[key] === 'object'){
-                    let d = mdl[key].___source;
-                    if(map.has(d)){
-                        map.get(d).push(module.id);
-                    }else{
-                        map.set(d,[module.id])
-                    }
-                    //递归处理
-                    saveChildren(mdl[key],map);
+            let mids;
+            if(!bindMap.has(model)){
+                mids = [];
+                bindMap.set(model,mids);
+            }else{
+                mids = bindMap.get(model);
+            }
+            if(!mids.includes(module.id)){
+                mids.push(module.id);
+            }
+            //级联绑定
+            for(let key of Object.keys(model)){
+                if(model[key] && typeof model[key] === 'object'){
+                    bind(bindMap,model[key],module);
                 }
             }
         }
-    }
-
-    /**
-     * 获取model绑定的moduleId
-     * @param model     模型
-     * @returns model绑定的模块id数组
-     */
-    public static getModuleIds(model:Model):number[]{
-        if(!this.modelMap.has(model)){
-            return;
-        }
-        return this.modelMap.get(model).modules;
     }
 
     /**
@@ -165,39 +154,60 @@ export class ModelManager {
      * @param oldValue  旧值
      * @param newValue  新值
      */
-    public static update(model: Model, key: string, oldValue?: any, newValue?: VirtualDom) {
-        const modules = this.getModuleIds(model);
-        if(!modules){
-            return;
-        }
-        //所有module渲染
-        for(let mid of modules){
-            const m:Module = ModuleFactory.get(mid);
-            if(m){
-                Renderer.add(m);
+    public update(model: Model, key: string, oldValue?: any, newValue?: any) {
+        //处理watch
+        handleWatcher(this.module,model);
+        //添加module渲染
+        Renderer.add(this.module);
+        //对绑定模块添加渲染
+        if(this.bindMap.has(model)){
+            for(let id of this.bindMap.get(model)){
+                const m = ModuleFactory.get(id);
+                if(m){
+                    handleWatcher(m,model);
+                    Renderer.add(m);
+                }
             }
         }
-
-        let watchers = this.modelMap.get(model)['watchers'];
-        if(!watchers){
-            return;
-        }
-        if(!watchers.has(key)){
-            return;
-        }
-        let foos = watchers.get(key);
-        for(let v of foos){
-            for(let mid of v[1]){
-                const m:Module = ModuleFactory.get(mid);
-                if(m){
-                    v[0].call(m,model,key,oldValue,newValue);
+        
+        /**
+         * 处理watcher
+         * @param mdl   模块
+         * @param model 模型
+         */  
+        function handleWatcher(mdl,model){
+            const map = mdl.modelManager.watchMap;
+            let watcher = map.get(model);
+            //当前model存在watcher
+            if(watcher && watcher[key]){
+                //查找对应key是否存在watch
+                watcher[key].f.call(mdl,model,key,oldValue,newValue);
+            }else if(mdl.modelManager.hasDeepWatch){   //进行deep查找
+                for(let m = model;m && m.__parent;m=m.__parent){
+                    //如果已经跨模块，则表示为父传子，父模块指向当前模块
+                    let pm = m.__parent.__module === mdl?m.__parent:mdl.model;
+                    if(!map.has(pm)){
+                        continue;
+                    }
+                    const watcher = map.get(pm);
+                    const name = mdl.modelManager.getModelName(m)||m.__name;
+                    if(watcher && watcher[name]){
+                        let cfg = watcher[name];
+                        // 当前model或父model deep watch
+                        if(cfg.deep){
+                            cfg.f.call(mdl,model,key,oldValue,newValue);
+                            //找到即跳出循环
+                            break;
+                        }
+                    }
                 }
             }
         }
     }
 
     /**
-     * 观察某个数据项
+     * 监听某个数据项
+     * 注意：执行此操作时，该数据项必须已经存在，否则监听失败
      * @param model     带watch的model
      * @param key       数据项名或数组
      * @param operate   数据项变化时执行方法
@@ -206,8 +216,13 @@ export class ModelManager {
      * 
      * @returns         unwatch函数
      */
-    public static watch(model:Model,key: string|string[], operate: Function,module?:Module,deep?:boolean):Function {
-        let mids = module?[module.id]:ModelManager.getModuleIds(model);
+    public watch(model:Model,key: string|string[], operate: Function,deep?:boolean):Function {
+        if(!operate || typeof operate !== 'function'){
+            return;
+        }
+        const me = this;
+        //设置深度watch标志
+        this.hasDeepWatch = deep;
         //撤销watch数组，数据项为{m:model,k:监听属性,f:触发方法}
         let arr = [];
         if(Array.isArray(key)){
@@ -220,17 +235,19 @@ export class ModelManager {
 
         //返回取消watch函数
         return ()=>{
-            if(arr){
-                for(let f of arr){
-                    let map = ModelManager.modelMap.get(f.m)['watchers'];
-                    if(!map || !map.has(f.k)){
-                        continue;
-                    }
-                    if(!f.operate){
-                        map.delete(f.k);
-                    }else if(map.get(f.k).has(f.operate)){
-                        map.get(f.k).delete(f.operate);
-                    }
+            //避免二次取消
+            if(!Array.isArray(arr)){
+                return;
+            }
+            for(let f of arr){
+                let obj = me.watchMap.get(f.m);
+                if(!obj){
+                    continue;
+                }
+                delete obj[f.k];
+                //已经无监听从watchMap移除
+                if(Object.keys(obj).length === 0){
+                    me.watchMap.delete(f.m);
                 }
             }
             //释放arr
@@ -240,51 +257,42 @@ export class ModelManager {
         /**
          * 监听一个
          * @param model     当前model  
-         * @param key       监听键
+         * @param key       监听属性，可以支持多级属性，如果为多级属性，倒数第二级对应数据项必须为对象
          * @param operate   操作方法
          * @returns 
          */
         function watchOne(model:Model,key:string,operate:Function){
-            let index = -1;
-            //如果带'.'，则只取最里面那个对象
-            if ((index = key.lastIndexOf('.')) !== -1) {
-                model = ModelManager.get(model,key.substring(0, index));
-                key = key.substring(index + 1);
-            }
-            if (!model) {
+            if (!model || typeof model !== 'object') {
                 return;
             }
-            
-            const obj = ModelManager.modelMap.get(model);
-            if(!obj['watchers']){
-                obj['watchers'] = new Map();
-            }
-            let map = obj['watchers'];
-            if(!map.has(key)){
-                map.set(key,new Map());
-            }
-            map.get(key).set(operate,mids);
-
-            //添加到撤销数组
-            arr.push({m:model,k:key,f:operate});
-            //深度监听
-            if(deep && model[key] && typeof model[key] === 'object'){
-                for(let k of Object.keys(model[key])){
-                    if(typeof model[key][k] !== 'function'){
-                        watchOne(model[key],k,operate);
-                    }
+            let index;
+            //如果带'.'，则只取最里面那个对象
+            if ((index = key.lastIndexOf('.')) !== -1) {
+                model = me.get(model,key.substring(0, index));
+                key = key.substring(index + 1);
+                if (!model || typeof model !== 'object') {
+                    return;
                 }
             }
+            
+            if(!me.watchMap.has(model)){
+                me.watchMap.set(model,{});
+            }
+            const obj= me.watchMap.get(model);
+            obj[key] = {f:operate,deep:deep};
+            //保存用于撤销watch
+            arr.push({m:model,k:key});
         }
     }
 
+    
     /**
      * 查询model子属性
      * @param key       属性名，可以分级，如 name.firstName
      * @param model     模型
      * @returns         属性对应model proxy
      */
-    public static get(model:Model, key?: string):any {
+    public get(model:Model, key?: string):any {
         if(key){
             if (key.indexOf('.') !== -1) {    //层级字段
                 let arr = key.split('.');
@@ -310,7 +318,7 @@ export class ModelManager {
      * @param key       子属性，可以分级，如 name.firstName
      * @param value     属性值
      */
-    public static set(model:Model,key:string,value:any){
+    public set(model:Model,key:string,value:any){
         if (key.indexOf('.') !== -1) {    //层级字段
             let arr = key.split('.');
             for (let i = 0; i < arr.length - 1; i++) {
@@ -323,14 +331,5 @@ export class ModelManager {
             key = arr[arr.length - 1];
         }
         model[key] = value;
-    }
-
-    /**
-     * 判断一个对象是否为model（proxy）
-     * @param model     待检测对象
-     * @returns         true/false
-     */
-    public static isModel(model):boolean{
-        return model!==undefined && model!==null && model.___source !== undefined;
     }
 }

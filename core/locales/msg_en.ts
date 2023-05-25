@@ -52,7 +52,11 @@ export const NodomMessage_en = {
         config1:"{0} config parameter '{1}' error",
         itemnotempty:"{0} '{1}' config item '{2}' not allow empty",
 		itemincorrect:"{0} '{1}' config item '{2}' error",
-        wrongTemplate:"wrong template"
+        needEndTag: "element {0} is not closed",
+        needStartTag: "without start tag matchs {0}",
+        tagError:"element {0} error",
+        wrongTemplate:"wrong template",
+        wrongExpression:"expression error: {0} "
     },
 
     WeekDays:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]

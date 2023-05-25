@@ -50,8 +50,9 @@
 						<div>三目运算：{{num>0?1:0}}</div>
 						<div>对象判断：{{{x:1,yyy:2}.constructor.name === 'Object'}}</div>
 						<div>数组方法：{{arr.join(',')}}</div>
-						{{desc + ' ' + this.state}}
+						<div>使用this：{{desc + ' ' + this.state}}</div>
 						<div>扩展运算-数组求和：{{sum(...arr)}}</div> 
+						<div>typeof：{{typeof arr}}</div> 
 					</div>
 				`
 			}
@@ -79,7 +80,7 @@
 					month:2,
 					$num: 3,
 					progress: 1.321,
-					name: "kyle",
+					name: "nodom",
 					str: "hello nodom!",
 					notime: "2021",
 					num: 1,

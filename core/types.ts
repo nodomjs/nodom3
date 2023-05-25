@@ -72,19 +72,14 @@ export interface IRenderedDom{
     tagName?: string;
 
     /**
-     * key，整颗虚拟dom树唯一
+     * key:string|number,整颗渲染树唯一
      */
-    key: string;
+    key: any;
  
     /**
       * 绑定模型
      */
     model?: Model;
-
-    /**
-     * 是否静态节点
-     */
-    isStatic?:boolean;
 
     /**
      * 直接属性 不是来自于attribute，而是直接作用于html element，如el.checked,el.value等
@@ -123,12 +118,7 @@ export interface IRenderedDom{
     /**
      * 子模块id，模块容器时有效
      */
-    subModuleId?: number;
-
-    /**
-     * 未改变标志，本次不渲染
-     */
-    notChange?: boolean;
+    moduleId?: number;
 
     /**
      * 源虚拟dom

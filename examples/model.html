@@ -12,8 +12,9 @@
     </div>
 </body>
 <script type='module'>
-    import{nodom,Module,watch,$set} from '../dist/nodom.esm.js'
+    import{nodom,Module} from '../dist/nodom.esm.js'
     class Module1 extends Module{
+        modules = [Module2];
         template(){
             return `
             <div>
@@ -23,7 +24,7 @@
                 <button e-click='unwatch'>cancel watch</button>
                 <div>{{name}}</div>
                 <for cond={{rows}}>{{name}}</for>
-                <div>{{x.y.z}}</div>
+                <div>x.y.z is :{{x.y.z}}</div>
                 <div class="tip">多层model</div>
                 <div class="code">
                     <div x-model="user">
@@ -47,12 +48,12 @@
                     <div>第四道菜：{{food4.name}}，价格：{{food4.price|currency}}</div>
                     金额：
                     <div>共消费：{{(food1.price+food2.price+food3.price+food4.price)|currency}}</div>
-                    <div>{{x.y.z}}</div>
                 </div>
 
                 <p>set测试</p>
                 <button e-click='setValue'>设置值</button>
                 <div>设置的值是:{{x.xx.xxx}}</div>
+                <module2 $out={{x.xx}}/>
             </div>
             `
         }
@@ -61,6 +62,9 @@
                 x: {
                     y: {
                         z: 'hello'
+                    },
+                    xx:{
+                        xxx:'nodom1'
                     }
                 },
                 datas: [{
@@ -105,23 +109,26 @@
             // model.name1 = {first:'yang'};
             // model.name='yang';
             // // model.datas = [{a:3,b:3}];
-            // model.datas.push({a:3,b:3});
+            //model.datas.splice(1,1,{a:3,b:3});
+            model.datas.push({a:555,b:555});
             // model.datas.fill({a:'aaa'},1,3)
             // model.show = false;
             // model.datas.pop();
             // model.$set("data1.data2.data3",{a:'a'});
             // console.log(model);
-            model.datas[0].a = 2;
-            model.name='123'
+            //model.datas[0].a = 2;
+            //model.name='123'
         }
 
         change1(model){
             model.name='aaa';
             model.user.name.lastName='yyyy';
+            model.show=false
         }
 
         delProp(model){
             delete model.name;
+            model.datas.pop();
         }   
         /**
          * 取消监听
@@ -134,16 +141,16 @@
             /**
              * 非深度监听，执行change1时，第二条不会触发监听事件
              */ 
-            // this.cancer = model.$watch(['user','name'],(m,key,oldValue,newValue)=>{
-            //     console.log(this,m,key,oldValue,newValue)
-            // },null)
+            //this.cancer = this.watch(['user','name','datas'],(m,key,oldValue,newValue)=>{
+            //    console.log(this,m,key,oldValue,newValue)
+            //},true)
 
             /**
              * 深度监听，执行change1时，第二条会触发监听事件
              */ 
-            this.cancer = watch(model,['user','name','datas'],(m,key,oldValue,newValue)=>{
-                console.log(this,m,key,oldValue,newValue)
-            },null,true);
+            //this.cancer = this.watch(model,['user','name','datas'],(m,key,oldValue,newValue)=>{
+            //    console.log(this,m,key,oldValue,newValue)
+            //},null,true);
 
             //this.cancer = watch(model,'name',(m,key,oldValue,newValue)=>{
             //    console.log('name watch',m,key,oldValue,newValue);
@@ -152,8 +159,30 @@
         }
 
         setValue(){
-            $set(this.model,'x.xx.xxx','nodom');
-            console.log(this.model);
+            this.set('x.xx.xxx','nodom');
+        }
+
+    }
+
+    class Module2 extends Module{
+        template(props){
+            return `
+                <div role='module2' style='padding:10px;background:#9cf'>
+                    <button e-click='changex'>changex</button>
+                    <p>传入数据为:{{out.xxx}}</p>
+                </div>
+            `
+        }
+
+        changex(){
+            this.model.out.xxx = 'nodom3';
+        }
+
+        onBeforeFirstRender(){
+            console.log(this,this.model)
+            this.watch('out.xxx',(model,key,ov,nv)=>{
+                console.log(this,model,key,ov,nv);
+            })
         }
     }
 

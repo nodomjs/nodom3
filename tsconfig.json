@@ -1,23 +1,24 @@
 {
+  "strict":true,
   "compileOnSave": false,
   "compilerOptions": {
-    "module":"es2020",
+    "module":"esnext",
     "target": "ES2015",
-    "moduleResolution": "node",
-    "sourceMap": true,
     "lib": [
       "es5",
       "es6",
       "dom",
-      "ES2017"
+      "ES2019"
     ],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "outDir":"./dist",
+    "sourceMap": true,
+    "moduleResolution": "node",
     "declaration": true,
     "declarationDir":"./dist/types"
   },
-  "include":["**/*.ts", "index.ts"],
+  "include":["**/*.ts", "index.ts", "test.ts"],
   "exclude": [
     "./examples"
   ]

@@ -28,66 +28,22 @@ export class Util {
      * 初始化保留字map
      */
     public static initKeyMap(){
-        this.keyWordMap.set('arguments',true);
-        this.keyWordMap.set('boolean',true);
-        this.keyWordMap.set('break',true);
-        this.keyWordMap.set('byte',true);
-        this.keyWordMap.set('catch',true);
-        this.keyWordMap.set('char',true);
-        this.keyWordMap.set('const',true);
-        this.keyWordMap.set('default',true);
-        this.keyWordMap.set('delete',true);
-        this.keyWordMap.set('do',true);
-        this.keyWordMap.set('double',true);
-        this.keyWordMap.set('else',true);
-        this.keyWordMap.set('enum',true);
-        this.keyWordMap.set('eval',true);
-        this.keyWordMap.set('false',true);
-        this.keyWordMap.set('float',true);
-        this.keyWordMap.set('for',true);
-        this.keyWordMap.set('function',true);
-        this.keyWordMap.set('goto',true);
-        this.keyWordMap.set('if',true);
-        this.keyWordMap.set('in',true);
-        this.keyWordMap.set('instanceof',true);
-        this.keyWordMap.set('int',true);
-        this.keyWordMap.set('let',true);
-        this.keyWordMap.set('long',true);
-        this.keyWordMap.set('new',true);
-        this.keyWordMap.set('null',true);
-        this.keyWordMap.set('return',true);
-        this.keyWordMap.set('short',true);
-        this.keyWordMap.set('switch',true);
-        this.keyWordMap.set('this',true);
-        this.keyWordMap.set('throw',true);
-        this.keyWordMap.set('true',true);
-        this.keyWordMap.set('try',true);
-        this.keyWordMap.set('this',true);
-        this.keyWordMap.set('throw',true);
-        this.keyWordMap.set('typeof',true);
-        this.keyWordMap.set('var',true);
-        this.keyWordMap.set('while',true);
-        this.keyWordMap.set('with',true);
-        this.keyWordMap.set('Array',true);
-        this.keyWordMap.set('Date',true);
-        this.keyWordMap.set('JSON',true);
-        this.keyWordMap.set('Set',true);
-        this.keyWordMap.set('Map',true);
-        this.keyWordMap.set('eval',true);
-        this.keyWordMap.set('function',true);
-        this.keyWordMap.set('Infinity',true);
-        this.keyWordMap.set('isFinite',true);
-        this.keyWordMap.set('isNaN',true);
-        this.keyWordMap.set('isPrototypeOf',true);
-        this.keyWordMap.set('Math',true);
-        this.keyWordMap.set('NaN',true);
-        this.keyWordMap.set('Number',true);
-        this.keyWordMap.set('Object',true);
-        this.keyWordMap.set('prototype',true);
-        this.keyWordMap.set('String',true);
-        this.keyWordMap.set('isPrototypeOf',true);
-        this.keyWordMap.set('undefined',true);
-        this.keyWordMap.set('valueOf',true);
+        [
+            'arguments','boolean','break','byte','catch',
+            'char','const','default','delete','do',
+            'double','else','enum','eval','false',
+            'float','for','function','goto','if',
+            'in','instanceof','int','let','long',
+            'null','return','short','switch','this',
+            'throw','true','try','this','throw',
+            'typeof','var','while','with','Array',
+            'Date','JSON', 'Set','Map','eval',
+            'Infinity','isFinite','isNaN','isPrototypeOf','Math',
+            'NaN','Number','Object','prototype','String',
+            'isPrototypeOf','undefined','valueOf'
+        ].forEach(item=>{
+            this.keyWordMap.set(item,true);
+        });
     }
     /**
      * 是否为 js 保留关键字
@@ -138,7 +94,7 @@ export class Util {
                     //不克隆的键
                     if (expKey) {
                         if (expKey.constructor === RegExp && (<RegExp>expKey).test(prop) //正则表达式匹配的键不复制
-                            || Util.isArray(expKey) && (<any[]>expKey).includes(prop)                        //被排除的键不复制
+                            || Util.isArray(expKey) && (<any[]>expKey).includes(prop)    //被排除的键不复制
                         ) {
                             return;
                         }
@@ -512,11 +468,11 @@ export class Util {
      * @param id      附加id
      * @param deep    是否深度处理
      */
-    public static setNodeKey(node:VirtualDom, id?:string,deep?:boolean){
-        node.key += '_' + (id||Util.genId());
+    public static setNodeKey(node:VirtualDom, id?:number,deep?:boolean){
+        node.key = this.genUniqueKey(node.key,id);
         if(deep && node.children){
             for(let c of node.children) {
-                Util.setNodeKey(c,id,deep);
+                Util.setNodeKey(c,id,true);
             }
         }
     }
@@ -535,16 +491,20 @@ export class Util {
     }
 
     /**
-     * 删除dom asset
-     * @param dom   渲染后的dom节点
-     * @param name  asset name
-     * @returns 
+     * 通过两个整数，生成唯一key
+     * @param x     第一个整整数
+     * @param y     第二个正整数
+     * @returns 唯一key，为避免与genId的key相同，对结果取负
      */
-    public static delDomAsset(dom:IRenderedDom,name:string){
-        if(!dom.assets){
-            return;
-        }
-        delete dom.assets[name];
+    public static genUniqueKey(x:number,y:number){
+        // if(x<0){
+        //     x = -x;
+        // }
+        // if(y<0){
+        //     y = -y;
+        // }
+        // return -((x << 16) | y);
+        return x + '_' + y;
     }
 }
 

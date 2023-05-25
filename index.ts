@@ -14,7 +14,6 @@ export { EventFactory } from "./core/eventfactory";
 export { GlobalCache } from "./core/globalcache";
 export { Expression } from "./core/expression";
 export { NFactory } from "./core/factory";
-
 export { NodomMessage_en } from "./core/locales/msg_en";
 export { NodomMessage_zh } from "./core/locales/msg_zh";
 export { Model } from "./core/model";
@@ -32,7 +31,3 @@ export { Util } from './core/util';
 export * from "./extend/elementinit";
 export * from "./extend/directiveinit";
 export * from "./extend/eventinit";
-
-
-
-

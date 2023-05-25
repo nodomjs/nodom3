@@ -52,10 +52,11 @@ export const NodomMessage_zh = {
         config1: "{0} 配置参数 '{1}' 错误",
         itemnotempty: "{0} '{1}' 配置项 '{2}' 不能为空",
         itemincorrect: "{0} '{1}' 配置项 '{2}' 错误",
-        compile1: "{0} 标签未闭合",
-        compile2: "结束标签 {0} 未找到与之匹配的开始标签",
-        compile3: "请检查模板标签闭合情况，模板需要有一个闭合的根节点",
-        wrongTemplate:"模版格式错误"
+        needEndTag: "{0} 标签未闭合",
+        needStartTag: "未找到与 {0} 匹配的开始标签",
+        tagError:"标签 {0} 错误",
+        wrongTemplate:"模版格式错误",
+        wrongExpression:"表达式 {0} 错误"
     },
     WeekDays: ["星期日","星期一", "星期二","星期三","星期四","星期五","星期六"]
 }

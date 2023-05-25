@@ -15,34 +15,36 @@ export class MRepeat extends Module{
                     <span>菜名：{{name}}，价格：{{price}}</span>
                 </for>
             </div>
-            <!--<div class=tip>索引号的使用（编号从0开始）</div> 
-            <p> 如果使用索引号，需要在带有repeat的指令中配置$index属性，该属性指定索引名。</p>
-            <div class=code>
+            
+            <div class="tip">索引号的使用（编号从0开始）</div> 
+            <p> 如果使用索引号，需要在带有repeat的指令中配置index属性，该属性指定索引名。</p>
+            <div class='code'>
                 菜单：
-                <for cond={{foods}} $index='idx'>
+                <for cond={{foods}} index='idx'>
                     编号：{{idx}}，菜名：{{name}}，价格：{{price}}
                 </for>
             </div>
             
-            <div class=tip>自定义过滤数组</div>
+            <div class="tip">自定义过滤数组</div>
             <div class="code">
                 菜单：
                 <for cond={{getOdd(foods)}}>
                     菜名：{{name}}，价格：{{price}}
                 </for>
             </div>
-            <div class=tip>repeat 嵌套</div>
-            <div class=code>
+            
+            <div class="tip">repeat 嵌套</div>
+            <div class="code">
                 菜单：
-                <div x-repeat={{foods1}} $index='idx'>
+                <div x-repeat={{foods1}} index='idx'>
                     编号：{{idx+1}}，菜名：{{name}}，价格：{{price}}
                     <p>配料列表：</p>
                     <ol>
                         <li x-repeat={{rows}}>食材：{{title}}，重量：{{weight}}</li>
                     </ol>
                 </div>
-            </div>-->
-
+            </div>
+            
             <style>
                 .red{
                     color:red;
@@ -122,6 +124,7 @@ export class MRepeat extends Module{
     }
     push(model){
         model.foods.push({name:'push菜单',price:50});
+        console.log(model.foods);
     }
     addFood(model){
         model.foods.splice(2,0,

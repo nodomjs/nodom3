@@ -57,15 +57,17 @@
 					<div>
 						<button e-click='change'>change</button>
 						<h3>简单使用</h3>
-						<div x-recur='ritem'>
-							<span class={{cls}}>{{title}}</span>
+						<div x-recur='ritem' class='first'>
+							<p e-click='itemClick'>
+								<span class={{cls}}>{{title}}</span>
+							</p>
 							<recur ref/>
 						</div>
 						<h3>递归带repeat</h3>
 						<div x-model='ritem2'>
 							<recur cond='items' name='r1' class='secondct'>
 								<for cond={{items}} >
-									<div class='second'>id is:{{id}}-{{title}}</div>
+									<div class='second' e-click='itemClick'>id is:{{id}}-{{title}}</div>
 									<recur ref='r1' />
 								</for>
 							</recur>
@@ -154,7 +156,11 @@
 			
 			change(model){
 				model.ritem2.items[0].items[1].title='hahaha';
-				model.ritem.ritem.title='hahaha';
+				model.ritem.ritem.title='hahaha1';
+			}
+
+			itemClick(model){
+				console.log(model);
 			}
 		
 		}

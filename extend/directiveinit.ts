@@ -27,14 +27,11 @@ export default (function () {
     createDirective(
         'module',
         function (module: Module, dom: IRenderedDom) {
-            const src = dom.vdom;
             let m: Module;
             //存在moduleId，表示已经渲染过，不渲染
             let mid = module.objectManager.getDomParam(dom.key, 'moduleId');
-            let handle: boolean = true;
             if (mid) {
                 m = ModuleFactory.get(mid);
-                handle = !dom.props['renderOnce'];
             } else {
                 let cls = this.value;
                 if(typeof cls === 'string'){
@@ -52,41 +49,30 @@ export default (function () {
                 //保留modelId
                 module.objectManager.setDomParam(dom.key, 'moduleId', mid);
                 module.addChild(m);
-                //共享当前dom的model给子模块
-                if (src.hasProp('useDomModel')) {
-                    m.model = dom.model;
-                    //绑定model到子模块，共享update,watch方法
-                    ModelManager.bindToModule(m.model, m);
-                    delete dom.props['useDomModel'];
-                }
             }
-            
             //保存到dom上，提升渲染性能
-            dom.subModuleId = mid;
+            dom.moduleId = mid;
             //变成文本节点，作为子模块占位符，子模块渲染后插入到占位符前面
             delete dom.tagName;
-            
-            if (handle) { //需要处理
-                //设置props，如果改变了props，启动渲染
-                let o: any = {};
-                if (dom.props) {
-                    for (let p of Object.keys(dom.props)) {
-                        let v = dom.props[p];
-                        if (p[0] === '$') { //数据
-                            if (!o.$data) {
-                                o.$data = {};
-                            }
-                            o.$data[p.substring(1)] = v;
-                            //删除属性
-                            delete dom.props[p];
-                        } else {
-                            o[p] = v;
+            //设置props，如果改变了props，启动渲染
+            let o: any = {};
+            if (dom.props) {
+                for (let p of Object.keys(dom.props)) {
+                    let v = dom.props[p];
+                    if (p[0] === '$') { //数据
+                        if (!o.$data) {
+                            o.$data = {};
                         }
+                        o.$data[p.substring(1)] = v;
+                        //删除属性
+                        delete dom.props[p];
+                    } else {
+                        o[p] = v;
                     }
                 }
-                //传递给模块
-                m.setProps(o, dom);
             }
+            //传递给模块
+            m.setProps(o, dom);
             return true;
         },
         8
@@ -98,7 +84,7 @@ export default (function () {
     createDirective(
         'model',
         function (module: Module, dom: IRenderedDom) {
-            let model: Model = ModelManager.get(dom.model,this.value);
+            let model: Model = module.get(this.value,dom.model);
             if (model) {
                 dom.model = model;
             }
@@ -121,11 +107,10 @@ export default (function () {
             }
             const src = dom.vdom;
             //索引名
-            const idxName = src.getProp('$index');
+            const idxName = src.getProp('index');
             const parent = dom.parent;
             //禁用该指令
             this.disabled = true;
-            
             //避免在渲染时对src设置了model，此处需要删除
             delete src.model;
             for (let i = 0; i < rows.length; i++) {
@@ -137,10 +122,10 @@ export default (function () {
                 }
                 //渲染一次-1，所以需要+1
                 src.staticNum++;
-                let d = Renderer.renderDom(module, src, rows[i], parent, ModelManager.getModelKey(rows[i]) + '');
+                let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].__key);
                 //删除$index属性
                 if (idxName) {
-                    delete d.props['$index'];
+                    delete d.props['index'];
                 }
             }
             //启用该指令
@@ -188,10 +173,11 @@ export default (function () {
 
                 //克隆，后续可以继续用
                 let node1 = node.clone();
-                //recur子节点不为数组，依赖子层数据，否则以来repeat数据
+                //recur子节点不为数组，依赖子层数据，否则依赖repeat数据
                 if (!Array.isArray(m)) {  
                     node1.model = m;
-                    Util.setNodeKey(node1, ModelManager.getModelKey(m)+'', true);
+                    //避免key相同，进行子节点key处理
+                    Util.setNodeKey(node1, m.__key, true);
                 }
                 src.children = [node1];
                 node1.parent = src;
@@ -359,7 +345,7 @@ export default (function () {
             if (!model) {
                 return true;
             }
-            let dataValue = ModelManager.get(model,this.value);
+            let dataValue = module.get(this.value,model);
             if (type === 'radio') {
                 let value = dom.props['value'];
                 if (dataValue == value) {
@@ -454,7 +440,7 @@ export default (function () {
                 delete dom.props['active'];
                 //active 转expression
                 Router.addActiveField(module, this.value, dom.model, acName);
-                if (this.value.startsWith(Router.currentPath) && dom.model[acName]) {
+                if ((Router.currentPath&&this.value.startsWith(Router.currentPath)||!Router.currentPath) && dom.model[acName]) {
                     Router.go(this.value);
                 }
             }
@@ -473,6 +459,7 @@ export default (function () {
                 );
                 GlobalCache.set('$routeClickEvent', event);
             }
+            //为virtual dom添加事件
             dom.vdom.addEvent(event);
             return true;
         },
@@ -497,7 +484,7 @@ export default (function () {
     createDirective('slot',
         function (module: Module, dom: IRenderedDom) {
             this.value = this.value || 'default';
-            let mid = dom.parent.subModuleId;
+            let mid = dom.parent.moduleId;
             const src = dom.vdom;
             //父dom有module指令，表示为替代节点，替换子模块中的对应的slot节点；否则为子模块定义slot节点
             if (mid) {
@@ -513,16 +500,15 @@ export default (function () {
                 if(children){
                     for (let d of children) {
                         let model;
-                        if (src.hasProp('innerRender') ) {  //内部数据渲染
+                        if (src.hasProp('innerrender') ) {  //内部数据渲染
                             model = dom.model;
                         }else if(cfg){  //外部数据渲染
-                            model = new Model(cfg.model,module);
-                            
-                            //对象绑定到当前模块
-                            // ModelManager.bindToModule(model, module);
+                            model = cfg.model;
+                            //绑定数据
+                            model.__module.modelManager.bindModel(model,module);
                         }
-                        //key以s结尾，避免重复，以dom key作为附加key
-                        Renderer.renderDom(module, d, model, dom.parent, dom.key+'s');
+                        //以dom key作为附加key
+                        Renderer.renderDom(module, d, model, dom.parent, src.key+'s');
                     }
                 }
             }
@@ -614,7 +600,7 @@ export default (function () {
             // 获得真实dom
             let el: HTMLElement = <HTMLElement>module.getElement(dom.key);
 
-            if (!tigger) {
+        if (!tigger) {
                 // tigger为false 播放Leave动画
                 if (el) {
                     if (el.getAttribute('class').indexOf(`${nameLeave}-leave-to`) != -1) {

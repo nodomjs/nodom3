@@ -4,8 +4,8 @@ import { VirtualDom } from "./virtualdom";
 import { Model } from "./model";
 import { Expression } from "./expression";
 import { CssManager } from "./cssmanager";
-import { EventManager } from "./eventmanager";
 import { IRenderedDom } from "./types";
+import { Util } from "./util";
 
 /**
  * 渲染器
@@ -50,7 +50,8 @@ export class Renderer {
         for(;this.waitList.length>0;){
             let id = this.waitList[0];
             if(id){ //存在id为null情况，remove方法造成
-                ModuleFactory.get(id).render();
+                const m = ModuleFactory.get(id)
+                m.render();
             }
             //渲染后移除
             this.waitList.shift();
@@ -61,29 +62,34 @@ export class Renderer {
      * 渲染dom
      * @param module            模块 
      * @param src               源dom
-     * @param model             模型，如果src已经带有model，则此参数无效
+     * @param model             模型，如果src已经带有model，则此参数无效，一般为指令产生的model（如slot）
      * @param parent            父dom
      * @param key               key 附加key，放在domkey的后面
      * @returns 
      */
-    public static renderDom(module:Module,src:VirtualDom,model:Model,parent?:IRenderedDom,key?:string):IRenderedDom{
+    public static renderDom(module:Module,src:VirtualDom,model:Model,parent?:IRenderedDom,key?:any):IRenderedDom{
+        //构建key，如果带key，则需要重新构建唯一key
+        const key1 = key?Util.genUniqueKey(src.key,key):src.key;
+        //设置model
+        model = src.model || model;
         let dst:IRenderedDom = {
-            key:key?src.key+'_'+key:src.key,
+            key:key1,
             vdom:src
         }
-        
         if(src.tagName){
             dst.tagName = src.tagName;
+            //添加key属性
             dst.props = {};
         }else{
             dst.textContent = src.textContent;
         }
-        
-        //设置model
-        model = src.model || model;
         //设置当前根root
         if(!parent){
             this.currentModuleRoot = dst;
+            //设置根model
+            if(!model){
+                model = module.model;
+            }
         }else{
             if(!model){
                 model = parent.model;
@@ -91,71 +97,63 @@ export class Renderer {
             // 设置父对象
             dst.parent = parent;
         }
-        // 默认根model
-        if(!model){
-            model = module.model;
-        }
         
         dst.model = model;
         dst.staticNum = src.staticNum;
-        if(src.staticNum>0){
-            src.staticNum--;
-        }
-        
         //先处理model指令
         if(src.directives && src.directives.length>0 && src.directives[0].type.name === 'model'){
             src.directives[0].exec(module,dst);
         }
-        if(dst.tagName){
-            if(!dst.notChange){
-                handleProps();
-                //处理style，如果为style，则不处理assets和events
-                if(!CssManager.handleStyleDom(module,src,Renderer.currentModuleRoot,src.getProp('scope') === 'this')){
-                    //assets
-                    if(src.assets && src.assets.size>0){
-                        for(let p of src.assets){
-                            dst[p[0]] = p[1];
-                        }
+        if(dst.tagName){  //标签节点
+            handleProps();
+            //处理style，如果为style，则不处理assets和events
+            if(!CssManager.handleStyleDom(module,src,Renderer.currentModuleRoot,src.getProp('scope') === 'this')){
+                //assets
+                if(src.assets && src.assets.size>0){
+                    for(let p of src.assets){
+                        dst[p[0]] = p[1];
                     }
                 }
-                if(!handleDirectives()){
-                    return null;
-                }
             }
-            
-            //复制源dom事件到事件工厂
-            if(src.events && !module.eventFactory.getEvent(dst.key)){
+            //处理directive时，导致禁止后续渲染，则不再渲染，如show指令
+            if(!handleDirectives()){
+                return null;
+            }
+            //添加dst事件到事件工厂
+            if(src.events){
                 for(let evt of src.events){
-                    module.eventFactory.addEvent(dst.key,evt);
+                    module.eventFactory.addEvent(dst,evt);
                 }
             }
-            // 子节点
+            // 子节点渲染
             if(src.children && src.children.length>0){
                 dst.children = [];
                 for(let c of src.children){
                     Renderer.renderDom(module,c,dst.model,dst,key?key:null);
                 }
             }
-        }else if(!dst.notChange){
+        }else{ //文本节点
             if(src.expressions){ //文本节点
                 let value = '';
-                src.expressions.forEach((v) => {
-                    if (v instanceof Expression) { //处理表达式
-                        let v1 = v.val(module,dst.model);
+                for(let expr of src.expressions){
+                    if (expr instanceof Expression) { //处理表达式
+                        let v1 = expr.val(module,dst.model);
                         value += v1 !== undefined ? v1 : '';
                     } else {
-                        value += v;
+                        value += expr;
                     }
-                });
+                }
                 dst.textContent = value;
-                dst.staticNum = -1;
             }else{
                 dst.textContent = src.textContent;
             }
         }
-        //添加到dom tree
+        if(src.staticNum===1){
+            src.staticNum=0;
+        }
+        //添加到dom tree，必须放在handleDirectives后，因为有可能directive执行后返回false
         if(parent){
-            parent.children.push(dst);
+            dst.parent.children.push(dst);
         }
         return dst;
 
@@ -167,7 +165,7 @@ export class Renderer {
             if(!src.directives || src.directives.length===0){
                 return true;
             }
-            dst.staticNum = -1;
+            // dst.staticNum = -1;
             for(let d of src.directives){
                 //model指令不执行
                 if(d.type.name==='model'){
@@ -198,7 +196,7 @@ export class Renderer {
                         let a = k[1][i];
                         if(a instanceof Expression){
                             value.push(a.val(module,dst.model));
-                            dst.staticNum = -1;
+                            // dst.staticNum = -1;
                         }else{
                             value.push(a);
                         }
@@ -210,7 +208,7 @@ export class Renderer {
                     }
                 }else if(k[1] instanceof Expression){
                     value = k[1].val(module,dst.model);
-                    dst.staticNum = -1;
+                    // dst.staticNum = -1;
                 }else{
                     value = k[1];
                 }
@@ -230,9 +228,8 @@ export class Renderer {
         if(!el){
             return this.renderToHtml(module,src,null);
         }else if(src.tagName){   //html dom节点已存在
-            //修改$vdom
-            el['$vdom'] = src;
-            module.saveElement(src.key,el);
+            //设置element key属性
+            (<any>el).key = src.key;
             let attrs = (<HTMLElement>el).attributes;
             let arr = [];
             for(let i=0;i<attrs.length;i++){
@@ -258,7 +255,6 @@ export class Renderer {
                     el[k] = src.assets[k];
                 }    
             }
-            (<HTMLElement>el).setAttribute('key',src.key);
         }else{  //文本节点
             (<any>el).textContent = src.textContent;
         }
@@ -293,37 +289,28 @@ export class Renderer {
          * @param dom 		虚拟dom
          * @returns 		新的html element
          */
-        function newEl(dom:IRenderedDom): HTMLElement {
+        function newEl(dom:IRenderedDom,isSvg?:boolean): HTMLElement {
             //style不处理
-            if(dom.tagName.toLowerCase() === 'style'){
+            if(dom.tagName === 'style'){
                 return;
             }
-            //创建element
             let el= document.createElement(dom.tagName);
-            //保存虚拟dom
-            el['$vdom'] = dom;
             //把el引用与key关系存放到cache中
             module.saveElement(dom.key,el);
-            el.setAttribute('key',dom.key);
-            //保存自定义key对应element
-            if(dom.props['key']){
-                module.saveElement(dom.props['key'],el);
+            //设置element key属性
+            (<any>el).key = dom.key;
+            //设置属性
+            for(let p of Object.keys(dom.props)){
+                el.setAttribute(p,dom.props[p]===undefined?'':dom.props[p]);
             }
-            //子模块容器的处理由子模块处理
-            if(!dom.subModuleId){
-                //设置属性
-                for(let p of Object.keys(dom.props)){
-                    el.setAttribute(p,dom.props[p]===undefined?'':dom.props[p]);
+            //asset
+            if(dom.assets){
+                for (let p of Object.keys(dom.assets)) {
+                    el[p] = dom.assets[p];
                 }
-                //asset
-                if(dom.assets){
-                    for (let p of Object.keys(dom.assets)) {
-                        el[p] = dom.assets[p];
-                    }
-                }
-                //处理event
-                EventManager.bind(module,dom);
             }
+            //绑定事件
+            module.eventFactory.bind(dom);
             return el;
         }
 
@@ -369,6 +356,9 @@ export class Renderer {
      * @param changeDoms    更改的dom参数数组 [type(add 1, upd 2,del 3,move 4 ,rep 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),loc(位置)]
      */
     public static handleChangedDoms(module:Module,changeDoms:any[]){
+        //替换数组
+        const repArr =[];
+        //添加和移动数组
         const arr = [];
         //保留原有html节点
         for (let item of changeDoms) {
@@ -380,17 +370,31 @@ export class Renderer {
                 if (pEl && n1 && n1.parentElement === pEl) {
                     pEl.removeChild(n1);
                 }
-                module.freeNode(item[1]);
+                module.domManager.freeNode(item[1]);
             }else if (item[0] === 5) {  //替换
+                repArr.push(item);
+            }else{ //仅对添加和移动的节点进行二次操作
+                arr.push(item);
+            }
+        }
+
+        //替换
+        if(repArr.length>0){
+            for(let item of repArr){
                 const pEl = module.getElement(item[3].key);
-                const n2 = module.getElement(item[2].key);
+                let n2;
+                if(item[2].moduleId){ //子模块先free再获取，先还原为空文本，再实现新的子模块mount
+                    module.domManager.freeNode(item[2]);
+                    n2 = module.getElement(item[2].key);
+                }else{  //先获取，再free，避免getElement为null
+                    n2 = module.getElement(item[2].key);
+                    module.domManager.freeNode(item[2]);
+                }
+                //替换n2在element map中的值
                 const n1 = Renderer.renderToHtml(module, item[1], null, true);
                 if (pEl && n2) {
                     pEl.replaceChild(n1, n2);
                 }
-                module.freeNode(item[2]);
-            }else{ //仅对添加和移动的节点进行二次操作
-                arr.push(item);
             }
         }
 
@@ -403,18 +407,18 @@ export class Renderer {
             const pEl = <HTMLElement>module.getElement(item[3].key);
             if(item[0] === 1){ //添加
                 const n1 = Renderer.renderToHtml(module, item[1], null, true);
-                if (pEl.children && pEl.children.length - 1 > item[4]) {
-                    pEl.insertBefore(n1, pEl.children[item[4]]);
+                if (pEl.childNodes && pEl.childNodes.length - 1 > item[4]) {
+                    pEl.insertBefore(n1, pEl.childNodes[item[4]]);
                 }
                 else {
                     pEl.appendChild(n1);
                 }
             }else{  //移动
                 const n1 = module.getElement(item[1].key);
-                if (n1 && n1 !== pEl.children[item[4]]) {
-                    if (pEl.children.length-1 > item[4]) {
-                        pEl.insertBefore(n1, pEl.children[item[4]]);
-                    }else if(n1 !== pEl.children[pEl.children.length-1]){ //最后一个与当前节点不相同，则放在最后
+                if (n1 && n1 !== pEl.childNodes[item[4]]) {
+                    if (pEl.childNodes.length-1 > item[4]) {
+                        pEl.insertBefore(n1, pEl.childNodes[item[4]]);
+                    }else if(n1 !== pEl.childNodes[pEl.childNodes.length-1]){ //最后一个与当前节点不相同，则放在最后
                         pEl.appendChild(n1);
                     }
                 }

@@ -23,13 +23,13 @@ export function initRoute(){
                 // },
                 routes: [{
                     path: '/home',
-                    module:()=>import ('/examples/modules/route/mdlmod1.js')
+                    module:'/examples/modules/route/mdlmod1.js'
                 }, {
                     path: '/list',
-                    module: ()=>import ('/examples/modules/route/mdlmod2.js')
+                    module:'/examples/modules/route/mdlmod2.js'
                 }, {
                     path: '/data',
-                    module:()=>import ('/examples/modules/route/mdlmod3.js')
+                    module:'/examples/modules/route/mdlmod3.js'
                 }],
                 onLeave:function(model){
                     // console.log(this,model);

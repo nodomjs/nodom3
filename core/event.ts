@@ -87,7 +87,6 @@ export class NEvent {
                         }
                     }
                 });
-
             } else if (tp === 'function') {
                 handler = <Function>eventStr;
             }

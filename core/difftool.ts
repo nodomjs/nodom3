@@ -27,26 +27,24 @@ export class DiffTool{
                 if (!dst.tagName) {
                     if ((src.staticNum || dst.staticNum) && src.textContent !== dst.textContent) {
                         addChange(2,src,null,dst.parent);
+                    }else if(src.moduleId !== dst.moduleId){
+                        addChange(5,src,dst, dst.parent);
                     }
                 } else { //节点类型不同，替换
                     addChange(5,src,dst, dst.parent);
                 }
             } else {
                 //节点类型不同或对应的子模块不同，替换
-                if (src.tagName !== dst.tagName || src.subModuleId !== dst.subModuleId) { 
+                if (src.tagName !== dst.tagName) { 
                     addChange(5,src,dst, dst.parent);
-                }else{
-                    //节点类型相同，但有一个不是静态节点，进行属性比较
+                }else{//节点类型相同，但有一个不是静态节点，进行属性比较
                     if((src.staticNum || dst.staticNum) && isChange(src,dst)){
                         addChange(2,src,null,dst.parent);
                     }
-                    if(!src.subModuleId){  //子模块不比较子节点
+                    if(!src.moduleId){  //子模块不比较子节点
                         compareChildren(src,dst);
                     }
                 }
-            }
-            if(src.staticNum>0){
-                src.staticNum--;
             }
         }
 

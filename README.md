@@ -10,6 +10,11 @@ nodom是一款基于数据驱动的web mvvm框架。用于搭建单页应用(SPA
 3. 示例目录：./examples
 4. 发布目录：./dist  
 
+## 版本
+### 3.0.1
+1. 优化Model和ModelManager，ModelManager由静态类修改为每个模块一个；
+2. 全局watch,$get,$set方法修改为模块方法，在模块方法中，以this.watch,this.get,this.set方式调用，调用参数参考Module类。
+
 ## 示例运行方式
 以vscode为例，使用Live Server插件启动在./examples目录下的html文件即可  
 
@@ -1958,7 +1963,7 @@ nodom(Main,"#app");
 - 模块实例的`data()`函数返回的对象;
 - 父模块通过`$data`方式传入的值。
 
-每一个模块都有独立的`Model`，但可以通过在使用子模块时传入属性`useDomModel`的方式与子模块共享`Model`，使用方式如下
+每一个模块都有独立的`Model`，使用方式如下
 
 ```js
 class ModuleA extends Module{
@@ -1972,7 +1977,7 @@ class Main extends Module{
     template(){
         return `
 		<div>
-        	<ModuleA useDomModel></ModuleA>
+        	<ModuleA ></ModuleA>
 		</div>`
 		;
     }
@@ -2029,9 +2034,8 @@ nodom(Main,"#app");
 
 每个`Model`存有一个模块列表，当`Model`内部的数据变化时，会引起该`Model`的模块列表中所有模块的渲染。一个`Model`的模块列表中默认只有初始化该`Model`的模块，如果需要该`Model`触发多个模块的渲染，则要将`需要触发渲染的模块`添加到该`Model`对应的模块列表中(`Model`与模块的绑定请查看API ModelManager.bindToModule)。
 
-#### $set()
-
-Nodom在提供了一个`$set()`方法，该方法可以往`Model`上设置一个深层次的对象。
+#### set()
+在module中提供了一个`set()`方法，该方法可以往`Model`上设置一个深层次的对象或值。
 ##### 参数说明
 model: Model, key: string, value:any
 参数名|类型|参数说明
@@ -2054,12 +2058,12 @@ change(model){
 	// 会报错，因为data1为undefined
 	model.data1.data2.data3 = { a:'a' };
 	// 使用$set可以避免该问题，如果不存在这么深层次的对象$set会帮你创建。
-	$set(model,"data1.data2.data3",{a:'a'});
+	this.set("data1.data2.data3",{a:'a'});
 }
 ```
 
-#### $get()
-Nodom在提供了一个`$get()`方法，可以从`Model`上获取一个深层次的对象值，当不知道对象具体层次时有效。
+#### get()
+Module中提供了一个`get()`方法，可以从`Model`上获取一个深层次的对象值，当不知道对象具体层次时有效。
 ##### 参数说明
 model: Model, key: string, value:any
 参数名|类型|参数说明
@@ -2080,12 +2084,11 @@ data(){
 
 getValue(model){
 	// 等同于 model.data.a
-	console.log($get(model,"data.a"));
+	console.log(this.get("data.a"));
 }
 
 #### watch()
-
-Nodom提供了`watch`方法来监视`Model`里的数据变化，当数据变化时执行指定的操作。  
+module的`watch`方法来监视`Model`里的数据变化，当数据变化时执行指定的操作。  
 ##### 参数说明
 model: Model, key: string|string[], operate: Function,module?:Module,deep?:boolean
 参数名|类型|参数说明
@@ -2121,7 +2124,7 @@ class Main extends Module{
 	
 	watch(model){
 		//m 被监听为model,key为监听属性,oldVal为旧值,newVal为新值
-		watch(model,'count',(m,key,oldVal,newVal)=>{
+		this.watch('count',(m,key,oldVal,newVal)=>{
 			console.log('检测到数据变化');
 			console.log('oldVal：',oldVal);
 			console.log('newVal：',newVal);
@@ -2955,7 +2958,6 @@ class RouteFilter{
         return true;
     }
 }
-
 export{RouteFilter};
 ```
 

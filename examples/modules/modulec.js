@@ -5,7 +5,7 @@ export class ModuleC extends Module{
         return `
             <div>
                 <div>这是子模块C</div>
-                <slot></slot>
+                <div>name is:{{d}}</div>
             </div>
         `
     }
@@ -17,9 +17,7 @@ export class ModuleC extends Module{
         }
     }
     
-    onBeforeFirstRender(){
-        // console.log(this);
-    }
+    
     changeX2(dom,module){
         console.log(this);
         this.x2 = 'hahaha'
