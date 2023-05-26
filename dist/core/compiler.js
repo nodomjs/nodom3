@@ -42,6 +42,9 @@ export class Compiler {
      * @returns              虚拟dom
      */
     compile(elementStr) {
+        if (!elementStr) {
+            return;
+        }
         // 清除注释
         this.template = elementStr.replace(/\<\!\-\-[\s\S]*?\-\-\>/g, '').trim();
         elementStr = this.template;

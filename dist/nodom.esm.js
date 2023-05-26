@@ -3148,6 +3148,9 @@ class Compiler {
      * @returns              虚拟dom
      */
     compile(elementStr) {
+        if (!elementStr) {
+            return;
+        }
         // 清除注释
         this.template = elementStr.replace(/\<\!\-\-[\s\S]*?\-\-\>/g, '').trim();
         elementStr = this.template;
@@ -5474,6 +5477,9 @@ class Module {
             }
             delete this.modules;
         }
+        if (!this.oldTemplate) {
+            return;
+        }
         //重置初始domkey
         this.domKeyId = 0;
         //清空孩子节点
@@ -5482,6 +5488,9 @@ class Module {
         CssManager.clearModuleRules(this);
         //编译
         this.domManager.vdomTree = new Compiler(this).compile(this.oldTemplate);
+        if (!this.domManager.vdomTree) {
+            return;
+        }
         //保存originProps(由编译后的节点属性确认)
         if (this.domManager.vdomTree.props) {
             for (let p of this.domManager.vdomTree.props) {
