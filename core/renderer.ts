@@ -309,8 +309,10 @@ export class Renderer {
                     el[p] = dom.assets[p];
                 }
             }
+            //解绑之前绑定事件
+            module.eventFactory.unbindAll(dom.key);
             //绑定事件
-            module.eventFactory.bind(dom);
+            module.eventFactory.bind(dom.key);
             return el;
         }
 

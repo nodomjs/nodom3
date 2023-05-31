@@ -362,6 +362,8 @@ export class Module {
         this.children = [];
         //清理css url
         CssManager.clearModuleRules(this);
+        //清除dom参数
+        this.objectManager.clearAllDomParams();
         //编译
         this.domManager.vdomTree = new Compiler(this).compile(this.oldTemplate);
         if (!this.domManager.vdomTree) {

@@ -74,22 +74,6 @@ export declare class VirtualDom {
      */
     allModelField: boolean;
     /**
-     * 标签闭合标志
-     */
-    isClosed: boolean;
-    /**
-     * 标签开始位置
-     */
-    tagStartPos: number;
-    /**
-     * 标签结束为止
-     */
-    tagEndPos: number;
-    /**
-     * 自关闭节点是否已经自关闭
-     */
-    selfClosed: boolean;
-    /**
      * @param tag       标签名
      * @param key       key
      * @param module 	模块

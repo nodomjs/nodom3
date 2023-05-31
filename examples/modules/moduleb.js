@@ -10,7 +10,7 @@ export class ModuleB extends Module{
                 <p>模块B的内容</p>
                 <p>ppp.z is:{{ppp.z}}</p>
                 <button e-click='change'>change ppp.z</button>
-                <br/>
+                <br />
                 <slot>haha slot b</slot>
             </div>
         `

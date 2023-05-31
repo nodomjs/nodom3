@@ -71,9 +71,9 @@ export declare class EventFactory {
     removeEvent(dom: IRenderedDom, event: NEvent): void;
     /**
      * 绑定dom事件
-     * @param dom   渲染dom节点
+     * @param key   dom key
      */
-    bind(dom: IRenderedDom): void;
+    bind(key: any): void;
     /**
      * 从eventfactory解绑所有事件
      * @param key           dom key

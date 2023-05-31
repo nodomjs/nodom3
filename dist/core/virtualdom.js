@@ -14,10 +14,6 @@ export class VirtualDom {
          * 对应的所有表达式的字段都属于dom model内
          */
         this.allModelField = true;
-        /**
-         * 自关闭节点是否已经自关闭
-         */
-        this.selfClosed = false;
         this.key = key || (module ? module.getDomKeyId() : Util.genId());
         this.staticNum = 1;
         if (tag) {

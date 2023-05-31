@@ -138,14 +138,14 @@ export class EventFactory {
     }
     /**
      * 绑定dom事件
-     * @param dom   渲染dom节点
+     * @param key   dom key
      */
-    bind(dom) {
-        if (!this.eventMap.has(dom.key)) {
+    bind(key) {
+        if (!this.eventMap.has(key)) {
             return;
         }
-        const el = this.module.getElement(dom.key);
-        const cfg = this.eventMap.get(dom.key);
+        const el = this.module.getElement(key);
+        const cfg = this.eventMap.get(key);
         for (let key of Object.keys(cfg)) {
             // bindMap 不是事件名
             if (key === 'bindMap') {

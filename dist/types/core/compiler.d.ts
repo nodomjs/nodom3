@@ -32,6 +32,10 @@ export declare class Compiler {
      */
     private template;
     /**
+     * 根节点
+     */
+    private root;
+    /**
      * 构造器
      * @param module
      */
@@ -53,7 +57,7 @@ export declare class Compiler {
      */
     private compileTemplate;
     /**
-     * 处理开始节点
+     * 处理开始标签
      * @param srcStr 待编译字符串
      * @returns 编译处理后的字符串
      */
@@ -65,11 +69,17 @@ export declare class Compiler {
      */
     private compileAttributes;
     /**
-     * 处理结束标签
-     * @param srcStr 待编译字符串
-     * @returns 编译后字符串
+     * 编译结束标签
+     * @param srcStr 	源串
+     * @returns 		剩余的串
      */
     private compileEndTag;
+    /**
+     * 强制闭合
+     * @param index 在domArr中的索引号
+     * @returns
+     */
+    private forceClose;
     /**
      * 编译text
      * @param srcStr 	源串
@@ -84,35 +94,22 @@ export declare class Compiler {
     private preHandleText;
     /**
      * 处理当前节点是模块或者自定义节点
+     * @param dom 	虚拟dom节点
      */
     private postHandleNode;
     /**
      * 处理插槽
+     * @param dom 	虚拟dom节点
      */
     private handleSlot;
     /**
-     * 处理闭合节点
+     * 标签闭合
      */
     private handleCloseTag;
     /**
-     * 处理自闭合节点
-     */
-    private handleSelfClosingTag;
-    /**
-     * 如有闭合标签没有匹配到任何开始标签 给用户警告
-     * @param name 标签名
-     * @param srcStr 剩余模板字符串
-     */
-    private warnEndTagNotMatch;
-    /**
-     * 当前节点没有闭合给用户输出警告
-     * @param dom 节点
-     */
-    private warnStartTagNotClose;
-    /**
-     * 判断节点是都是空节点
-     * @param dom
+     * 判断节点是否为空节点
+     * @param dom	带检测节点
      * @returns
      */
-    private isVoidTag;
+    private isVoidTab;
 }

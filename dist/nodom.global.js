@@ -973,8 +973,10 @@ var nodom = (function (exports) {
                         el[p] = dom.assets[p];
                     }
                 }
+                //解绑之前绑定事件
+                module.eventFactory.unbindAll(dom.key);
                 //绑定事件
-                module.eventFactory.bind(dom);
+                module.eventFactory.bind(dom.key);
                 return el;
             }
             /**
@@ -2666,10 +2668,6 @@ var nodom = (function (exports) {
              * 对应的所有表达式的字段都属于dom model内
              */
             this.allModelField = true;
-            /**
-             * 自关闭节点是否已经自关闭
-             */
-            this.selfClosed = false;
             this.key = key || (module ? module.getDomKeyId() : Util.genId());
             this.staticNum = 1;
             if (tag) {
@@ -3159,54 +3157,11 @@ var nodom = (function (exports) {
             elementStr = this.template;
             // 编译
             this.compileTemplate(elementStr);
-            if (this.domArr.length === 0) {
-                throw new NError('wrongTemplate');
+            //处理未关闭节点
+            if (this.domArr.length > 0) {
+                this.forceClose(0);
             }
-            // 处理<div><div><div>abc这样的模板
-            for (let i = this.domArr.length - 1; i >= 1; i--) {
-                if (!this.domArr[i].isClosed) {
-                    if (this.domArr[i].tagName !== undefined) {
-                        this.warnStartTagNotClose(this.domArr[i]);
-                    }
-                    if (!this.domArr[i - 1].isClosed) {
-                        this.domArr[i].isClosed = true;
-                        let temp = this.domArr.pop();
-                        this.domArr[i - 1].add(temp);
-                    }
-                }
-            }
-            if (!this.domArr[this.domArr.length - 1].isClosed) {
-                this.domArr[this.domArr.length - 1].isClosed = true;
-                this.warnStartTagNotClose(this.domArr[this.domArr.length - 1]);
-            }
-            // 后处理，主要处理没有使用一个容器包裹所有节点的情况
-            // domArr.length > 1  新建一个div节点接收domArr里面的所有节点
-            // domArr.length == 1 如果是文本节点或者是模块，则新建一个div节点接收，其他情况直接使用该节点
-            // domArr.length < 1 模板错误，抛出编译模板报错
-            let dom;
-            if (this.domArr.length > 1) {
-                // 说明没有使用一个容器包裹所有的节点
-                dom = new VirtualDom('div', this.genKey(), this.module);
-                // dom.add([...this.domArr]);
-                this.domArr.forEach((item) => {
-                    dom.add(item);
-                });
-                dom.isClosed = true;
-            }
-            else if (this.domArr.length == 1) {
-                if (this.domArr[0].tagName && !this.domArr[0].hasDirective('module')) {
-                    dom = this.domArr[0];
-                }
-                else {
-                    dom = new VirtualDom('div', this.genKey(), this.module);
-                    dom.add(this.domArr[0]);
-                    dom.isClosed = true;
-                }
-            }
-            else {
-                throw new NError('wrongTemplate');
-            }
-            return dom;
+            return this.root;
         }
         /**
          * 产生dom key
@@ -3239,7 +3194,7 @@ var nodom = (function (exports) {
             }
         }
         /**
-         * 处理开始节点
+         * 处理开始标签
          * @param srcStr 待编译字符串
          * @returns 编译处理后的字符串
          */
@@ -3249,11 +3204,18 @@ var nodom = (function (exports) {
             // 抓取成功
             if (match) {
                 // 设置当前正在编译的节点
-                this.current = new VirtualDom(match[1].toLowerCase(), this.genKey(), this.module);
+                const dom = new VirtualDom(match[1].toLowerCase(), this.genKey(), this.module);
+                if (!this.root) {
+                    this.root = dom;
+                }
+                if (this.current) {
+                    this.current.add(dom);
+                }
+                //设置当前节点
+                this.current = dom;
                 // 当前节点入栈
-                this.domArr.push(this.current);
+                this.domArr.push(dom);
                 // 截断字符串 准备处理属性
-                this.current.tagStartPos = this.template.length - srcStr.length;
                 srcStr = srcStr.substring(match.index + match[0].length).trimStart();
             }
             else {
@@ -3266,20 +3228,12 @@ var nodom = (function (exports) {
             srcStr = this.compileAttributes(srcStr);
             // 属性处理完成之后 判断是否结束
             if (srcStr.startsWith('>')) {
-                // 开始标签结束
-                this.current.tagEndPos = this.template.length - srcStr.substring(1).length;
-                if (this.isVoidTag(this.current)) {
-                    if (!this.current.selfClosed) {
-                        this.warnStartTagNotClose(this.current);
-                    }
-                    this.handleSelfClosingTag();
+                if (this.isVoidTab(this.current)) { //属于自闭合，则处理闭合
+                    this.handleCloseTag(this.current, true);
                 }
                 return srcStr.substring(1).trimStart();
             }
-            else {
-                // 开始标签没结束>
-                throw new NError('needEndTag', this.current.tagName);
-            }
+            return srcStr;
         }
         /**
          * 处理标签属性
@@ -3287,28 +3241,27 @@ var nodom = (function (exports) {
          * @returns 编译后字符串
          */
         compileAttributes(srcStr) {
-            // 确保处理完成之后是>开头
-            while (srcStr.length != 0 && !srcStr.startsWith('>')) {
-                // 抓取形如：a='b' a={{b}} a="b" a=`b` / a 的属性串;
-                const match = /^(\/|\$?[a-z_][\w-]*)(?:\s*=\s*((?:'[^']*')|(?:"[^"]*")|(?:`[^`]*`)|(?:{{[^}}]*}})))?/i.exec(srcStr);
+            while (srcStr.length !== 0 && srcStr[0] !== '>') {
+                // 抓取形如： /> a='b' a={{b}} a="b" a=`b` a $data={{***}} a={{***}}的属性串;
+                const match = /^((\/\>)|\$?[a-z_][\w-]*)(?:\s*=\s*((?:'[^']*')|(?:"[^"]*")|(?:`[^`]*`)|(?:{{[^}}]*}})))?/i.exec(srcStr);
                 // 抓取成功 处理属性
                 if (match) {
-                    // HTML在解析 属性的时候会把大写属性名改成小写(数据项除外)，这里为了和html一致 统一把属性名处理成为小写
-                    let name = match[1][0] !== '$' ? match[1].toLowerCase() : match[1];
-                    if (name === '/') {
+                    if (match[0] === '/>') { //自闭合标签结束则退出
                         // 是自闭合标签
-                        this.handleSelfClosingTag();
-                        this.current.selfClosed = true;
+                        this.handleCloseTag(this.current, true);
+                        srcStr = srcStr.substring(match.index + match[0].length).trimStart();
+                        break;
                     }
-                    else {
+                    else { //属性
+                        let name = match[1][0] !== '$' ? match[1].toLowerCase() : match[1];
                         // 是普通属性
-                        let value = !match[2]
+                        let value = !match[3]
                             ? undefined
-                            : match[2].startsWith(`"`)
-                                ? match[2].substring(1, match[2].length - 1)
-                                : match[2].startsWith(`'`)
-                                    ? match[2].substring(1, match[2].length - 1)
-                                    : match[2];
+                            : match[3].startsWith(`"`)
+                                ? match[3].substring(1, match[3].length - 1)
+                                : match[3].startsWith(`'`)
+                                    ? match[3].substring(1, match[3].length - 1)
+                                    : match[3];
                         if (value && value.startsWith('{{')) {
                             value = new Expression(value.substring(2, value.length - 2));
                             //表达式 staticNum为-1
@@ -3327,8 +3280,6 @@ var nodom = (function (exports) {
                             this.current.setProp(name, value);
                         }
                     }
-                }
-                if (match) {
                     srcStr = srcStr.substring(match.index + match[0].length).trimStart();
                 }
                 else {
@@ -3341,86 +3292,35 @@ var nodom = (function (exports) {
             return srcStr;
         }
         /**
-         * 处理结束标签
-         * @param srcStr 待编译字符串
-         * @returns 编译后字符串
+         * 编译结束标签
+         * @param srcStr 	源串
+         * @returns 		剩余的串
          */
         compileEndTag(srcStr) {
-            // 抓取</div>
+            // 抓取结束标签
             const match = /^<\/\s*([a-z][^\>]*)/i.exec(srcStr);
             if (match) {
-                // 抓取成功
                 const name = match[1].toLowerCase().trim();
-                if (this.current && this.current.tagName === name) {
-                    // 当前节点与闭合标签名相同 尝试闭合
-                    if (this.domArr.length < 1) {
-                        // 当前栈空 错误闭合 按照html 测试 a</b>c 的结果丢弃该字符串
-                        return srcStr.substring(match.index + match[0].length + 1);
-                    }
-                    else if (this.domArr.length == 1) {
-                        // 当前栈只有一个节点，处理该节点，并且将当前节点指向undefined
-                        this.handleCloseTag();
-                        this.current = undefined;
-                    }
-                    else {
-                        // 当前栈内有多个节点
-                        // 1.处理当前节点
-                        let temp = this.domArr.pop();
-                        this.handleCloseTag();
-                        this.current = !this.domArr[this.domArr.length - 1].isClosed
-                            ? this.domArr[this.domArr.length - 1]
-                            : undefined;
-                        this.current ? this.current.add(temp) : this.domArr.push(temp);
-                    }
-                }
-                else {
-                    //
-                    /**
-                     * 没找到闭合标签与当前标签不匹配 ，分两种情况
-                     * 1. 当前结束标签与栈中之前的元素匹配正常闭合只是中间有标签没闭合；
-                     * 2. 当前结束标签与栈中所有元素都不匹配
-                     * */
-                    if (this.domArr.length === 0) {
-                        this.warnEndTagNotMatch(name, srcStr);
-                    }
-                    else {
-                        // 尝试寻找与其匹配的开始节点
-                        let pos = 0;
-                        for (let i = this.domArr.length - 1; i >= 1; i--) {
-                            if (!this.domArr[i].isClosed && name === this.domArr[i].tagName) {
-                                pos = i;
-                                break;
-                            }
-                        }
-                        if (pos !== 0) {
-                            // warn 用户中间有未闭合的节点
-                            for (let i = this.domArr.length - 1; i >= pos; i--) {
-                                if (this.domArr[i].tagName !== undefined && i !== pos) {
-                                    // 不是文本节点
-                                    this.warnStartTagNotClose(this.domArr[i]);
-                                }
-                                // 如果是空标签那么不能将节点放进去
-                                if (!this.domArr[i - 1].isClosed) {
-                                    this.domArr[i].isClosed = true;
-                                    let temp = this.domArr.pop();
-                                    this.domArr[i - 1].add(temp);
-                                }
-                            }
-                            this.current = undefined;
-                        }
-                        else {
-                            // pos = 0 表示当前栈没有元素与当前闭合标签匹配
-                            this.warnEndTagNotMatch(name, srcStr);
-                        }
-                    }
-                    return srcStr.substring(match.index + match[0].length + 1);
-                }
+                //如果找不到匹配的标签头则丢弃
+                const index = this.domArr.findLastIndex((item) => item.tagName === name);
+                //关闭
+                this.forceClose(index);
+                return srcStr.substring(match.index + match[0].length + 1);
             }
-            else {
-                // 抓取失败
-                throw new NError('needEndTag', this.current.tagName);
+            return srcStr;
+        }
+        /**
+         * 强制闭合
+         * @param index 在domArr中的索引号
+         * @returns
+         */
+        forceClose(index) {
+            if (index === -1 || index > this.domArr.length - 1) {
+                return;
             }
-            return srcStr.substring(match.index + match[0].length + 1).trimStart();
+            for (let i = this.domArr.length - 1; i >= index; i--) {
+                this.handleCloseTag(this.domArr[i]);
+            }
         }
         /**
          * 编译text
@@ -3457,7 +3357,7 @@ var nodom = (function (exports) {
                             txt = this.preHandleText(srcStr.substring(0, match.index + match[0].length));
                         }
                         else {
-                            txt = this.preHandleText(srcStr.substring(0, match.index + match[0].length));
+                            txt = this.preHandleText(srcStr.substring(0, match.index + match[0].length).trim());
                         }
                         this.textArr.push(txt);
                     }
@@ -3474,38 +3374,9 @@ var nodom = (function (exports) {
             else {
                 text.textContent = this.textArr.join('');
             }
-            if (this.current) {
-                // 当前节点未闭合
-                if (this.isExprText) {
-                    this.current.add(text);
-                }
-                else {
-                    if (text.textContent.length !== 0) {
-                        this.current.add(text);
-                    }
-                }
+            if (this.current && (this.isExprText || text.textContent.length !== 0)) {
+                this.current.add(text);
             }
-            else {
-                // 当前不存在未闭合节点，说明text是第一个节点 或者 没有用一个容器把所有节点包裹起来。
-                // 如果文本节点不是全空则直接push当前文本节点 ，等到编译完成的时候使用一个统一的div包裹所有的domArr里面的节点。
-                // 如果是全空文本节点则直接丢弃
-                if (this.isExprText) {
-                    this.domArr.push(text);
-                }
-                else {
-                    if (text.textContent.trim().length !== 0) {
-                        this.domArr.push(text);
-                    }
-                }
-            }
-            // 文本节点也要闭合
-            /**
-             *  防止下面的情况出现
-             * <div>abc</div>
-             *  something
-             * <div>abc</div>
-             */
-            text.isClosed = true;
             // 重置状态
             this.isExprText = false;
             this.textArr = [];
@@ -3522,32 +3393,33 @@ var nodom = (function (exports) {
             if (reg.test(str)) {
                 let div = document.createElement('div');
                 div.innerHTML = str;
-                return div.textContent + '';
+                console.log(str, "'" + div.textContent + "'");
+                return div.textContent;
             }
             return str;
         }
         /**
          * 处理当前节点是模块或者自定义节点
+         * @param dom 	虚拟dom节点
          */
-        postHandleNode() {
-            let clazz = DefineElementManager.get(this.current.tagName);
+        postHandleNode(dom) {
+            let clazz = DefineElementManager.get(dom.tagName);
             if (clazz) {
-                Reflect.construct(clazz, [this.current, this.module]);
+                Reflect.construct(clazz, [dom, this.module]);
             }
-            const node = this.current;
             // 是否是模块类
-            if (ModuleFactory.hasClass(node.tagName)) {
-                const dir = new Directive('module', node.tagName);
+            if (ModuleFactory.hasClass(dom.tagName)) {
+                const dir = new Directive('module', dom.tagName);
                 dir.params = { srcId: this.module.id };
-                node.addDirective(dir);
-                node.tagName = 'div';
+                dom.addDirective(dir);
+                dom.tagName = 'div';
             }
         }
         /**
          * 处理插槽
+         * @param dom 	虚拟dom节点
          */
-        handleSlot() {
-            let dom = this.current;
+        handleSlot(dom) {
             if (!dom.children ||
                 dom.children.length === 0 ||
                 !dom.hasDirective('module')) {
@@ -3576,51 +3448,27 @@ var nodom = (function (exports) {
             }
         }
         /**
-         * 处理闭合节点
+         * 标签闭合
          */
-        handleCloseTag() {
-            this.postHandleNode();
-            this.current.sortDirective();
-            this.handleSlot();
-            this.current.isClosed = true;
-        }
-        /**
-         * 处理自闭合节点
-         */
-        handleSelfClosingTag() {
-            this.postHandleNode();
-            this.current.sortDirective();
-            if (this.domArr.length > 1) {
-                this.domArr.pop();
-                this.domArr[this.domArr.length - 1].add(this.current);
+        handleCloseTag(dom, isSelfClose) {
+            this.postHandleNode(dom);
+            dom.sortDirective();
+            if (!isSelfClose) {
+                this.handleSlot(dom);
+            }
+            //闭合节点出栈
+            this.domArr.pop();
+            //设置current为最后一个节点
+            if (this.domArr.length > 0) {
                 this.current = this.domArr[this.domArr.length - 1];
             }
-            else {
-                this.current = undefined;
-            }
         }
         /**
-         * 如有闭合标签没有匹配到任何开始标签 给用户警告
-         * @param name 标签名
-         * @param srcStr 剩余模板字符串
-         */
-        warnEndTagNotMatch(name, srcStr) {
-            console.warn(`[Nodom warn]: 模块 %c${this.module.constructor.name}%c 中 </${name}> 未匹配到对应的开始标签。
-      \n\t ${this.template.substring(0, this.template.length - srcStr.length)}%c</${name}>%c${srcStr.substring(name.length + 3)}`, 'color:red;font-weight:bold;', '', 'color:red;font-weight:bold;', ``);
-        }
-        /**
-         * 当前节点没有闭合给用户输出警告
-         * @param dom 节点
-         */
-        warnStartTagNotClose(dom) {
-            console.warn(`[Nodom warn]: 模块：%c${this.module.constructor.name}%c 中 ${dom.tagName} 标签未闭合！ \n\t ${this.template.substring(0, dom.tagStartPos)}%c${this.template.substring(dom.tagStartPos, dom.tagEndPos)}%c${this.template.substring(dom.tagEndPos)}`, 'color:red;font-weight:bold;', '', 'color:red;font-weight:bold;', '');
-        }
-        /**
-         * 判断节点是都是空节点
-         * @param dom
+         * 判断节点是否为空节点
+         * @param dom	带检测节点
          * @returns
          */
-        isVoidTag(dom) {
+        isVoidTab(dom) {
             return voidTagMap.has(dom.tagName);
         }
     }
@@ -4046,14 +3894,14 @@ var nodom = (function (exports) {
         }
         /**
          * 绑定dom事件
-         * @param dom   渲染dom节点
+         * @param key   dom key
          */
-        bind(dom) {
-            if (!this.eventMap.has(dom.key)) {
+        bind(key) {
+            if (!this.eventMap.has(key)) {
                 return;
             }
-            const el = this.module.getElement(dom.key);
-            const cfg = this.eventMap.get(dom.key);
+            const el = this.module.getElement(key);
+            const cfg = this.eventMap.get(key);
             for (let key of Object.keys(cfg)) {
                 // bindMap 不是事件名
                 if (key === 'bindMap') {
@@ -5489,6 +5337,8 @@ var nodom = (function (exports) {
             this.children = [];
             //清理css url
             CssManager.clearModuleRules(this);
+            //清除dom参数
+            this.objectManager.clearAllDomParams();
             //编译
             this.domManager.vdomTree = new Compiler(this).compile(this.oldTemplate);
             if (!this.domManager.vdomTree) {
@@ -6261,401 +6111,6 @@ var nodom = (function (exports) {
             }
             return false;
         }, 5);
-        /**
-         * 指令名
-         * 描述：动画指令
-         */
-        createDirective('animation', function (module, dom) {
-            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v;
-            const confObj = this.value;
-            if (!Util.isObject(confObj)) {
-                return new Error('未找到animation配置对象');
-            }
-            // 获得tigger
-            const tigger = confObj.tigger == false ? false : true;
-            // 用于判断是动画还是过渡
-            const type = confObj.type || "transition";
-            // 用于判断是否是 进入/离开动画 
-            const isAppear = confObj.isAppear == false ? false : true;
-            // 提取 动画/过渡 名
-            const nameEnter = ((_a = confObj.name) === null || _a === void 0 ? void 0 : _a.enter) || confObj.name;
-            const nameLeave = ((_b = confObj.name) === null || _b === void 0 ? void 0 : _b.leave) || confObj.name;
-            // 提取 动画/过渡 持续时间
-            const durationEnter = ((_c = confObj.duration) === null || _c === void 0 ? void 0 : _c.enter) || confObj.duration || '';
-            const durationLeave = ((_d = confObj.duration) === null || _d === void 0 ? void 0 : _d.leavr) || confObj.duration || '';
-            // 提取 动画/过渡 延迟时间
-            const delayEnter = ((_e = confObj.delay) === null || _e === void 0 ? void 0 : _e.enter) || confObj.delay || '0s';
-            const delayLeave = ((_f = confObj.delay) === null || _f === void 0 ? void 0 : _f.leave) || confObj.delay || '0s';
-            // 提取 动画/过渡 时间函数
-            const timingFunctionEnter = ((_g = confObj.timingFunction) === null || _g === void 0 ? void 0 : _g.enter) || confObj.timingFunction || 'ease';
-            const timingFunctionLeave = ((_h = confObj.timingFunction) === null || _h === void 0 ? void 0 : _h.leave) || confObj.timingFunction || 'ease';
-            // 提取动画/过渡 钩子函数
-            const beforeEnter = ((_k = (_j = confObj.hooks) === null || _j === void 0 ? void 0 : _j.enter) === null || _k === void 0 ? void 0 : _k.before) ? confObj.hooks.enter.before : ((_l = confObj.hooks) === null || _l === void 0 ? void 0 : _l.before) || undefined;
-            const afterEnter = ((_o = (_m = confObj.hooks) === null || _m === void 0 ? void 0 : _m.enter) === null || _o === void 0 ? void 0 : _o.after) ? confObj.hooks.enter.after : ((_p = confObj.hooks) === null || _p === void 0 ? void 0 : _p.after) || undefined;
-            const beforeLeave = ((_r = (_q = confObj.hooks) === null || _q === void 0 ? void 0 : _q.leave) === null || _r === void 0 ? void 0 : _r.before) ? confObj.hooks.leave.before : ((_s = confObj.hooks) === null || _s === void 0 ? void 0 : _s.before) || undefined;
-            const afterLeave = ((_u = (_t = confObj.hooks) === null || _t === void 0 ? void 0 : _t.leave) === null || _u === void 0 ? void 0 : _u.after) ? confObj.hooks.leave.after : ((_v = confObj.hooks) === null || _v === void 0 ? void 0 : _v.after) || undefined;
-            // 定义动画或者过渡结束回调。
-            let handler = () => {
-                const el = module.getElement(dom.key);
-                // 离开动画结束之后隐藏元素
-                if (!tigger) {
-                    if (isAppear) {
-                        // 离开动画结束之后 把元素隐藏
-                        el.style.display = 'none';
-                    }
-                    if (afterLeave) {
-                        afterLeave.apply(module.model, [module]);
-                    }
-                    // 这里如果style里面写了width和height 那么给他恢复成他写的，不然
-                    [el.style.width, el.style.height] = getOriginalWidthAndHeight(dom);
-                    // 结束之后删除掉离开动画相关的类
-                    el.classList.remove(nameLeave + '-leave-active');
-                    if (type == 'animation') {
-                        el.classList.add(nameLeave + '-leave-to');
-                    }
-                }
-                else {
-                    if (afterEnter) {
-                        afterEnter.apply(module.model, [module]);
-                    }
-                    // 进入动画结束之后删除掉相关的类
-                    el.classList.remove(nameEnter + '-enter-active');
-                    if (type == 'animation') {
-                        el.classList.add(nameEnter + '-enter-to');
-                    }
-                }
-                // 清除事件监听
-                el.removeEventListener('animationend', handler);
-                el.removeEventListener('transitionend', handler);
-            };
-            // 获得真实dom
-            let el = module.getElement(dom.key);
-            if (!tigger) {
-                // tigger为false 播放Leave动画
-                if (el) {
-                    if (el.getAttribute('class').indexOf(`${nameLeave}-leave-to`) != -1) {
-                        // 当前已经处于leave动画播放完成之后，若是进入离开动画，这时候需要他保持隐藏状态。
-                        dom.props['class'] += ` ${nameLeave}-leave-to`;
-                        if (isAppear) {
-                            dom.props["style"]
-                                ? (dom.props["style"] += ";display:none;")
-                                : (dom.props["style"] = "display:none;");
-                        }
-                        return true;
-                    }
-                    // // 确保在触发动画之前还是隐藏状态
-                    // 调用函数触发 Leave动画/过渡
-                    changeStateFromShowToHide(el);
-                    return true;
-                }
-                else {
-                    // el不存在，第一次渲染
-                    if (isAppear) {
-                        // 是进入离开动画，管理初次渲染的状态，让他隐藏
-                        dom.props["style"]
-                            ? (dom.props["style"] += ";display:none;")
-                            : (dom.props["style"] = "display:none;");
-                    }
-                    // 下一帧
-                    setTimeout(() => {
-                        // el已经渲染出来，取得el 根据动画/过渡的类型来做不同的事
-                        let el = module.getElement(dom.key);
-                        if (isAppear) {
-                            // 动画/过渡 是进入离开动画/过渡，并且当前是需要让他隐藏所以我们不播放动画，直接隐藏。
-                            el.classList.add(`${nameLeave}-leave-to`);
-                            // 这里必须将这个属性加入到dom中,否则该模块其他数据变化触发增量渲染时,diff会将这个节点重新渲染,导致显示异常
-                            // 这里添加添加属性是为了避免diff算法重新渲染该节点
-                            dom.props['class'] += ` ${nameLeave}-leave-to`;
-                            el.style.display = 'none';
-                        }
-                        else {
-                            //  动画/过渡 是 **非进入离开动画/过渡** 我们不管理元素的隐藏，所以我们让他播放一次Leave动画。
-                            changeStateFromShowToHide(el);
-                        }
-                    }, 0);
-                }
-                // 通过虚拟dom将元素渲染出来
-                return true;
-            }
-            else {
-                // tigger为true 播放Enter动画
-                if (el) {
-                    if (el.getAttribute('class').indexOf(`${nameEnter}-enter-to`) != -1) {
-                        // 这里不需要像tigger=false时那样处理，这时候他已经处于进入动画播放完毕状态，
-                        // 模块内其他数据变化引起该指令重新执行，这时候需要他保持现在显示的状态，直接返回true
-                        dom.props['class'] += ` ${nameEnter}-enter-to`;
-                        return true;
-                    }
-                    if (isAppear) {
-                        // 如果是进入离开动画，在播放enter动画之前确保该元素是隐藏状态
-                        // 确保就算diff更新了该dom还是有隐藏属性
-                        dom.props["style"]
-                            ? (dom.props["style"] += ";display:none;")
-                            : (dom.props["style"] = "display:none;");
-                    }
-                    // 调用函数触发Enter动画/过渡
-                    changeStateFromHideToShow(el);
-                }
-                else {
-                    // el不存在，是初次渲染
-                    if (isAppear) {
-                        // 管理初次渲染元素的隐藏显示状态
-                        dom.props["style"]
-                            ? (dom.props["style"] += ";display:none;")
-                            : (dom.props["style"] = "display:none;");
-                    }
-                    // 下一帧
-                    setTimeout(() => {
-                        // 等虚拟dom把元素更新上去了之后，取得元素
-                        let el = module.getElement(dom.key);
-                        if (isAppear) {
-                            // 这里必须将这个属性加入到dom中,否则该模块其他数据变化触发增量渲染时,diff会将这个节点重新渲染,导致显示异常
-                            // 这里添加添加属性是为了避免diff算法重新渲染该节点
-                            dom.props['class'] += ` ${nameEnter}-enter-to`;
-                            el.style.display = 'none';
-                        }
-                        // Enter动画与Leave动画不同，
-                        // 不管动画是不是进入离开动画，在初次渲染的时候都要执行一遍动画
-                        // Leave动画不一样，如果是开始离开动画，并且初次渲染的时候需要隐藏，那么我们没有必要播放一遍离开动画
-                        changeStateFromHideToShow(el);
-                    }, 0);
-                }
-                // 通过虚拟dom将元素渲染出来
-                return true;
-            }
-            /**
-             * 播放Leave动画
-             * @param el 真实dom
-             */
-            function changeStateFromShowToHide(el) {
-                // 动画类型是transitiojn
-                if (type == 'transition') {
-                    // 前面已经对transition的初始状态进行了设置，我们需要在下一帧设置结束状态才能触发过渡
-                    // 获得宽高的值 因为 宽高的auto 百分比 calc计算值都无法拿来触发动画或者过渡。
-                    let [width, height] = getElRealSzie(el);
-                    // setTimeout(() => {
-                    requestAnimationFrame(() => {
-                        // 移除掉上一次过渡的最终状态
-                        el.classList.remove(nameEnter + '-enter-to');
-                        // 设置过渡的类名
-                        el.classList.add(nameLeave + '-leave-active');
-                        // 设置离开过渡的开始类
-                        el.classList.add(nameLeave + '-leave-from');
-                        // fold过渡的开始状态
-                        if (nameLeave == 'fold-height') {
-                            el.style.height = height;
-                        }
-                        else if (nameLeave == 'fold-width') {
-                            el.style.width = width;
-                        }
-                        // 处理离开过渡的延时
-                        el.style.transitionDelay = delayEnter;
-                        // 处理过渡的持续时间
-                        if (durationEnter != '') {
-                            el.style.transitionDuration = durationEnter;
-                        }
-                        // 处理过渡的时间函数
-                        if (timingFunctionEnter != 'ease') {
-                            el.style.transitionTimingFunction = timingFunctionEnter;
-                        }
-                        // 在触发过渡之前执行hook
-                        if (beforeLeave) {
-                            beforeLeave.apply(module.model, [module]);
-                        }
-                        requestAnimationFrame(() => {
-                            // 添加结束状态
-                            el.classList.add(nameLeave + '-leave-to');
-                            // 在动画或者过渡开始之前移除掉初始状态
-                            el.classList.remove(nameLeave + '-leave-from');
-                            if (nameLeave == 'fold-height') {
-                                el.style.height = '0px';
-                            }
-                            else if (nameLeave == 'fold-width') {
-                                el.style.width = '0px';
-                            }
-                            // 添加过渡结束事件监听
-                            el.addEventListener('transitionend', handler);
-                        });
-                    });
-                }
-                else {
-                    requestAnimationFrame(() => {
-                        // 动画类型是aniamtion
-                        el.classList.remove(nameEnter + '-enter-to');
-                        // 动画延时时间
-                        el.style.animationDelay = delayLeave;
-                        // 动画持续时间
-                        if (durationLeave != '') {
-                            el.style.animationDuration = durationLeave;
-                        }
-                        if (timingFunctionLeave != 'ease') {
-                            el.style.animationTimingFunction = timingFunctionLeave;
-                        }
-                        // 在触发动画之前执行hook
-                        if (beforeLeave) {
-                            beforeLeave.apply(module.model, [module]);
-                        }
-                        // 触发一次回流reflow
-                        void el.offsetWidth;
-                        // 添加动画类名
-                        el.classList.add(nameLeave + '-leave-active');
-                        //添加动画结束时间监听
-                        el.addEventListener('animationend', handler);
-                        // })
-                    });
-                }
-            }
-            /**
-             * 播放Enter动画
-             * @param el 真实dom
-             */
-            function changeStateFromHideToShow(el) {
-                // 动画类型是transition
-                if (type == 'transition') {
-                    // 对于进入/离开动画
-                    // Enter过渡的延迟时间与Leave过渡的延迟时间处理不一样
-                    // 我们这里把延迟统一设置成0s，然后通过定时器来设置延时，
-                    // 这样可以避免先渲染一片空白区域占位，然后再延时一段时间执行过渡效果。
-                    el.style.transitionDelay = '0s';
-                    let delay = parseFloat(delayEnter) * 1000;
-                    setTimeout(() => {
-                        let [width, height] = getElRealSzie(el);
-                        // 在第一帧设置初始状态
-                        // 移除掉上一次过渡的最终状态
-                        el.classList.remove(nameLeave + '-leave-to');
-                        // 添加过渡的类名
-                        el.classList.add(nameEnter + '-enter-active');
-                        // 给进入过渡设置开始类名
-                        el.classList.add(nameEnter + '-enter-from');
-                        // 获得元素的真实尺寸
-                        if (nameEnter == 'fold-height') {
-                            el.style.height = '0px';
-                        }
-                        else if (nameEnter == 'fold-width') {
-                            el.style.width = '0px';
-                        }
-                        // 设置过渡持续时间
-                        if (durationEnter != '') {
-                            el.style.transitionDuration = durationEnter;
-                        }
-                        // 设置过渡时间函数
-                        if (timingFunctionEnter != 'ease') {
-                            el.style.transitionTimingFunction = timingFunctionEnter;
-                        }
-                        // 第二帧将带有初始状态的元素显示出来,如果不开这一帧那么fade的进入过渡在初次渲染的时候会被当作离开过渡触发。
-                        requestAnimationFrame(() => {
-                            // 下一帧请求过渡效果
-                            // 过渡开始之前先将元素显示
-                            if (isAppear) {
-                                el.style.display = '';
-                            }
-                            // 第三帧触发过渡
-                            requestAnimationFrame(() => {
-                                if (beforeEnter) {
-                                    beforeEnter.apply(module.model, [module]);
-                                }
-                                // 增加 过渡 结束类名
-                                el.classList.add(nameEnter + '-enter-to');
-                                // 移除过渡的开始类名
-                                el.classList.remove(nameEnter + '-enter-from');
-                                if (nameEnter == 'fold-height') {
-                                    el.style.height = height;
-                                }
-                                else if (nameEnter == 'fold-width') {
-                                    el.style.width = width;
-                                }
-                                el.addEventListener('transitionend', handler);
-                            });
-                        });
-                    }, delay);
-                }
-                else {
-                    // 动画类型是aniamtion
-                    // 这里动画的延迟时间也与过渡类似的处理方式。
-                    el.style.animationDelay = "0s";
-                    let delay = parseFloat(delayEnter) * 1000;
-                    setTimeout(() => {
-                        // 动画开始之前先将元素显示
-                        requestAnimationFrame(() => {
-                            el.classList.remove(nameLeave + '-leave-to');
-                            // 设置动画的持续时间
-                            if (durationEnter != '') {
-                                el.style.animationDuration = durationEnter;
-                            }
-                            // 设置动画的时间函数
-                            if (timingFunctionEnter != 'ease') {
-                                el.style.animationTimingFunction = durationEnter;
-                            }
-                            if (isAppear) {
-                                el.style.display = '';
-                            }
-                            // 在触发过渡之前执行hook 
-                            if (beforeEnter) {
-                                beforeEnter.apply(module.model, [module]);
-                            }
-                            // 触发一次回流reflow
-                            void el.offsetWidth;
-                            // 重新添加类名
-                            el.classList.add(nameEnter + '-enter-active');
-                            el.addEventListener('animationend', handler);
-                        });
-                    }, delay);
-                }
-            }
-            /**
-             * 获取真实dom绘制出来之后的宽高
-             * @param el 真实dom
-             * @returns 真实dom绘制出来之后的宽高
-             */
-            function getElRealSzie(el) {
-                if (el.style.display == 'none') {
-                    // 获取原先的
-                    const position = window.getComputedStyle(el).getPropertyValue("position");
-                    const vis = window.getComputedStyle(el).getPropertyValue("visibility");
-                    // 先脱流
-                    el.style.position = 'absolute';
-                    // 然后将元素变为
-                    el.style.visibility = 'hidden';
-                    el.style.display = '';
-                    let width = window.getComputedStyle(el).getPropertyValue("width");
-                    let height = window.getComputedStyle(el).getPropertyValue("height");
-                    // 还原样式
-                    el.style.position = position;
-                    el.style.visibility = vis;
-                    el.style.display = 'none';
-                    return [width, height];
-                }
-                else {
-                    let width = window.getComputedStyle(el).getPropertyValue("width");
-                    let height = window.getComputedStyle(el).getPropertyValue("height");
-                    return [width, height];
-                }
-            }
-            /**
-             * 如果dom上得style里面有width/height
-             * @param dom 虚拟dom
-             * @returns 获得模板上的width/height 如果没有则返回空字符串
-             */
-            function getOriginalWidthAndHeight(dom) {
-                const oStyle = dom.vdom.getProp('style');
-                let width;
-                let height;
-                if (oStyle) {
-                    let arr = oStyle.trim().split(/;\s*/);
-                    for (const a of arr) {
-                        if (a.startsWith('width')) {
-                            width = a.split(":")[1];
-                        }
-                        if (a.startsWith('height')) {
-                            height = a.split(':')[1];
-                        }
-                    }
-                }
-                width = width || '';
-                height = height || '';
-                return [width, height];
-            }
-        }, 10);
     })());
 
     /**
