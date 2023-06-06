@@ -2852,6 +2852,9 @@ var nodom = (function (exports) {
          *  @param style style字符串或表达式
          */
         addStyle(style) {
+            if (!style) {
+                return;
+            }
             this.addProp('style', style);
             if (typeof style === 'string') {
                 //需要从remove class map 移除
@@ -2895,6 +2898,9 @@ var nodom = (function (exports) {
         getStyleString(values) {
             let map = new Map();
             for (let pv of values) {
+                if (!pv) {
+                    continue;
+                }
                 let sa = pv.trim().split(/\s*;\s*/);
                 for (let s of sa) {
                     if (s === '') {
@@ -5106,17 +5112,14 @@ var nodom = (function (exports) {
          * @param module    模块id或模块
          */
         addChild(module) {
-            let mid;
             if (typeof module === 'number') {
-                mid = module;
-                module = ModuleFactory.get(mid);
+                module = ModuleFactory.get(module);
             }
-            else {
-                mid = module.id;
-            }
-            if (!this.children.includes(mid)) {
-                this.children.push(mid);
-                module.parentId = this.id;
+            if (module) {
+                if (!this.children.includes(module.id)) {
+                    this.children.push(module.id);
+                    module.parentId = this.id;
+                }
             }
         }
         /**

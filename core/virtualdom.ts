@@ -299,6 +299,9 @@ export class VirtualDom {
 	 *  @param style style字符串或表达式
 	 */
 	public addStyle(style: string | Expression) {
+		if(!style){
+			return;
+		}
 		this.addProp('style', style)
 		if (typeof style === 'string') {
 			//需要从remove class map 移除
@@ -344,6 +347,9 @@ export class VirtualDom {
 	public getStyleString(values): string {
 		let map = new Map()
 		for (let pv of values) {
+			if(!pv){
+				continue;
+			}
 			let sa = pv.trim().split(/\s*;\s*/)
 			for (let s of sa) {
 				if (s === '') {

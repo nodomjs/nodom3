@@ -131,17 +131,14 @@ export class Module {
      * @param module    模块id或模块
      */
     addChild(module) {
-        let mid;
         if (typeof module === 'number') {
-            mid = module;
-            module = ModuleFactory.get(mid);
+            module = ModuleFactory.get(module);
         }
-        else {
-            mid = module.id;
-        }
-        if (!this.children.includes(mid)) {
-            this.children.push(mid);
-            module.parentId = this.id;
+        if (module) {
+            if (!this.children.includes(module.id)) {
+                this.children.push(module.id);
+                module.parentId = this.id;
+            }
         }
     }
     /**
