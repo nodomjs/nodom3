@@ -74,7 +74,8 @@ export class Renderer {
         model = src.model || model;
         let dst:IRenderedDom = {
             key:key1,
-            vdom:src
+            vdom:src,
+            isSvg:src.isSvg
         }
         if(src.tagName){
             dst.tagName = src.tagName;
@@ -294,7 +295,15 @@ export class Renderer {
             if(dom.tagName === 'style'){
                 return;
             }
-            let el= document.createElement(dom.tagName);
+            let el; 
+            if(dom.isSvg){   //是svg节点
+                el = document.createElementNS("http://www.w3.org/2000/svg",dom.tagName);
+                if(dom.tagName === 'svg'){
+                    el.setAttribute('xmlns','http://www.w3.org/2000/svg');
+                }
+            }else{      //普通节点
+                el = document.createElement(dom.tagName);
+            }
             //把el引用与key关系存放到cache中
             module.saveElement(dom.key,el);
             //设置element key属性

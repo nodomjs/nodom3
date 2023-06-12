@@ -98,6 +98,11 @@ export class Compiler {
         if (match) {
             // 设置当前正在编译的节点
             const dom = new VirtualDom(match[1].toLowerCase(), this.genKey(), this.module);
+            if (dom.tagName === 'svg') {
+                this.isSvg = true;
+            }
+            //设置svg标志
+            dom.isSvg = this.isSvg;
             if (!this.root) {
                 this.root = dom;
             }
@@ -354,6 +359,10 @@ export class Compiler {
         //设置current为最后一个节点
         if (this.domArr.length > 0) {
             this.current = this.domArr[this.domArr.length - 1];
+        }
+        // 取消isSvg标识
+        if (dom.tagName === 'svg') {
+            this.isSvg = false;
         }
     }
     /**

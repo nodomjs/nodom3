@@ -124,5 +124,10 @@ export interface IRenderedDom{
      * 源虚拟dom
      */
     vdom?: VirtualDom;
+
+    /**
+	 * 是否为svg节点
+	 */
+	isSvg?:boolean;
 }
 

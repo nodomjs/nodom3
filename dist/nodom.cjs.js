@@ -751,7 +751,8 @@ class Renderer {
         model = src.model || model;
         let dst = {
             key: key1,
-            vdom: src
+            vdom: src,
+            isSvg: src.isSvg
         };
         if (src.tagName) {
             dst.tagName = src.tagName;
@@ -977,7 +978,16 @@ class Renderer {
             if (dom.tagName === 'style') {
                 return;
             }
-            let el = document.createElement(dom.tagName);
+            let el;
+            if (dom.isSvg) { //是svg节点
+                el = document.createElementNS("http://www.w3.org/2000/svg", dom.tagName);
+                if (dom.tagName === 'svg') {
+                    el.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                }
+            }
+            else { //普通节点
+                el = document.createElement(dom.tagName);
+            }
             //把el引用与key关系存放到cache中
             module.saveElement(dom.key, el);
             //设置element key属性
@@ -3230,6 +3240,11 @@ class Compiler {
         if (match) {
             // 设置当前正在编译的节点
             const dom = new VirtualDom(match[1].toLowerCase(), this.genKey(), this.module);
+            if (dom.tagName === 'svg') {
+                this.isSvg = true;
+            }
+            //设置svg标志
+            dom.isSvg = this.isSvg;
             if (!this.root) {
                 this.root = dom;
             }
@@ -3486,6 +3501,10 @@ class Compiler {
         //设置current为最后一个节点
         if (this.domArr.length > 0) {
             this.current = this.domArr[this.domArr.length - 1];
+        }
+        // 取消isSvg标识
+        if (dom.tagName === 'svg') {
+            this.isSvg = false;
         }
     }
     /**

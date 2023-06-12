@@ -36,6 +36,10 @@ export declare class Compiler {
      */
     private root;
     /**
+     * 当前是否在svg区域
+     */
+    private isSvg;
+    /**
      * 构造器
      * @param module
      */

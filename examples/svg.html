@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<title>svg</title>
+		</head>
+
+	<body>
+		<div class="view"></div> 
+	</body>
+	<script type='module'>
+		import{nodom,Module} from '../dist/nodom.esm.js'
+		class Module1 extends Module{
+			template(){
+				return `
+					<div>
+						<H3>Svg Test</h3>
+						<button e-click='change'>修改蓝色块为黄色</button>
+						<button e-click='change1'>添加灰色块</button>
+						<br>
+						<svg width='500' height='500'>
+                            <rect x-repeat={{rects}} x={{x}} y={{y}} width={{width}} height={{height}} fill={{color}} />
+                        </svg>
+					</div>
+				`
+			}
+			data(){
+				return {
+					rects:[{
+						x:50,
+						y:100,
+						width:50,
+						height:50,
+						color:'red'
+					},{
+						x:100,
+						y:200,
+						width:100,
+						height:50,
+						color:'green'
+					},{
+						x:200,
+						y:300,
+						width:200,
+						height:50,
+						color:'blue'
+					}]
+				}
+			}
+
+			hello(){
+				console.log(this)
+			}
+
+			change(model){
+				model.rects[2].color='yellow';
+			}
+
+			change1(model){
+				model.rects.push({
+					x:50,
+					y:400,
+					width:100,
+					height:100,
+					color:'grey'
+				})
+			}
+		}
+    	nodom(Module1,'div');
+	</script>
+</html>

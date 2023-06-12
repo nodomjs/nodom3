@@ -78,6 +78,11 @@ export class VirtualDom {
 	public parent: VirtualDom;
 
 	/**
+	 * 是否为svg节点
+	 */
+	isSvg:boolean;
+
+	/**
 	 * staticNum 静态标识数
 	 *  0 表示静态，不进行比较
 	 *  > 0 每次比较后-1
