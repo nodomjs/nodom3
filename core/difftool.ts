@@ -38,7 +38,7 @@ export class DiffTool{
                 if (src.tagName !== dst.tagName) { 
                     addChange(5,src,dst, dst.parent);
                 }else{//节点类型相同，但有一个不是静态节点，进行属性比较
-                    if((src.staticNum || dst.staticNum) && isChange(src,dst)){
+                    if((src.staticNum || dst.staticNum) && isChanged(src,dst)){
                         addChange(2,src,null,dst.parent);
                     }
                     if(!src.moduleId){  //子模块不比较子节点
@@ -75,19 +75,18 @@ export class DiffTool{
                         dst.children[oldStartIdx],
                         dst.children[oldEndIdx]
                     ]
-                    
                     while(newStartIdx <= newEndIdx && oldStartIdx <= oldEndIdx) {
                         if (oldStartNode.key === newStartNode.key) {  //新前旧前
                             compare(newStartNode,oldStartNode);
                             if(newStartIdx !== oldStartIdx){
-                                addChange(4,newStartNode,null,dst,newStartIdx);
+                                addChange(4,newStartNode,null,dst,newStartIdx,oldStartIdx);
                             }
                             newStartNode = src.children[++newStartIdx];
                             oldStartNode = dst.children[++oldStartIdx];
                         } else if (oldEndNode.key === newEndNode.key) { //新后旧后
                             compare(newEndNode,oldEndNode);
                             if(oldEndIdx !== newEndIdx){
-                                addChange(4,newEndNode,null,dst,newEndIdx);
+                                addChange(4,newEndNode,null,dst,newEndIdx,oldEndIdx);
                             }
                             newEndNode = src.children[--newEndIdx];
                             oldEndNode = dst.children[--oldEndIdx];
@@ -96,14 +95,15 @@ export class DiffTool{
                             compare(newStartNode,oldEndNode);
                             //放在指定位置
                             if(newStartIdx !== oldEndIdx){
-                                addChange(4,newStartNode,null,dst,newStartIdx);
+                                addChange(4,newStartNode,null,dst,newStartIdx,oldEndIdx);
                             }
                             newStartNode = src.children[++newStartIdx];
                             oldEndNode = dst.children[--oldEndIdx];
+                            
                         } else if (newEndNode.key === oldStartNode.key) {  //新后旧前
                             compare(newEndNode,oldStartNode);
                             if(newEndIdx !== oldStartIdx){
-                                addChange(4, newEndNode, null,dst, newEndIdx);
+                                addChange(4, newEndNode, null,dst, newEndIdx,oldStartIdx);
                             }
                             newEndNode = src.children[--newEndIdx];
                             oldStartNode = dst.children[++oldStartIdx];
@@ -130,8 +130,10 @@ export class DiffTool{
                             //如果要删除的节点在addArr中，则表示move，否则表示删除
                             if(addObj.hasOwnProperty(ch.key)){ 
                                 let o = addObj[ch.key];
-                                if(index !== o[4]){ //修改为move
+                                if(index !== o[4]){ //修改add为move
                                     o[0] = 4;
+                                    //设置move前位置
+                                    o[5] = i;
                                     //从add转为move，需要比较新旧节点
                                     compare(o[1],ch);
                                 }else{  //删除不需要移动的元素
@@ -150,13 +152,14 @@ export class DiffTool{
                 }
             }
         }
+        
         /**
          * 判断节点是否修改
          * @parma src   新树节点
          * @param dst   旧树节点
-         * 
+         * @returns     true/false
          */
-        function isChange(src:IRenderedDom,dst:IRenderedDom):boolean{
+        function isChanged(src:IRenderedDom,dst:IRenderedDom):boolean{
             for(let p of ['props','assets']){
                 //属性比较
                 if(!src[p] && dst[p] || src[p] && !dst[p]){
@@ -179,16 +182,17 @@ export class DiffTool{
         }
         
         /**
-         * 添加刪除替換
+         * 添加到修改数组
          * @param type      类型 add 1, upd 2,del 3,move 4 ,rep 5
-         * @param dom       虚拟节点    
-         * @param dom1      相对节点
+         * @param dom       目标节点       
+         * @param dom1      相对节点（被替换）
          * @param parent    父节点
          * @param loc       添加或移动的目标index
+         * @param loc1      被移动前位置
          * @returns         添加的change数组
         */
-        function addChange(type:number,dom: IRenderedDom, dom1: IRenderedDom,parent?:IRenderedDom,loc?:number){
-            const o = [type,dom,dom1,parent,loc];
+        function addChange(type:number,dom: IRenderedDom, dom1: IRenderedDom,parent?:IRenderedDom,loc?:number,loc1?:number){
+            const o = [type,dom,dom1,parent,loc,loc1];
             changeArr.push(o);
             return o;
         }

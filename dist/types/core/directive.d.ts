@@ -31,11 +31,16 @@ export declare class Directive {
      */
     params: any;
     /**
-     * 构造方法
-     * @param type  	类型名
-     * @param value 	指令值
+     * 模板所属的module id，指令用于哪个模板，则该属性指向模板对应的模块id
      */
-    constructor(type?: string, value?: string | Expression);
+    templateModuleId: number;
+    /**
+     * 构造方法
+     * @param type  	    类型名
+     * @param value 	    指令值
+     * @param templateMid   模板所属的module id，即指令用于哪个模板，则该参数指向模板对应的模块id
+     */
+    constructor(type?: string, value?: string | Expression, templateMid?: number);
     /**
      * 执行指令
      * @param module    模块

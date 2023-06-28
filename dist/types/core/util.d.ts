@@ -1,4 +1,3 @@
-import { IRenderedDom } from "./types";
 import { VirtualDom } from "./virtualdom";
 /**
  * 基础服务库
@@ -37,17 +36,6 @@ export declare class Util {
      */
     static clone(srcObj: Object, expKey?: RegExp | string[], extra?: any): any;
     /**
-     * 合并多个对象并返回
-     * @param   参数数组
-     * @returns 返回对象
-     */
-    static merge(o1?: Object, o2?: Object, o3?: Object, o4?: Object, o5?: Object, o6?: Object): any;
-    /**
-     * 把obj2对象所有属性赋值给obj1
-     * @returns 返回对象obj1
-     */
-    static assign(obj1: any, obj2: any): any;
-    /**
      * 比较两个对象值是否相同(只比较object和array)
      * @param src   源对象
      * @param dst   目标对象
@@ -85,52 +73,11 @@ export declare class Util {
      */
     static isObject(obj: any): boolean;
     /**
-     * 判断是否为整数
-     * @param v     检查的值
-     * @returns     true/false
-     */
-    static isInt(v: any): boolean;
-    /**
-     * 判断是否为number
-     * @param v     检查的值
-     * @returns     true/false
-     */
-    static isNumber(v: any): boolean;
-    /**
-     * 判断是否为boolean
-     * @param v     检查的值
-     * @returns     true/false
-     */
-    static isBoolean(v: any): boolean;
-    /**
-     * 判断是否为字符串
-     * @param v     检查的值
-     * @returns     true/false
-     */
-    static isString(v: any): boolean;
-    /**
-     * 判断是否为数字串
-     * @param v     检查的值
-     * @returns     true/false
-     */
-    static isNumberString(v: any): boolean;
-    /**
      * 判断对象/字符串是否为空
      * @param obj   检查的对象
      * @returns     true/false
      */
     static isEmpty(obj: any): boolean;
-    /**
-     * 把srcNode替换为nodes
-     * @param srcNode       源dom
-     * @param nodes         替换的dom或dom数组
-     */
-    static replaceNode(srcNode: Node, nodes: Node | Array<Node>): void;
-    /**
-     * 清空子节点
-     * @param el   需要清空的节点
-     */
-    static empty(el: HTMLElement): void;
     /******日期相关******/
     /**
      * 日期格式化
@@ -147,43 +94,10 @@ export declare class Util {
      */
     static compileStr(src: string, p1?: any, p2?: any, p3?: any, p4?: any, p5?: any): string;
     /**
-     * 函数调用
-     * @param foo   函数
-     * @param obj   this指向
-     * @param args  参数数组
-     */
-    static apply(foo: Function, obj: any, args?: Array<any>): any;
-    /**
-     * 合并并修正路径，即路径中出现'//','///','\/'的情况，统一置换为'/'
-     * @param paths     待合并路径数组
-     * @returns         返回路径
-     */
-    static mergePath(paths: string[]): string;
-    /**
-     * eval
-     * @param evalStr   eval串
-     * @returns         eval值
-     */
-    static eval(evalStr: string): any;
-    /**
      * 改造 dom key，避免克隆时重复，格式为：key_id
      * @param node    节点
      * @param id      附加id
      * @param deep    是否深度处理
      */
     static setNodeKey(node: VirtualDom, id?: number, deep?: boolean): void;
-    /**
-     * 设置dom asset
-     * @param dom       渲染后的dom节点
-     * @param name      asset name
-     * @param value     asset value
-     */
-    static setDomAsset(dom: IRenderedDom, name: string, value: any): void;
-    /**
-     * 通过两个整数，生成唯一key
-     * @param x     第一个整整数
-     * @param y     第二个正整数
-     * @returns 唯一key，为避免与genId的key相同，对结果取负
-     */
-    static genUniqueKey(x: number, y: number): string;
 }

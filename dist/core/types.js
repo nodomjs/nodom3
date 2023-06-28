@@ -4,9 +4,9 @@
 export var EModuleState;
 (function (EModuleState) {
     /**
-     * 准备好，可渲染
+     * 已初始化
      */
-    EModuleState[EModuleState["READY"] = 1] = "READY";
+    EModuleState[EModuleState["INIT"] = 1] = "INIT";
     /**
      * 未挂载到html dom
      */

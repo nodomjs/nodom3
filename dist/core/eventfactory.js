@@ -89,6 +89,19 @@ export class EventFactory {
         return this.eventMap.get(key);
     }
     /**
+     * 移除所有事件
+     * @param dom
+     */
+    removeAllEvents(dom) {
+        if (!this.addedEvents.has(dom.key)) {
+            return;
+        }
+        for (let ev of this.addedEvents.get(dom.key)) {
+            this.removeEvent(dom, ev);
+        }
+        this.addedEvents.delete(dom.key);
+    }
+    /**
      * 删除事件
      * @param event     事件对象
      * @param key       对应dom keys
@@ -115,9 +128,9 @@ export class EventFactory {
             if (index !== -1) {
                 obj.delg.splice(index, 1);
                 // 解绑事件
-                if (obj.delg.length === 0 && obj.own.length === 0) {
-                    this.unbind(dom.parent.key, event.name);
-                }
+                // if(obj.delg.length===0 && obj.own.length===0){
+                //     this.unbind(dom.parent.key,event.name);
+                // }
             }
         }
         else { //own
@@ -130,9 +143,9 @@ export class EventFactory {
             if (index !== -1) {
                 obj.own.splice(index, 1);
                 // 解绑事件
-                if (obj.delg.length === 0 && obj.own.length === 0) {
-                    this.unbind(dom.key, event.name);
-                }
+                // if(obj.delg.length === 0 && obj.own.length===0){
+                //     this.unbind(dom.key,event.name);
+                // }
             }
         }
     }
@@ -260,7 +273,7 @@ export class EventFactory {
             for (let i = 0; i < events.length; i++) {
                 const ev = events[i];
                 if (typeof ev.handler === 'string') {
-                    module.invokeMethod(ev.handler, dom.model, dom, ev, e);
+                    ev.module.invokeMethod(ev.handler, dom.model, dom, ev, e);
                 }
                 else if (typeof ev.handler === 'function') {
                     ev.handler.apply(module, [dom.model, dom, ev, e]);
@@ -293,10 +306,10 @@ export class EventFactory {
                     if (k === evo.key) {
                         const dom1 = module.domManager.getRenderedDom(k);
                         if (typeof ev.handler === 'string') {
-                            module.invokeMethod(ev.handler, dom1.model, dom1, ev, e);
+                            ev.module.invokeMethod(ev.handler, dom1.model, dom1, ev, e);
                         }
                         else if (typeof ev.handler === 'function') {
-                            ev.handler.apply(module, [dom1.model, dom1, ev, e]);
+                            ev.handler.apply(ev.module, dom1.model, dom1, ev, e);
                         }
                         // 保留nopopo
                         nopopo = ev.nopopo;

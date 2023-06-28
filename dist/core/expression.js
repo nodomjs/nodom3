@@ -2,20 +2,22 @@ import { NError } from "./error";
 import { Util } from "./util";
 /**
  * 表达式类
+ * 表达式中的特殊符号
+ *  this:指向渲染的module
+ *  $model:指向当前dom的model
  */
 export class Expression {
     /**
      * @param exprStr	表达式串
      */
-    constructor(exprStr) {
+    constructor(exprStr, module) {
         this.id = Util.genId();
-        this.allModelField = true;
         if (!exprStr) {
             return;
         }
         this.exprStr = exprStr;
         const funStr = this.compile(exprStr);
-        this.execFunc = new Function('$model', `return ` + funStr);
+        this.execFunc = new Function('$model', 'return ' + funStr);
     }
     /**
      * 编译表达式串，替换字段和方法
@@ -47,7 +49,8 @@ export class Expression {
                 else { //字段 this $model .field等不做处理
                     if (s.startsWith('this.')
                         || Util.isKeyWord(s)
-                        || (s[0] === '.' && s[1] !== '.')) { //非model属性
+                        || (s[0] === '.' && s[1] !== '.')
+                        || s === '$model') { //非model属性
                         retS += s;
                     }
                     else { //model属性
@@ -57,10 +60,6 @@ export class Expression {
                             s = s.substring(3);
                         }
                         retS += s1 + '$model.' + s;
-                        //存在‘.’，则变量不全在在当前模型中
-                        if (s.indexOf('.') !== -1) {
-                            this.allModelField = false;
-                        }
                     }
                 }
             }
@@ -76,21 +75,22 @@ export class Expression {
          * @returns     处理后的串
          */
         function handleFunc(str) {
+            //去除空格
+            str = str.replace(/\s+/g, '');
             const ind1 = str.lastIndexOf('(');
             const ind2 = str.indexOf('.');
             //第一段
-            const fn1 = (ind2 !== -1 ? str.substring(0, ind2) : str.substring(0, ind1)).trim();
+            const fn1 = (ind2 !== -1 ? str.substring(0, ind2) : str.substring(0, ind1));
             //保留字或第一个为.
             if (Util.isKeyWord(fn1) || str[0] === '.') {
                 return str;
             }
-            //中间无'.'，模块方法
             if (ind2 === -1) {
-                return 'this.' + fn1 + str.substring(fn1.length);
+                let s = "this.invokeMethod('" + fn1 + "'";
+                s += str[str.length - 1] !== ')' ? ',' : ')';
+                return s;
             }
-            else { //变量原型方法
-                return '$model.' + str;
-            }
+            return '$model.' + str;
         }
     }
     /**

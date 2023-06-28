@@ -1,10 +1,6 @@
 import { DirectiveManager } from "./directivemanager";
-import { NError } from "./error";
 import { NodomMessage_en } from "./locales/msg_en";
 import { NodomMessage_zh } from "./locales/msg_zh";
-import { Model } from "./model";
-import { ModelManager } from "./modelmanager";
-import { Module } from "./module";
 import { ModuleFactory } from "./modulefactory";
 import { Renderer } from "./renderer";
 import { RequestManager } from "./requestmanager";

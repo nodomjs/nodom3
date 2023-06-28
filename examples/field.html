@@ -31,8 +31,8 @@
 							出生日期：<input type='date' x-field='birth' value={{birth}} />
 						</div>
 						<div>
-							性别：<input type='radio' x-field='sexy' value='M' />男
-							<input x-field='sexy' type='radio' value='F' />女
+							性别：<input type='radio' x-field='sexy' value='M'/>男
+							<input x-field='sexy' type='radio' value='F'/>女
 						</div>
 						<div>已婚：<input type='checkbox' x-field='married' yes-value='1' no-value='0' />是</div>
 						<div>
@@ -85,8 +85,8 @@
 				// console.log($.FilterManager.exec(this,'date','1616472327001',':yyyy-MM-dd HH:mm:ss'));
 			}
 
-			onBeforeFirstRender(model){
-				watch(model,'edu',(model,ov,nv)=>{
+			onInit(model){
+				this.watch('edu',(model,ov,nv)=>{
 					console.log(ov,nv);
 				});
 			}

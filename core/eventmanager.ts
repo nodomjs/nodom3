@@ -9,8 +9,6 @@ export class EventManager {
      * 外部事件集
      */
     private static extendEventMap = new Map();
-
-    
     
     /**
      * 处理外部事件
@@ -37,10 +35,10 @@ export class EventManager {
     }
 
     /**
-      * 注册扩展事件
-      * @param eventName    事件名
-      * @param handleObj    事件处理集
-      */
+     * 注册扩展事件
+     * @param eventName    事件名
+     * @param handleObj    事件处理集
+     */
     public static regist(eventName:string,handleObj:any) {
         this.extendEventMap.set(eventName,handleObj);
     }
@@ -49,7 +47,7 @@ export class EventManager {
      * 取消注册扩展事件
      * @param eventName     事件名
      */
-    static unregist(eventName:string) {
+    public static unregist(eventName:string) {
         return this.extendEventMap.delete(eventName);
     }
 

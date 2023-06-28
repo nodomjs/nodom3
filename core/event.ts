@@ -1,6 +1,7 @@
 import { Module } from "./module";
 import { Util } from "./util";
 import { IRenderedDom } from "./types";
+import { Expression } from "./expression";
 
 /**
  * 事件类
@@ -23,9 +24,13 @@ export class NEvent {
      */
     public name: string;
     /**
-     * 事件处理函数名(需要在模块中定义)
+     * 事件处理方法名(需要在模块中定义)、方法函数或表达式
      */
     public handler: string | Function;
+    /**
+     * 表达式，当传递事件串为表达式时有效
+     */
+    private expr:Expression;
     /**
      * 代理模式，事件代理到父对象
      */
@@ -56,46 +61,76 @@ export class NEvent {
      *                      如果为函数，则替代第三个参数
      * @param handler       事件执行函数，如果方法不在module methods中定义，则可以直接申明，eventStr第一个参数失效，即eventStr可以是":delg:nopopo..."
      */
-    constructor(module:Module,eventName: string, eventStr?: string | Function, handler?: Function) {
+    constructor(module:Module,eventName: string, eventStr?: string | Function | Expression, handler?: Function) {
         this.id = Util.genId();
         this.module = module;
         this.name = eventName;
-        // GlobalCache.saveEvent(this);
         //如果事件串不为空，则不需要处理
         if (eventStr) {
             let tp = typeof eventStr;
             if (tp === 'string') {
-                let eStr: string = (<string>eventStr).trim();
-                eStr.split(':').forEach((item, i) => {
-                    item = item.trim();
-                    if (i === 0) { //事件方法
-                        this.handler = item;
-                    } else { //事件附加参数
-                        switch (item) {
-                            case 'delg':
-                                this.delg = true;
-                                break;
-                            case 'nopopo':
-                                this.nopopo = true;
-                                break;
-                            case 'once':
-                                this.once = true;
-                                break;
-                            case 'capture':
-                                this.capture = true;
-                                break;
-                        }
-                    }
-                });
-            } else if (tp === 'function') {
-                handler = <Function>eventStr;
+                this.parseEvent((<string>eventStr).trim());
+            } else if(tp === 'function'){
+                this.handler = <Function>eventStr;
+            }else if(eventStr instanceof Expression){
+                this.expr = eventStr;
             }
         }
         //新增事件方法（不在methods中定义）
         if (handler) {
             this.handler = handler;
         }
-        
+        this.touchOrNot();
+    }
+
+    /**
+     * 表达式处理，当handler为expression时有效
+     * @param module    模块
+     * @param model     对应model
+     */
+    public handleExpr(module,model){
+        if(!this.expr){
+            return this;
+        }
+        const evtStr = this.expr.val(module,model);
+        if(evtStr){
+            //新建事件对象
+            return new NEvent(module,this.name,evtStr);
+        }
+    }
+
+    /**
+     * 解析事件字符串
+     * @param eventStr  待解析的字符串
+     */
+    private parseEvent(eventStr){
+        eventStr.split(':').forEach((item, i) => {
+            item = item.trim();
+            if (i === 0) { //事件方法
+                this.handler = item;
+            } else { //事件附加参数
+                switch (item) {
+                    case 'delg':
+                        this.delg = true;
+                        break;
+                    case 'nopopo':
+                        this.nopopo = true;
+                        break;
+                    case 'once':
+                        this.once = true;
+                        break;
+                    case 'capture':
+                        this.capture = true;
+                        break;
+                }
+            }
+        });
+    }
+
+    /**
+     * 触屏转换
+     */
+    private touchOrNot(){
         if (document.ontouchend) { //触屏设备
             switch (this.name) {
                 case 'click':
@@ -128,7 +163,6 @@ export class NEvent {
             }
         }
     }
-
     /**
      * 设置附加参数值
      * @param module    模块

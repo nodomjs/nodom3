@@ -46,7 +46,7 @@ export class ModuleMain extends Module{
                         </for>
                     </slot>
                     <slot name='s2'><h1>被替换的s2</h1></slot>-->
-                    <ModuleC x-repeat={{rows}} $d={{name}} index='idx' idx={{idx}}></ModuleC>
+                    <ModuleC x-repeat={{rows}} $d={{name}} index='idx' idx={{idx}}  test={{genTest(a,b,c)}}/>
                 </ModuleA>
            </div>
         `
@@ -86,6 +86,10 @@ export class ModuleMain extends Module{
         model.x.y.z='module main change x.y.z'
         model.rows.push({name:'relaen'})
         console.log(model);
+    }
+
+    genTest(a,b,c){
+        return 'mc'
     }
 
     getSubModule(){

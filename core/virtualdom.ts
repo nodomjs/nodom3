@@ -92,11 +92,6 @@ export class VirtualDom {
 	public staticNum: number
 
 	/**
-	 * 对应的所有表达式的字段都属于dom model内
-	 */
-	public allModelField: boolean = true;
-
-	/**
 	 * @param tag       标签名
 	 * @param key       key
 	 * @param module 	模块
@@ -154,10 +149,9 @@ export class VirtualDom {
 	 */
 	public addDirective(directive: Directive, sort?: boolean) {
 		if (!this.directives) {
-			this.directives = []
-		} else if (
-			this.directives.find((item) => item.type.name === directive.type.name)
-		) {
+			this.directives = [directive];
+			return;
+		} else if (this.directives.find((item) => item.type.name === directive.type.name)){
 			return
 		}
 		this.directives.push(directive)
@@ -191,10 +185,7 @@ export class VirtualDom {
 	 * @returns             如果指令集不为空，且含有传入的指令类型名则返回true，否则返回false
 	 */
 	public hasDirective(typeName: string): boolean {
-		return (
-			this.directives &&
-			this.directives.findIndex((item) => item.type.name === typeName) !== -1
-		)
+		return this.directives && this.directives.find(item => item.type.name === typeName) !== undefined;
 	}
 
 	/**

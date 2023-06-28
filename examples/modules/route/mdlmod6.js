@@ -18,9 +18,7 @@ export class MdlMod6 extends Module {
         console.log('temp mdl6');
         return `
             <div>
-                vip is:{{d1.vip}}
-                <Module61 x-repeat = {{d1.foods}} name={{name}}>
-                </module61>
+                <Module61 x-repeat={{d1.foods}} name={{name}} />
                 <ul>
                     <li x-repeat={{d1.foods}}>
                         {{name}}
@@ -38,7 +36,7 @@ export class MdlMod6 extends Module {
             title:'test'
         }
     }
-    onBeforeFirstRender(model){
+    onInit(model){
         request({
             url:'/examples/data/data1.json',
             type:'json'

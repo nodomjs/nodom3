@@ -31,7 +31,7 @@ export declare class CssManager {
      * @param add       是否添加根模块类名
      * @returns         如果是styledom，则返回true，否则返回false
      */
-    static handleStyleDom(module: Module, dom: IRenderedDom, root: IRenderedDom, add?: boolean): boolean;
+    static handleStyleDom(module: Module, dom: IRenderedDom, root: IRenderedDom): void;
     /**
      * 处理 style 下的文本元素
      * @param module    模块

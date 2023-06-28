@@ -9,10 +9,11 @@ import { NodomMessage } from "./nodom";
 export class Directive {
     /**
      * 构造方法
-     * @param type  	类型名
-     * @param value 	指令值
+     * @param type  	    类型名
+     * @param value 	    指令值
+     * @param templateMid   模板所属的module id，即指令用于哪个模板，则该参数指向模板对应的模块id
      */
-    constructor(type, value) {
+    constructor(type, value, templateMid) {
         this.id = Util.genId();
         if (type) {
             this.type = DirectiveManager.getType(type);
@@ -20,7 +21,7 @@ export class Directive {
                 throw new NError('notexist1', NodomMessage.TipWords['directive'], type);
             }
         }
-        if (Util.isString(value)) {
+        if (typeof value === 'string') {
             this.value = value.trim();
         }
         else if (value instanceof Expression) {
@@ -29,6 +30,7 @@ export class Directive {
         else {
             this.value = value;
         }
+        this.templateModuleId = templateMid;
     }
     /**
      * 执行指令
@@ -54,6 +56,7 @@ export class Directive {
         d.type = this.type;
         d.expression = this.expression;
         d.value = this.value;
+        d.templateModuleId = this.templateModuleId;
         return d;
     }
 }

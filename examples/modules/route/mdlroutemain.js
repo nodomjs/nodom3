@@ -20,7 +20,7 @@ export class MdlRouteMain extends Module {
     formatDate(d){
         return Util.formatDate(d,'yyyy/MM/dd');
     }
-    onBeforeFirstRender(){
+    onInit(){
         let hash = location.hash;
         if(hash){
             Router.go(hash.substr(1));

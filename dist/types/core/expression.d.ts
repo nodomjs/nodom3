@@ -2,6 +2,9 @@ import { Model } from "./model";
 import { Module } from "./module";
 /**
  * 表达式类
+ * 表达式中的特殊符号
+ *  this:指向渲染的module
+ *  $model:指向当前dom的model
  */
 export declare class Expression {
     /**
@@ -17,17 +20,13 @@ export declare class Expression {
      */
     exprStr: string;
     /**
-     * 只包含自有model变量
-     */
-    allModelField: boolean;
-    /**
      * 值
      */
     value: any;
     /**
      * @param exprStr	表达式串
      */
-    constructor(exprStr: string);
+    constructor(exprStr: string, module?: Module);
     /**
      * 编译表达式串，替换字段和方法
      * @param exprStr   表达式串

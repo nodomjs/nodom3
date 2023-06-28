@@ -12,17 +12,18 @@ import { NEvent } from "./event";
  *      事件参数: model(当前按钮对应model),dom(事件对应虚拟dom),eventObj(事件对象),e(实际触发的html event)
  *      表达式方法：参数按照表达式方式给定即可
  * 模块事件
- *      onBeforeFirstRender 首次渲染前
- *      onFirstRender       首次渲染后
- *      onBeforeRender      增量渲染前
- *      onRender            增量渲染后
+ *      onInit              初始化后（constructor后，已经有model对象，但是尚未编译，只执行1次）
+ *      onBeforeFirstRender 首次渲染前（只执行1次）
+ *      onFirstRender       首次渲染后（只执行1次）
+ *      onBeforeRender      渲染前
+ *      onRender            渲染后
  *      onCompile           编译后
- *      onBeforeMount       挂载到html dom树前（onFirstRender渲染后）
- *      onMount             挂载到html dom树后(首次渲染到html树后)
- *      onBeforeUnMount     从html dom树解挂前
- *      onUnmount           从html dom树解挂后
- *      onBeforeUpdate      更新到html dom树前（onRender后，针对增量渲染）
- *      onUpdate            更新到html dom树后（针对增量渲染）
+ *      onBeforeMount       挂载到document前
+ *      onMount             挂载到document后
+ *      onBeforeUnMount     从document脱离前
+ *      onUnmount           从document脱离后
+ *      onBeforeUpdate      更新到document前
+ *      onUpdate            更新到document后
  */
 export declare class Module {
     /**
@@ -42,18 +43,6 @@ export declare class Module {
      * 父模块通过dom节点传递的属性
      */
     props: any;
-    /**
-     * 编译后的根结点props
-     */
-    private originProps;
-    /**
-     * 更改后的props
-     */
-    private changedProps;
-    /**
-     * dom 管理器，管理虚拟dom、渲染dom和html node
-     */
-    domManager: DomManager;
     /**
      * 不渲染的属性（这些属性用于生产模板，不作为属性渲染到模块根节点）
      */
@@ -83,6 +72,10 @@ export declare class Module {
      */
     objectManager: ObjectManager;
     /**
+     * dom 管理器，管理虚拟dom、渲染dom和html node
+     */
+    domManager: DomManager;
+    /**
      * 事件工厂
      */
     eventFactory: EventFactory;
@@ -107,17 +100,17 @@ export declare class Module {
      */
     private oldTemplate;
     /**
-     * 编译来源模块id
+     * 模板对应模块id，作为子模块时有效
      */
-    compileMid: number;
-    /**
-     * 是否已渲染过
-     */
-    private hasRendered;
+    templateModuleId: number;
     /**
      * 构造器
      */
     constructor();
+    /**
+     * 初始化操作
+     */
+    init(): void;
     /**
      * 模板串方法，使用时重载
      * @param props     props对象，在模板容器dom中进行配置，从父模块传入
@@ -126,7 +119,7 @@ export declare class Module {
     template(props?: any): string;
     /**
      * 数据方法，使用时重载
-     * @returns      model数据
+     * @returns     数据对象
      */
     data(): any;
     /**
@@ -145,15 +138,14 @@ export declare class Module {
     removeChild(module: Module): void;
     /**
      * 激活模块(准备渲染)
-     * @param type  0 手动， 1父节点setProps激活，默认0
      */
     active(): void;
     /**
-     * 挂载到html dom
+     * 挂载到document
      */
     mount(): void;
     /**
-     * 解挂，从htmldom 移除
+     * 解挂，从document移除
      */
     unmount(): void;
     /**
@@ -180,11 +172,6 @@ export declare class Module {
      */
     setContainer(el: HTMLElement): void;
     /**
-     * 调用方法
-     * @param methodName    方法名
-     */
-    invokeMethod(methodName: string, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any, arg6?: any, arg7?: any, arg8?: any): any;
-    /**
      * 设置props
      * @param props     属性值
      * @param dom       子模块对应渲染后节点
@@ -200,24 +187,23 @@ export declare class Module {
      */
     setExcludeProps(props: string[]): void;
     /**
-    * 合并根节点属性
-    * @param dom       dom节点
-    * @param props     属性集合
-    * @returns         是否改变
-    */
-    private mergeProps;
+     * 处理根节点属性
+     * @param src       编译节点
+     * @param dst       dom节点
+     */
+    handleRootProps(src: any, dst: any): void;
     /**
      * 获取html node
-     * @param key   dom key
+     * @param key   dom key 或 props键值对
      * @returns     html node
      */
-    getElement(key: number): Node;
+    getElement(key: any): Node;
     /**
      * save html node
      * @param key   dom key
      * @param node  html node
      */
-    saveElement(key: number, node: Node): void;
+    saveElement(key: number | string, node: Node): void;
     /**
      * 获取模块类名对应的第一个子模块(如果设置deep，则深度优先)
      * @param name          子模块类名或别名
@@ -260,6 +246,12 @@ export declare class Module {
      * @returns         属性值
      */
     get(model: Model | string, key?: any): any;
+    /**
+     * 调用方法
+     * @param methodName    方法名
+     * @param pn            参数，最多10个参数
+     */
+    invokeMethod(methodName: string, p1?: any, p2?: any, p3?: any, p4?: any, p5?: any, p6?: any, p7?: any, p8?: any, p9?: any, p10?: any): any;
     /**
      * 获取dom key id
      * @returns     key id

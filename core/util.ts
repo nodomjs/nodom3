@@ -1,6 +1,5 @@
 import { NError } from "./error";
 import { NodomMessage } from "./nodom";
-import { IRenderedDom } from "./types";
 import { VirtualDom } from "./virtualdom";
 /**
  * 基础服务库
@@ -143,46 +142,7 @@ export class Util {
             return value;
         }
     }
-    /**
-     * 合并多个对象并返回
-     * @param   参数数组
-     * @returns 返回对象
-     */
-    public static merge(o1?: Object, o2?: Object, o3?: Object, o4?: Object, o5?: Object, o6?: Object) {
-        let me = this;
-        for (let i = 0; i < arguments.length; i++) {
-            if (!this.isObject(arguments[i])) {
-                throw new NError('invoke', 'Util.merge', i + '', 'object');
-            }
-        }
-        let retObj = Object.assign.apply(null, arguments);
-        subObj(retObj);
-        return retObj;
-        //处理子对象
-        function subObj(obj) {
-            for (let o of Object.keys(obj)) {
-                if (me.isObject(obj[o]) || me.isArray(obj[o])) { //对象或数组
-                    retObj[o] = me.clone(retObj[o]);
-                }
-            }
-        }
-    }
-
-    /**
-     * 把obj2对象所有属性赋值给obj1
-     * @returns 返回对象obj1
-     */
-    public static assign(obj1, obj2) {
-        if (Object.assign) {
-            Object.assign(obj1, obj2);
-        } else {
-            this.getOwnProps(obj2).forEach(function (p) {
-                obj1[p] = obj2[p];
-            });
-        }
-        return obj1;
-    }
-
+    
     /**
      * 比较两个对象值是否相同(只比较object和array)
      * @param src   源对象
@@ -261,49 +221,6 @@ export class Util {
     }
 
     /**
-     * 判断是否为整数
-     * @param v     检查的值
-     * @returns     true/false
-     */
-    public static isInt(v): boolean {
-        return Number.isInteger(v);
-    }
-    /**
-     * 判断是否为number
-     * @param v     检查的值
-     * @returns     true/false
-     */
-    public static isNumber(v): boolean {
-        return typeof v === 'number';
-    }
-
-    /**
-     * 判断是否为boolean
-     * @param v     检查的值
-     * @returns     true/false
-     */
-    public static isBoolean(v): boolean {
-        return typeof v === 'boolean';
-    }
-    /**
-     * 判断是否为字符串
-     * @param v     检查的值
-     * @returns     true/false
-     */
-    public static isString(v): boolean {
-        return typeof v === 'string';
-    }
-
-    /**
-     * 判断是否为数字串
-     * @param v     检查的值
-     * @returns     true/false
-     */
-    public static isNumberString(v): boolean {
-        return /^\d+\.?\d*$/.test(v);
-    }
-
-    /**
      * 判断对象/字符串是否为空
      * @param obj   检查的对象
      * @returns     true/false
@@ -323,41 +240,6 @@ export class Util {
         return false;
     }
 
-
-    /**
-     * 把srcNode替换为nodes
-     * @param srcNode       源dom
-     * @param nodes         替换的dom或dom数组
-     */
-    public static replaceNode(srcNode: Node, nodes: Node | Array<Node>) {
-        let pnode: Node = srcNode.parentNode;
-        let bnode: Node = srcNode.nextSibling;
-        if (pnode === null) {
-            return;
-        }
-        pnode.removeChild(srcNode);
-        const nodeArr: Array<Node> = this.isArray(nodes) ? <Node[]>nodes : [<Node>nodes];
-        nodeArr.forEach(function (node) {
-            if (bnode === undefined || bnode === null) {
-                pnode.appendChild(node);
-            } else {
-                pnode.insertBefore(node, bnode);
-            }
-        });
-    }
-    
-    /**
-     * 清空子节点
-     * @param el   需要清空的节点
-     */
-    public static empty(el: HTMLElement) {
-        const me = this;
-        let nodes: NodeList = el.childNodes;
-        for (let i = nodes.length - 1; i >= 0; i--) {
-            el.removeChild(nodes[i]);
-        }
-    }
-    
     /******日期相关******/
     /**
      * 日期格式化
@@ -366,7 +248,7 @@ export class Util {
      * @returns          日期串
      */
     public static formatDate(timeStamp: string | number, format: string): string {
-        if (this.isString(timeStamp)) {
+        if (typeof timeStamp === 'string') {
             //排除日期格式串,只处理时间戳
             let reg = /^\d+$/;
             if (reg.test(<string>timeStamp)) {
@@ -432,79 +314,18 @@ export class Util {
     }
 
     /**
-     * 函数调用
-     * @param foo   函数
-     * @param obj   this指向
-     * @param args  参数数组
-     */
-    public static apply(foo: Function, obj: any, args?: Array<any>): any {
-        if (!foo) {
-            return;
-        }
-        return Reflect.apply(foo, obj || null, args);
-    }
-
-    /**
-     * 合并并修正路径，即路径中出现'//','///','\/'的情况，统一置换为'/'
-     * @param paths     待合并路径数组
-     * @returns         返回路径
-     */
-    public static mergePath(paths: string[]): string {
-        return paths.join('/').replace(/(\/{2,})|\\\//g, '\/');
-    }
-
-    /**
-     * eval
-     * @param evalStr   eval串
-     * @returns         eval值
-     */
-    public static eval(evalStr: string): any {
-        return new Function(`return(${evalStr})`)();
-    }
-
-    /**
      * 改造 dom key，避免克隆时重复，格式为：key_id
      * @param node    节点
      * @param id      附加id
      * @param deep    是否深度处理
      */
     public static setNodeKey(node:VirtualDom, id?:number,deep?:boolean){
-        node.key = this.genUniqueKey(node.key,id);
+        node.key = node.key + '_' + id;
         if(deep && node.children){
             for(let c of node.children) {
                 Util.setNodeKey(c,id,true);
             }
         }
-    }
-
-    /**
-     * 设置dom asset
-     * @param dom       渲染后的dom节点
-     * @param name      asset name    
-     * @param value     asset value
-     */
-    public static setDomAsset(dom:IRenderedDom,name:string,value:any){
-        if(!dom.assets){
-            dom.assets = {};
-        }
-        dom.assets[name] = value;
-    }
-
-    /**
-     * 通过两个整数，生成唯一key
-     * @param x     第一个整整数
-     * @param y     第二个正整数
-     * @returns 唯一key，为避免与genId的key相同，对结果取负
-     */
-    public static genUniqueKey(x:number,y:number){
-        // if(x<0){
-        //     x = -x;
-        // }
-        // if(y<0){
-        //     y = -y;
-        // }
-        // return -((x << 16) | y);
-        return x + '_' + y;
     }
 }
 

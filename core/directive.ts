@@ -40,12 +40,19 @@ export  class Directive {
      * 指令参数
      */
     public params:any;
+
+    /**
+     * 模板所属的module id，指令用于哪个模板，则该属性指向模板对应的模块id
+     */
+    public templateModuleId:number;
+
     /**
      * 构造方法
-     * @param type  	类型名
-     * @param value 	指令值
+     * @param type  	    类型名
+     * @param value 	    指令值
+     * @param templateMid   模板所属的module id，即指令用于哪个模板，则该参数指向模板对应的模块id
      */
-    constructor(type?:string,value?:string|Expression) {
+    constructor(type?:string,value?:string|Expression,templateMid?:number) {
         this.id = Util.genId();
         if(type){
             this.type = DirectiveManager.getType(type);
@@ -53,14 +60,14 @@ export  class Directive {
                 throw new NError('notexist1',NodomMessage.TipWords['directive'],type);
             }
         }
-        
-        if (Util.isString(value)) {
+        if (typeof value === 'string') {
             this.value = (<string>value).trim();
         }else if(value instanceof Expression){
             this.expression = value;
         }else{
             this.value = value;
         }
+        this.templateModuleId = templateMid;
     }
 
     /**
@@ -88,6 +95,7 @@ export  class Directive {
         d.type = this.type;
         d.expression = this.expression;
         d.value = this.value;
+        d.templateModuleId = this.templateModuleId;
         return d;
     }
 }

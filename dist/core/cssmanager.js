@@ -13,11 +13,8 @@ export class CssManager {
      * @param add       是否添加根模块类名
      * @returns         如果是styledom，则返回true，否则返回false
      */
-    static handleStyleDom(module, dom, root, add) {
-        if (dom.tagName.toLowerCase() !== 'style') {
-            return false;
-        }
-        if (add) {
+    static handleStyleDom(module, dom, root) {
+        if (dom.props['scope'] === 'this') {
             let cls = this.cssPreName + module.id;
             if (root.props['class']) {
                 root.props['class'] = dom.props['class'] + ' ' + cls;
@@ -26,7 +23,6 @@ export class CssManager {
                 root.props['class'] = cls;
             }
         }
-        return true;
     }
     /**
      * 处理 style 下的文本元素
@@ -35,11 +31,11 @@ export class CssManager {
      * @returns         如果是styleTextdom返回true，否则返回false
      */
     static handleStyleTextDom(module, dom) {
-        if (!dom.parent || dom.parent.tagName.toLowerCase() !== 'style') {
+        if (!dom.parent || dom.parent.tagName !== 'style') {
             return false;
         }
         //scope=this，在模块根节点添加 限定 class
-        CssManager.addRules(module, dom.textContent, dom.parent.props['scope'] === 'this' ? '.' + this.cssPreName + module.id : undefined);
+        CssManager.addRules(module, dom.textContent, dom.parent && dom.parent.props['scope'] === 'this' ? '.' + this.cssPreName + module.id : undefined);
         return true;
     }
     /**

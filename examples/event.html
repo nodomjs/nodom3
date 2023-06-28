@@ -60,6 +60,11 @@
 					<ul e-click='clickP'>
 						<li x-repeat={{edus}} e-click='clickItem:delg' e-dblclick='dblClick'><span>{{eduName}}</span></li>
 					</ul>
+				
+					<h3>使用表达式动态修改事件串</h3>
+					<ul>
+						<li x-repeat={{edus}} index='idx' e-click={{genClick(idx)}}><span>{{eduName + ':' + idx}}</span></li>
+					</ul>
 				</div>
 				`;
 			}
@@ -92,11 +97,32 @@
 			}
 
 			add(model, dom, evo, e) {
-				console.log(model,dom)
 				model.edus.push({
 					eduId: 5,
 					eduName: "博士后",
 				});
+				console.log(model);
+			}
+
+			click0(){
+				console.log('高中被点击');
+			}
+			click1(){
+				console.log('大学被点击');
+			}
+			click2(){
+				console.log('硕士被点击');
+			}
+			click3(){
+				console.log('博士被点击');
+			}
+
+			click4(){
+				console.log('博士后被点击');
+			}
+
+			genClick(index){
+				return 'click' + index + ':delg';
 			}
 		}
 

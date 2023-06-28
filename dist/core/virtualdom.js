@@ -10,10 +10,6 @@ export class VirtualDom {
      * @param module 	模块
      */
     constructor(tag, key, module) {
-        /**
-         * 对应的所有表达式的字段都属于dom model内
-         */
-        this.allModelField = true;
         this.key = key || (module ? module.getDomKeyId() : Util.genId());
         this.staticNum = 1;
         if (tag) {
@@ -59,7 +55,8 @@ export class VirtualDom {
      */
     addDirective(directive, sort) {
         if (!this.directives) {
-            this.directives = [];
+            this.directives = [directive];
+            return;
         }
         else if (this.directives.find((item) => item.type.name === directive.type.name)) {
             return;
@@ -93,8 +90,7 @@ export class VirtualDom {
      * @returns             如果指令集不为空，且含有传入的指令类型名则返回true，否则返回false
      */
     hasDirective(typeName) {
-        return (this.directives &&
-            this.directives.findIndex((item) => item.type.name === typeName) !== -1);
+        return this.directives && this.directives.find(item => item.type.name === typeName) !== undefined;
     }
     /**
      * 获取某个类型的指令

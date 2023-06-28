@@ -64,6 +64,11 @@ export declare class EventFactory {
      */
     getEvent(key: number): any;
     /**
+     * 移除所有事件
+     * @param dom
+     */
+    removeAllEvents(dom: IRenderedDom): void;
+    /**
      * 删除事件
      * @param event     事件对象
      * @param key       对应dom keys

@@ -1,5 +1,6 @@
 import { Module } from "./module";
 import { IRenderedDom } from "./types";
+import { Expression } from "./expression";
 /**
  * 事件类
  * @remarks
@@ -21,9 +22,13 @@ export declare class NEvent {
      */
     name: string;
     /**
-     * 事件处理函数名(需要在模块中定义)
+     * 事件处理方法名(需要在模块中定义)、方法函数或表达式
      */
     handler: string | Function;
+    /**
+     * 表达式，当传递事件串为表达式时有效
+     */
+    private expr;
     /**
      * 代理模式，事件代理到父对象
      */
@@ -50,7 +55,22 @@ export declare class NEvent {
      *                      如果为函数，则替代第三个参数
      * @param handler       事件执行函数，如果方法不在module methods中定义，则可以直接申明，eventStr第一个参数失效，即eventStr可以是":delg:nopopo..."
      */
-    constructor(module: Module, eventName: string, eventStr?: string | Function, handler?: Function);
+    constructor(module: Module, eventName: string, eventStr?: string | Function | Expression, handler?: Function);
+    /**
+     * 表达式处理，当handler为expression时有效
+     * @param module    模块
+     * @param model     对应model
+     */
+    handleExpr(module: any, model: any): NEvent;
+    /**
+     * 解析事件字符串
+     * @param eventStr  待解析的字符串
+     */
+    private parseEvent;
+    /**
+     * 触屏转换
+     */
+    private touchOrNot;
     /**
      * 设置附加参数值
      * @param module    模块

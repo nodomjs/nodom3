@@ -196,13 +196,13 @@ export class Compiler {
 						? match[3].substring(1, match[3].length - 1)
 						: match[3]
 					if (value && value.startsWith('{{')) {
-						value = new Expression(value.substring(2, value.length - 2))
+						value = new Expression(value.substring(2, value.length - 2),this.module)
 						//表达式 staticNum为-1
 						this.current.staticNum = -1;
 					}
 					if (name.startsWith('x-')) {
 						// 指令
-						this.current.addDirective(new Directive(name.substring(2), value))
+						this.current.addDirective(new Directive(name.substring(2), value,this.module.id))
 					} else if (name.startsWith('e-')) {
 						// 事件
 						this.current.addEvent(
@@ -270,7 +270,7 @@ export class Compiler {
 				const matchExp = /^{{([\s\S]*?)}}/i.exec(srcStr)
 				if (matchExp) {
 					// 抓取成功
-					this.textArr.push(new Expression(matchExp[1]))
+					this.textArr.push(new Expression(matchExp[1],this.module))
 					this.isExprText = true
 					srcStr = srcStr.substring(matchExp.index + matchExp[0].length)
 				} else {
@@ -295,7 +295,9 @@ export class Compiler {
 							srcStr.substring(0, match.index + match[0].length).trim()
 						)
 					}
-					this.textArr.push(txt)
+					if(txt !== ''){
+						this.textArr.push(txt)
+					}
 				}
 				srcStr = srcStr.substring(match.index + match[0].length)
 			}
@@ -329,7 +331,6 @@ export class Compiler {
 		if (reg.test(str)) {
 			let div = document.createElement('div')
 			div.innerHTML = str
-			console.log(str,"'" + div.textContent + "'");
 			return div.textContent
 		}
 		return str
@@ -346,9 +347,7 @@ export class Compiler {
 		}
 		// 是否是模块类
 		if (ModuleFactory.hasClass(dom.tagName)) {
-			const dir: Directive = new Directive('module', dom.tagName)
-			dir.params = { srcId: this.module.id }
-			dom.addDirective(dir)
+			dom.addDirective(new Directive('module', dom.tagName,this.module.id))
 			dom.tagName = 'div'
 		}
 	}
@@ -371,14 +370,13 @@ export class Compiler {
 				//带slot的不处理
 				continue
 			}
-			//@ts-ignore
-			if (!slotCt) {
+			if (!slotCt) { //初始化default slot container
 				//第一个直接被slotCt替换
 				slotCt = new VirtualDom('div', this.genKey())
-				slotCt.addDirective(new Directive('slot'))
+				slotCt.addDirective(new Directive('slot','default',this.module.id))
 				//当前位置，用slot替代
 				dom.children.splice(j, 1, slotCt)
-			} else {
+			} else { 		//添加到default slot container
 				//直接删除
 				dom.children.splice(j--, 1)
 			}

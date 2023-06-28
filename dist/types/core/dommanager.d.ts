@@ -10,7 +10,7 @@ export declare class DomManager {
      */
     private module;
     /**
-     * 虚拟dom树
+     * 编译后的虚拟dom树
      */
     vdomTree: VirtualDom;
     /**
@@ -20,24 +20,24 @@ export declare class DomManager {
     /**
      *  key:html node映射
      */
-    elementMap: Map<number, Node>;
+    elementMap: Map<number | string, Node>;
+    /**
+     * 构造方法
+     * @param module    所属模块
+     */
     constructor(module: Module);
     /**
      * 从origin tree 获取虚拟dom节点
-     * @param key   dom key
+     * @param key   dom key 或 props 键值对
+     * @returns     编译后虚拟节点
      */
-    getOriginDom(key: number): VirtualDom;
+    getOriginDom(key: any): VirtualDom;
     /**
      * 从渲染树中获取key对应的渲染节点
-     * @param key   dom key
+     * @param key   dom key或props键值对
+     * @returns     渲染后虚拟节点
      */
-    getRenderedDom(key: number): IRenderedDom;
-    /**
-     * 克隆渲染后的dom节点
-     * @param key   dom key或dom节点
-     * @param deep  是否深度复制（复制子节点）
-     */
-    cloneRenderedDom(key: IRenderedDom | number, deep?: boolean): IRenderedDom;
+    getRenderedDom(key: any): IRenderedDom;
     /**
      * 清除html element map 节点
      * @param dom   dom节点，如果为空，则清空map
@@ -45,16 +45,16 @@ export declare class DomManager {
     clearElementMap(dom?: IRenderedDom): void;
     /**
      * 获取html node
-     * @param key   dom key
+     * @param key   dom key 或 props 键值对
      * @returns     html node
      */
-    getElement(key: number): Node;
+    getElement(key: any): Node;
     /**
      * save html node
      * @param key   dom key
      * @param node  html node
      */
-    saveElement(key: number, node: Node): void;
+    saveElement(key: number | string, node: Node): void;
     /**
      * 释放node
      * 包括从dom树解挂，释放对应结点资源

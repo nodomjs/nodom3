@@ -11,9 +11,13 @@ export declare class Renderer {
      */
     static waitList: Array<number>;
     /**
+     * 当前module
+     */
+    static currentModule: Module;
+    /**
      * 当前模块根dom
      */
-    private static currentModuleRoot;
+    private static currentRootDom;
     /**
      * 添加到渲染列表
      * @param module 模块
@@ -39,6 +43,21 @@ export declare class Renderer {
      */
     static renderDom(module: Module, src: VirtualDom, model: Model, parent?: IRenderedDom, key?: any): IRenderedDom;
     /**
+     * 处理指令
+     * @param module    模块
+     * @param src       编译节点
+     * @param dst       渲染节点
+     * @returns         true继续执行，false不执行后续渲染代码，也不加入渲染树
+    */
+    private static handleDirectives;
+    /**
+     * 处理属性
+     * @param module    模块
+     * @param src       编译节点
+     * @param dst       渲染节点
+     */
+    private static handleProps;
+    /**
      * 更新到html树
      * @param module    模块
      * @param src       渲染节点
@@ -56,7 +75,12 @@ export declare class Renderer {
     /**
      * 处理更改的dom节点
      * @param module        待处理模块
-     * @param changeDoms    更改的dom参数数组 [type(add 1, upd 2,del 3,move 4 ,rep 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),loc(位置)]
+     * @param changeDoms    更改的dom参数数组，数组元素说明如下：
+     *                      0:type(操作类型) add 1, upd 2,del 3,move 4 ,rep 5
+     *                      1:dom           待处理节点
+     *                      2:dom1          被替换或修改节点，rep时有效
+     *                      3:parent        父节点
+     *                      4:loc           位置,add和move时有效
      */
     static handleChangedDoms(module: Module, changeDoms: any[]): void;
 }

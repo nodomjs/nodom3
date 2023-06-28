@@ -74,10 +74,6 @@ export declare class VirtualDom {
      */
     staticNum: number;
     /**
-     * 对应的所有表达式的字段都属于dom model内
-     */
-    allModelField: boolean;
-    /**
      * @param tag       标签名
      * @param key       key
      * @param module 	模块

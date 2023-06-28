@@ -15,7 +15,7 @@ class MODULE extends DefineElement {
             throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'MODULE', 'className');
         }
         node.delProp('name');
-        node.addDirective(new Directive('module', clazz));
+        node.addDirective(new Directive('module', clazz, module.id));
     }
 }
 /**
@@ -30,7 +30,7 @@ class FOR extends DefineElement {
             throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'FOR', 'cond');
         }
         node.delProp('cond');
-        node.addDirective(new Directive('repeat', cond));
+        node.addDirective(new Directive('repeat', cond, module.id));
     }
 }
 /**
@@ -42,7 +42,7 @@ class RECUR extends DefineElement {
         //条件
         let cond = node.getProp('cond');
         node.delProp('cond');
-        node.addDirective(new Directive('recur', cond));
+        node.addDirective(new Directive('recur', cond, module.id));
     }
 }
 /**
@@ -57,13 +57,13 @@ class IF extends DefineElement {
             throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'IF', 'cond');
         }
         node.delProp('cond');
-        node.addDirective(new Directive('if', cond));
+        node.addDirective(new Directive('if', cond, module.id));
     }
 }
 class ELSE extends DefineElement {
     constructor(node, module) {
         super(node);
-        node.addDirective(new Directive('else', null));
+        node.addDirective(new Directive('else', null, module.id));
     }
 }
 /**
@@ -78,7 +78,7 @@ class ELSEIF extends DefineElement {
             throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ELSEIF', 'cond');
         }
         node.delProp('cond');
-        node.addDirective(new Directive('elseif', cond));
+        node.addDirective(new Directive('elseif', cond, module.id));
     }
 }
 /**
@@ -87,7 +87,7 @@ class ELSEIF extends DefineElement {
 class ENDIF extends DefineElement {
     constructor(node, module) {
         super(node);
-        node.addDirective(new Directive('endif', null));
+        node.addDirective(new Directive('endif', null, module.id));
     }
 }
 /**
@@ -99,7 +99,7 @@ class SLOT extends DefineElement {
         //条件
         let cond = node.getProp('name') || 'default';
         node.delProp('name');
-        node.addDirective(new Directive('slot', cond));
+        node.addDirective(new Directive('slot', cond, module.id));
     }
 }
 DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);

@@ -30,21 +30,27 @@ export class ModuleFactory {
      */
     static get(name) {
         let tp = typeof name;
+        let mdl;
         if (tp === 'number') { //数字，模块id
             return this.modules.get(name);
         }
         else {
             let m;
             if (tp === 'string') { //字符串，模块类名
+                name = name.toLowerCase();
                 if (!this.classes.has(name)) { //为别名
                     name = this.aliasMap.get(name);
                 }
                 if (this.classes.has(name)) {
-                    return Reflect.construct(this.classes.get(name), []);
+                    mdl = Reflect.construct(this.classes.get(name), []);
                 }
             }
             else { //模块类
-                return Reflect.construct(name, []);
+                mdl = Reflect.construct(name, []);
+            }
+            if (mdl) {
+                mdl.init();
+                return mdl;
             }
         }
     }

@@ -27,8 +27,7 @@ export class ModuleA extends Module{
                     moduleA
                     <button e-click='change'>修改x.y.z</button>
                     <div>这是外部数据x.y.z:{{x.y.z}}</div>
-                    <moduleb $ppp={{x.y}}>
-                    </moduleb>
+                    <moduleb $ppp={{x.y}} />
                     <div>name:{{name.first + ' ' + name.last}}</div>
                     <slot>
                     </slot>
@@ -55,18 +54,6 @@ export class ModuleA extends Module{
         model.x2='hello';
         model.name.first='li';
         model.x.y.z='module a changed x.y.z';
-    }
-    onBeforeFirstRender(){
-        // console.log(this);
-    }
-    onBeforeRender(model){
-        if(!this.props || !this.props.$data){
-            return;
-        }
-        for(let k of Object.keys(this.props.$data)){
-            model[k] = this.props.$data[k];
-        }
-        delete this.props.$data
     }
 }
 

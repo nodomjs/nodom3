@@ -27,10 +27,10 @@ export class EventManager {
         return true;
     }
     /**
-      * 注册扩展事件
-      * @param eventName    事件名
-      * @param handleObj    事件处理集
-      */
+     * 注册扩展事件
+     * @param eventName    事件名
+     * @param handleObj    事件处理集
+     */
     static regist(eventName, handleObj) {
         this.extendEventMap.set(eventName, handleObj);
     }

@@ -275,20 +275,26 @@ var nodom = (function (exports) {
          */
         static get(name) {
             let tp = typeof name;
+            let mdl;
             if (tp === 'number') { //数字，模块id
                 return this.modules.get(name);
             }
             else {
                 if (tp === 'string') { //字符串，模块类名
+                    name = name.toLowerCase();
                     if (!this.classes.has(name)) { //为别名
                         name = this.aliasMap.get(name);
                     }
                     if (this.classes.has(name)) {
-                        return Reflect.construct(this.classes.get(name), []);
+                        mdl = Reflect.construct(this.classes.get(name), []);
                     }
                 }
                 else { //模块类
-                    return Reflect.construct(name, []);
+                    mdl = Reflect.construct(name, []);
+                }
+                if (mdl) {
+                    mdl.init();
+                    return mdl;
                 }
             }
         }
@@ -385,20 +391,22 @@ var nodom = (function (exports) {
 
     /**
      * 表达式类
+     * 表达式中的特殊符号
+     *  this:指向渲染的module
+     *  $model:指向当前dom的model
      */
     class Expression {
         /**
          * @param exprStr	表达式串
          */
-        constructor(exprStr) {
+        constructor(exprStr, module) {
             this.id = Util.genId();
-            this.allModelField = true;
             if (!exprStr) {
                 return;
             }
             this.exprStr = exprStr;
             const funStr = this.compile(exprStr);
-            this.execFunc = new Function('$model', `return ` + funStr);
+            this.execFunc = new Function('$model', 'return ' + funStr);
         }
         /**
          * 编译表达式串，替换字段和方法
@@ -430,7 +438,8 @@ var nodom = (function (exports) {
                     else { //字段 this $model .field等不做处理
                         if (s.startsWith('this.')
                             || Util.isKeyWord(s)
-                            || (s[0] === '.' && s[1] !== '.')) { //非model属性
+                            || (s[0] === '.' && s[1] !== '.')
+                            || s === '$model') { //非model属性
                             retS += s;
                         }
                         else { //model属性
@@ -440,10 +449,6 @@ var nodom = (function (exports) {
                                 s = s.substring(3);
                             }
                             retS += s1 + '$model.' + s;
-                            //存在‘.’，则变量不全在在当前模型中
-                            if (s.indexOf('.') !== -1) {
-                                this.allModelField = false;
-                            }
                         }
                     }
                 }
@@ -459,21 +464,22 @@ var nodom = (function (exports) {
              * @returns     处理后的串
              */
             function handleFunc(str) {
+                //去除空格
+                str = str.replace(/\s+/g, '');
                 const ind1 = str.lastIndexOf('(');
                 const ind2 = str.indexOf('.');
                 //第一段
-                const fn1 = (ind2 !== -1 ? str.substring(0, ind2) : str.substring(0, ind1)).trim();
+                const fn1 = (ind2 !== -1 ? str.substring(0, ind2) : str.substring(0, ind1));
                 //保留字或第一个为.
                 if (Util.isKeyWord(fn1) || str[0] === '.') {
                     return str;
                 }
-                //中间无'.'，模块方法
                 if (ind2 === -1) {
-                    return 'this.' + fn1 + str.substring(fn1.length);
+                    let s = "this.invokeMethod('" + fn1 + "'";
+                    s += str[str.length - 1] !== ')' ? ',' : ')';
+                    return s;
                 }
-                else { //变量原型方法
-                    return '$model.' + str;
-                }
+                return '$model.' + str;
             }
         }
         /**
@@ -511,11 +517,8 @@ var nodom = (function (exports) {
          * @param add       是否添加根模块类名
          * @returns         如果是styledom，则返回true，否则返回false
          */
-        static handleStyleDom(module, dom, root, add) {
-            if (dom.tagName.toLowerCase() !== 'style') {
-                return false;
-            }
-            if (add) {
+        static handleStyleDom(module, dom, root) {
+            if (dom.props['scope'] === 'this') {
                 let cls = this.cssPreName + module.id;
                 if (root.props['class']) {
                     root.props['class'] = dom.props['class'] + ' ' + cls;
@@ -524,7 +527,6 @@ var nodom = (function (exports) {
                     root.props['class'] = cls;
                 }
             }
-            return true;
         }
         /**
          * 处理 style 下的文本元素
@@ -533,11 +535,11 @@ var nodom = (function (exports) {
          * @returns         如果是styleTextdom返回true，否则返回false
          */
         static handleStyleTextDom(module, dom) {
-            if (!dom.parent || dom.parent.tagName.toLowerCase() !== 'style') {
+            if (!dom.parent || dom.parent.tagName !== 'style') {
                 return false;
             }
             //scope=this，在模块根节点添加 限定 class
-            CssManager.addRules(module, dom.textContent, dom.parent.props['scope'] === 'this' ? '.' + this.cssPreName + module.id : undefined);
+            CssManager.addRules(module, dom.textContent, dom.parent && dom.parent.props['scope'] === 'this' ? '.' + this.cssPreName + module.id : undefined);
             return true;
         }
         /**
@@ -710,7 +712,9 @@ var nodom = (function (exports) {
                 let id = this.waitList[0];
                 if (id) { //存在id为null情况，remove方法造成
                     const m = ModuleFactory.get(id);
+                    this.currentModule = m;
                     m.render();
+                    this.currentModule = null;
                 }
                 //渲染后移除
                 this.waitList.shift();
@@ -727,69 +731,69 @@ var nodom = (function (exports) {
          */
         static renderDom(module, src, model, parent, key) {
             //构建key，如果带key，则需要重新构建唯一key
-            const key1 = key ? Util.genUniqueKey(src.key, key) : src.key;
-            //设置model
-            model = src.model || model;
+            const key1 = key ? src.key + '_' + key : src.key;
+            //静态节点只渲染1次
+            if (src.staticNum > 0) {
+                src.staticNum--;
+            }
+            //初始化渲染节点
             let dst = {
                 key: key1,
+                model: model,
                 vdom: src,
-                isSvg: src.isSvg
+                staticNum: src.staticNum
             };
-            if (src.tagName) {
+            if (src.tagName) { //标签
                 dst.tagName = src.tagName;
                 //添加key属性
                 dst.props = {};
-            }
-            else {
-                dst.textContent = src.textContent;
+                //设置svg标志
+                if (src.isSvg) {
+                    dst.isSvg = src.isSvg;
+                }
             }
             //设置当前根root
             if (!parent) {
-                this.currentModuleRoot = dst;
-                //设置根model
-                if (!model) {
-                    model = module.model;
-                }
+                this.currentRootDom = dst;
             }
             else {
-                if (!model) {
-                    model = parent.model;
-                }
                 // 设置父对象
                 dst.parent = parent;
             }
-            dst.model = model;
-            dst.staticNum = src.staticNum;
-            //先处理model指令
-            if (src.directives && src.directives.length > 0 && src.directives[0].type.name === 'model') {
-                src.directives[0].exec(module, dst);
+            //处理model指令
+            const mdlDir = src.getDirective('model');
+            if (mdlDir) {
+                mdlDir.exec(module, dst);
             }
             if (dst.tagName) { //标签节点
-                handleProps();
-                //处理style，如果为style，则不处理assets和events
-                if (!CssManager.handleStyleDom(module, src, Renderer.currentModuleRoot, src.getProp('scope') === 'this')) {
-                    //assets
-                    if (src.assets && src.assets.size > 0) {
-                        for (let p of src.assets) {
-                            dst[p[0]] = p[1];
-                        }
+                this.handleProps(module, src, dst);
+                //处理style标签，如果为style，则不处理assets
+                if (src.tagName === 'style') {
+                    CssManager.handleStyleDom(module, dst, Renderer.currentRootDom);
+                }
+                else if (src.assets && src.assets.size > 0) {
+                    dst.assets || (dst.assets = {});
+                    for (let p of src.assets) {
+                        dst.assets[p[0]] = p[1];
                     }
                 }
                 //处理directive时，导致禁止后续渲染，则不再渲染，如show指令
-                if (!handleDirectives()) {
+                if (!this.handleDirectives(module, src, dst)) {
                     return null;
                 }
-                //添加dst事件到事件工厂
-                if (src.events) {
+                //非module dom，添加dst事件到事件工厂
+                if (src.events && !src.hasDirective('module')) {
+                    module.eventFactory.removeAllEvents(dst);
                     for (let evt of src.events) {
-                        module.eventFactory.addEvent(dst, evt);
+                        //当事件串为表达式时，需要处理
+                        module.eventFactory.addEvent(dst, evt.handleExpr(module, model));
                     }
                 }
-                // 子节点渲染
+                //子节点渲染
                 if (src.children && src.children.length > 0) {
                     dst.children = [];
                     for (let c of src.children) {
-                        Renderer.renderDom(module, c, dst.model, dst, key ? key : null);
+                        this.renderDom(module, c, dst.model, dst, key ? key : null);
                     }
                 }
             }
@@ -811,74 +815,50 @@ var nodom = (function (exports) {
                     dst.textContent = src.textContent;
                 }
             }
-            if (src.staticNum === 1) {
-                src.staticNum = 0;
-            }
             //添加到dom tree，必须放在handleDirectives后，因为有可能directive执行后返回false
             if (parent) {
-                dst.parent.children.push(dst);
+                parent.children.push(dst);
             }
             return dst;
-            /**
-             * 处理指令
-             * @returns     true继续执行，false不执行后续渲染代码
-             */
-            function handleDirectives() {
-                if (!src.directives || src.directives.length === 0) {
-                    return true;
-                }
-                // dst.staticNum = -1;
-                for (let d of src.directives) {
-                    //model指令不执行
-                    if (d.type.name === 'model') {
-                        continue;
-                    }
-                    if (!d.exec(module, dst)) {
-                        return false;
-                    }
-                }
+        }
+        /**
+         * 处理指令
+         * @param module    模块
+         * @param src       编译节点
+         * @param dst       渲染节点
+         * @returns         true继续执行，false不执行后续渲染代码，也不加入渲染树
+        */
+        static handleDirectives(module, src, dst) {
+            if (!src.directives || src.directives.length === 0) {
                 return true;
             }
-            /**
-             * 处理属性（带表达式）
-             */
-            function handleProps() {
-                if (!src.props || src.props.size === 0) {
-                    return;
+            for (let d of src.directives) {
+                //model指令不执行
+                if (d.type.name === 'model') {
+                    continue;
                 }
-                //因为存在大小写，所以用正则式进行匹配
-                const styleReg = /^style$/i;
-                const classReg = /^class$/i;
-                let value;
-                for (let k of src.props) {
-                    if (Array.isArray(k[1])) { //数组，需要合并
-                        value = [];
-                        for (let i = 0; i < k[1].length; i++) {
-                            let a = k[1][i];
-                            if (a instanceof Expression) {
-                                value.push(a.val(module, dst.model));
-                                // dst.staticNum = -1;
-                            }
-                            else {
-                                value.push(a);
-                            }
-                        }
-                        if (styleReg.test(k[0])) {
-                            value = src.getStyleString(value);
-                        }
-                        else if (classReg.test(k[0])) {
-                            value = src.getClassString(value);
-                        }
-                    }
-                    else if (k[1] instanceof Expression) {
-                        value = k[1].val(module, dst.model);
-                        // dst.staticNum = -1;
-                    }
-                    else {
-                        value = k[1];
-                    }
-                    dst.props[k[0]] = value;
+                if (!d.exec(module, dst)) {
+                    return false;
                 }
+            }
+            return true;
+        }
+        /**
+         * 处理属性
+         * @param module    模块
+         * @param src       编译节点
+         * @param dst       渲染节点
+         */
+        static handleProps(module, src, dst) {
+            if (dst === this.currentRootDom) {
+                module.handleRootProps(src, dst);
+                return;
+            }
+            if (!src.props || src.props.size === 0) {
+                return;
+            }
+            for (let k of src.props) {
+                dst.props[k[0]] = k[1] instanceof Expression ? k[1].val(module, dst.model) : k[1];
             }
         }
         /**
@@ -897,8 +877,10 @@ var nodom = (function (exports) {
                 el.key = src.key;
                 let attrs = el.attributes;
                 let arr = [];
-                for (let i = 0; i < attrs.length; i++) {
-                    arr.push(attrs[i].name);
+                if (attrs) {
+                    for (let i = 0; i < attrs.length; i++) {
+                        arr.push(attrs[i].name);
+                    }
                 }
                 //设置属性
                 for (let p of Object.keys(src.props)) {
@@ -954,7 +936,7 @@ var nodom = (function (exports) {
              * @param dom 		虚拟dom
              * @returns 		新的html element
              */
-            function newEl(dom, isSvg) {
+            function newEl(dom) {
                 //style不处理
                 if (dom.tagName === 'style') {
                     return;
@@ -975,7 +957,9 @@ var nodom = (function (exports) {
                 el.key = dom.key;
                 //设置属性
                 for (let p of Object.keys(dom.props)) {
-                    el.setAttribute(p, dom.props[p] === undefined ? '' : dom.props[p]);
+                    if (dom.props[p] !== undefined && dom.props[p] !== null && dom.props[p] !== '') {
+                        el.setAttribute(p, dom.props[p]);
+                    }
                 }
                 //asset
                 if (dom.assets) {
@@ -1027,31 +1011,42 @@ var nodom = (function (exports) {
         /**
          * 处理更改的dom节点
          * @param module        待处理模块
-         * @param changeDoms    更改的dom参数数组 [type(add 1, upd 2,del 3,move 4 ,rep 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),loc(位置)]
+         * @param changeDoms    更改的dom参数数组，数组元素说明如下：
+         *                      0:type(操作类型) add 1, upd 2,del 3,move 4 ,rep 5
+         *                      1:dom           待处理节点
+         *                      2:dom1          被替换或修改节点，rep时有效
+         *                      3:parent        父节点
+         *                      4:loc           位置,add和move时有效
          */
         static handleChangedDoms(module, changeDoms) {
             //替换数组
             const repArr = [];
-            //添加和移动数组
-            const arr = [];
+            //添加数组
+            const addArr = [];
+            //移动数组
+            const moveArr = [];
             //保留原有html节点
             for (let item of changeDoms) {
-                if (item[0] === 2) { //修改
-                    Renderer.updateToHtml(module, item[1]);
-                }
-                else if (item[0] === 3) { //删除
-                    const pEl = module.getElement(item[3].key);
-                    const n1 = module.getElement(item[1].key);
-                    if (pEl && n1 && n1.parentElement === pEl) {
-                        pEl.removeChild(n1);
-                    }
-                    module.domManager.freeNode(item[1]);
-                }
-                else if (item[0] === 5) { //替换
-                    repArr.push(item);
-                }
-                else { //仅对添加和移动的节点进行二次操作
-                    arr.push(item);
+                switch (item[0]) {
+                    case 1: //添加
+                        addArr.push(item);
+                        break;
+                    case 2: //修改
+                        Renderer.updateToHtml(module, item[1]);
+                        break;
+                    case 3: //删除
+                        const pEl = module.getElement(item[3].key);
+                        const n1 = module.getElement(item[1].key);
+                        if (pEl && n1 && n1.parentElement === pEl) {
+                            pEl.removeChild(n1);
+                        }
+                        module.domManager.freeNode(item[1]);
+                        break;
+                    case 4: //移动
+                        moveArr.push(item);
+                        break;
+                    default: //替换
+                        repArr.push(item);
                 }
             }
             //替换
@@ -1074,32 +1069,49 @@ var nodom = (function (exports) {
                     }
                 }
             }
-            //按index排序
-            if (arr.length > 0) {
-                arr.sort((a, b) => a[4] > b[4] ? 1 : -1);
+            //addArr 按index排序
+            if (addArr.length > 1) {
+                addArr.sort((a, b) => a[4] > b[4] ? 1 : -1);
             }
-            for (let item of arr) {
+            //操作map，用于存放添加或移动过的位置
+            const opMap = moveArr.length > 0 ? {} : undefined;
+            //处理添加元素
+            for (let item of addArr) {
                 const pEl = module.getElement(item[3].key);
-                if (item[0] === 1) { //添加
-                    const n1 = Renderer.renderToHtml(module, item[1], null, true);
-                    if (pEl.childNodes && pEl.childNodes.length - 1 > item[4]) {
-                        pEl.insertBefore(n1, pEl.childNodes[item[4]]);
+                const n1 = Renderer.renderToHtml(module, item[1], null, true);
+                if (pEl.childNodes && pEl.childNodes.length - 1 > item[4]) {
+                    pEl.insertBefore(n1, pEl.childNodes[item[4]]);
+                }
+                else {
+                    pEl.appendChild(n1);
+                }
+                //记录操作位置
+                if (opMap) {
+                    opMap[item[3].key + '_' + item[4]] = true;
+                }
+            }
+            //处理move元素
+            for (let item of moveArr) {
+                const pEl = module.getElement(item[3].key);
+                const n1 = module.getElement(item[1].key);
+                if (!n1 || n1 === pEl.childNodes[item[4]]) {
+                    continue;
+                }
+                //判断是否需要用空节点填充移走后的位置
+                if (!opMap[item[3].key + '_' + item[5]]) {
+                    const emptyDom = document.createTextNode('');
+                    //新放到指定位置
+                    if (pEl.childNodes.length - 1 > item[5]) {
+                        pEl.insertBefore(emptyDom, pEl.childNodes[item[5]]);
                     }
-                    else {
-                        pEl.appendChild(n1);
+                    else { //最后一个与当前节点不相同，则放在最后
+                        pEl.appendChild(emptyDom);
                     }
                 }
-                else { //移动
-                    const n1 = module.getElement(item[1].key);
-                    if (n1 && n1 !== pEl.childNodes[item[4]]) {
-                        if (pEl.childNodes.length - 1 > item[4]) {
-                            pEl.insertBefore(n1, pEl.childNodes[item[4]]);
-                        }
-                        else if (n1 !== pEl.childNodes[pEl.childNodes.length - 1]) { //最后一个与当前节点不相同，则放在最后
-                            pEl.appendChild(n1);
-                        }
-                    }
-                }
+                //替换到指定位置
+                pEl.replaceChild(n1, pEl.childNodes[item[4]]);
+                //记录操作的位置
+                opMap[item[3].key + '_' + item[4]] = true;
             }
         }
     }
@@ -1389,9 +1401,9 @@ var nodom = (function (exports) {
     exports.EModuleState = void 0;
     (function (EModuleState) {
         /**
-         * 准备好，可渲染
+         * 已初始化
          */
-        EModuleState[EModuleState["READY"] = 1] = "READY";
+        EModuleState[EModuleState["INIT"] = 1] = "INIT";
         /**
          * 未挂载到html dom
          */
@@ -2126,45 +2138,6 @@ var nodom = (function (exports) {
             }
         }
         /**
-         * 合并多个对象并返回
-         * @param   参数数组
-         * @returns 返回对象
-         */
-        static merge(o1, o2, o3, o4, o5, o6) {
-            let me = this;
-            for (let i = 0; i < arguments.length; i++) {
-                if (!this.isObject(arguments[i])) {
-                    throw new NError('invoke', 'Util.merge', i + '', 'object');
-                }
-            }
-            let retObj = Object.assign.apply(null, arguments);
-            subObj(retObj);
-            return retObj;
-            //处理子对象
-            function subObj(obj) {
-                for (let o of Object.keys(obj)) {
-                    if (me.isObject(obj[o]) || me.isArray(obj[o])) { //对象或数组
-                        retObj[o] = me.clone(retObj[o]);
-                    }
-                }
-            }
-        }
-        /**
-         * 把obj2对象所有属性赋值给obj1
-         * @returns 返回对象obj1
-         */
-        static assign(obj1, obj2) {
-            if (Object.assign) {
-                Object.assign(obj1, obj2);
-            }
-            else {
-                this.getOwnProps(obj2).forEach(function (p) {
-                    obj1[p] = obj2[p];
-                });
-            }
-            return obj1;
-        }
-        /**
          * 比较两个对象值是否相同(只比较object和array)
          * @param src   源对象
          * @param dst   目标对象
@@ -2239,46 +2212,6 @@ var nodom = (function (exports) {
             return obj !== null && obj !== undefined && obj.constructor === Object;
         }
         /**
-         * 判断是否为整数
-         * @param v     检查的值
-         * @returns     true/false
-         */
-        static isInt(v) {
-            return Number.isInteger(v);
-        }
-        /**
-         * 判断是否为number
-         * @param v     检查的值
-         * @returns     true/false
-         */
-        static isNumber(v) {
-            return typeof v === 'number';
-        }
-        /**
-         * 判断是否为boolean
-         * @param v     检查的值
-         * @returns     true/false
-         */
-        static isBoolean(v) {
-            return typeof v === 'boolean';
-        }
-        /**
-         * 判断是否为字符串
-         * @param v     检查的值
-         * @returns     true/false
-         */
-        static isString(v) {
-            return typeof v === 'string';
-        }
-        /**
-         * 判断是否为数字串
-         * @param v     检查的值
-         * @returns     true/false
-         */
-        static isNumberString(v) {
-            return /^\d+\.?\d*$/.test(v);
-        }
-        /**
          * 判断对象/字符串是否为空
          * @param obj   检查的对象
          * @returns     true/false
@@ -2298,38 +2231,6 @@ var nodom = (function (exports) {
             }
             return false;
         }
-        /**
-         * 把srcNode替换为nodes
-         * @param srcNode       源dom
-         * @param nodes         替换的dom或dom数组
-         */
-        static replaceNode(srcNode, nodes) {
-            let pnode = srcNode.parentNode;
-            let bnode = srcNode.nextSibling;
-            if (pnode === null) {
-                return;
-            }
-            pnode.removeChild(srcNode);
-            const nodeArr = this.isArray(nodes) ? nodes : [nodes];
-            nodeArr.forEach(function (node) {
-                if (bnode === undefined || bnode === null) {
-                    pnode.appendChild(node);
-                }
-                else {
-                    pnode.insertBefore(node, bnode);
-                }
-            });
-        }
-        /**
-         * 清空子节点
-         * @param el   需要清空的节点
-         */
-        static empty(el) {
-            let nodes = el.childNodes;
-            for (let i = nodes.length - 1; i >= 0; i--) {
-                el.removeChild(nodes[i]);
-            }
-        }
         /******日期相关******/
         /**
          * 日期格式化
@@ -2338,7 +2239,7 @@ var nodom = (function (exports) {
          * @returns          日期串
          */
         static formatDate(timeStamp, format) {
-            if (this.isString(timeStamp)) {
+            if (typeof timeStamp === 'string') {
                 //排除日期格式串,只处理时间戳
                 let reg = /^\d+$/;
                 if (reg.test(timeStamp)) {
@@ -2401,74 +2302,18 @@ var nodom = (function (exports) {
             return src;
         }
         /**
-         * 函数调用
-         * @param foo   函数
-         * @param obj   this指向
-         * @param args  参数数组
-         */
-        static apply(foo, obj, args) {
-            if (!foo) {
-                return;
-            }
-            return Reflect.apply(foo, obj || null, args);
-        }
-        /**
-         * 合并并修正路径，即路径中出现'//','///','\/'的情况，统一置换为'/'
-         * @param paths     待合并路径数组
-         * @returns         返回路径
-         */
-        static mergePath(paths) {
-            return paths.join('/').replace(/(\/{2,})|\\\//g, '\/');
-        }
-        /**
-         * eval
-         * @param evalStr   eval串
-         * @returns         eval值
-         */
-        static eval(evalStr) {
-            return new Function(`return(${evalStr})`)();
-        }
-        /**
          * 改造 dom key，避免克隆时重复，格式为：key_id
          * @param node    节点
          * @param id      附加id
          * @param deep    是否深度处理
          */
         static setNodeKey(node, id, deep) {
-            node.key = this.genUniqueKey(node.key, id);
+            node.key = node.key + '_' + id;
             if (deep && node.children) {
                 for (let c of node.children) {
                     Util.setNodeKey(c, id, true);
                 }
             }
-        }
-        /**
-         * 设置dom asset
-         * @param dom       渲染后的dom节点
-         * @param name      asset name
-         * @param value     asset value
-         */
-        static setDomAsset(dom, name, value) {
-            if (!dom.assets) {
-                dom.assets = {};
-            }
-            dom.assets[name] = value;
-        }
-        /**
-         * 通过两个整数，生成唯一key
-         * @param x     第一个整整数
-         * @param y     第二个正整数
-         * @returns 唯一key，为避免与genId的key相同，对结果取负
-         */
-        static genUniqueKey(x, y) {
-            // if(x<0){
-            //     x = -x;
-            // }
-            // if(y<0){
-            //     y = -y;
-            // }
-            // return -((x << 16) | y);
-            return x + '_' + y;
         }
     }
     /**
@@ -2488,10 +2333,11 @@ var nodom = (function (exports) {
     class Directive {
         /**
          * 构造方法
-         * @param type  	类型名
-         * @param value 	指令值
+         * @param type  	    类型名
+         * @param value 	    指令值
+         * @param templateMid   模板所属的module id，即指令用于哪个模板，则该参数指向模板对应的模块id
          */
-        constructor(type, value) {
+        constructor(type, value, templateMid) {
             this.id = Util.genId();
             if (type) {
                 this.type = DirectiveManager.getType(type);
@@ -2499,7 +2345,7 @@ var nodom = (function (exports) {
                     throw new NError('notexist1', exports.NodomMessage.TipWords['directive'], type);
                 }
             }
-            if (Util.isString(value)) {
+            if (typeof value === 'string') {
                 this.value = value.trim();
             }
             else if (value instanceof Expression) {
@@ -2508,6 +2354,7 @@ var nodom = (function (exports) {
             else {
                 this.value = value;
             }
+            this.templateModuleId = templateMid;
         }
         /**
          * 执行指令
@@ -2533,6 +2380,7 @@ var nodom = (function (exports) {
             d.type = this.type;
             d.expression = this.expression;
             d.value = this.value;
+            d.templateModuleId = this.templateModuleId;
             return d;
         }
     }
@@ -2555,43 +2403,72 @@ var nodom = (function (exports) {
             this.id = Util.genId();
             this.module = module;
             this.name = eventName;
-            // GlobalCache.saveEvent(this);
             //如果事件串不为空，则不需要处理
             if (eventStr) {
                 let tp = typeof eventStr;
                 if (tp === 'string') {
-                    let eStr = eventStr.trim();
-                    eStr.split(':').forEach((item, i) => {
-                        item = item.trim();
-                        if (i === 0) { //事件方法
-                            this.handler = item;
-                        }
-                        else { //事件附加参数
-                            switch (item) {
-                                case 'delg':
-                                    this.delg = true;
-                                    break;
-                                case 'nopopo':
-                                    this.nopopo = true;
-                                    break;
-                                case 'once':
-                                    this.once = true;
-                                    break;
-                                case 'capture':
-                                    this.capture = true;
-                                    break;
-                            }
-                        }
-                    });
+                    this.parseEvent(eventStr.trim());
                 }
                 else if (tp === 'function') {
-                    handler = eventStr;
+                    this.handler = eventStr;
+                }
+                else if (eventStr instanceof Expression) {
+                    this.expr = eventStr;
                 }
             }
             //新增事件方法（不在methods中定义）
             if (handler) {
                 this.handler = handler;
             }
+            this.touchOrNot();
+        }
+        /**
+         * 表达式处理，当handler为expression时有效
+         * @param module    模块
+         * @param model     对应model
+         */
+        handleExpr(module, model) {
+            if (!this.expr) {
+                return this;
+            }
+            const evtStr = this.expr.val(module, model);
+            if (evtStr) {
+                //新建事件对象
+                return new NEvent(module, this.name, evtStr);
+            }
+        }
+        /**
+         * 解析事件字符串
+         * @param eventStr  待解析的字符串
+         */
+        parseEvent(eventStr) {
+            eventStr.split(':').forEach((item, i) => {
+                item = item.trim();
+                if (i === 0) { //事件方法
+                    this.handler = item;
+                }
+                else { //事件附加参数
+                    switch (item) {
+                        case 'delg':
+                            this.delg = true;
+                            break;
+                        case 'nopopo':
+                            this.nopopo = true;
+                            break;
+                        case 'once':
+                            this.once = true;
+                            break;
+                        case 'capture':
+                            this.capture = true;
+                            break;
+                    }
+                }
+            });
+        }
+        /**
+         * 触屏转换
+         */
+        touchOrNot() {
             if (document.ontouchend) { //触屏设备
                 switch (this.name) {
                     case 'click':
@@ -2674,10 +2551,6 @@ var nodom = (function (exports) {
          * @param module 	模块
          */
         constructor(tag, key, module) {
-            /**
-             * 对应的所有表达式的字段都属于dom model内
-             */
-            this.allModelField = true;
             this.key = key || (module ? module.getDomKeyId() : Util.genId());
             this.staticNum = 1;
             if (tag) {
@@ -2723,7 +2596,8 @@ var nodom = (function (exports) {
          */
         addDirective(directive, sort) {
             if (!this.directives) {
-                this.directives = [];
+                this.directives = [directive];
+                return;
             }
             else if (this.directives.find((item) => item.type.name === directive.type.name)) {
                 return;
@@ -2757,8 +2631,7 @@ var nodom = (function (exports) {
          * @returns             如果指令集不为空，且含有传入的指令类型名则返回true，否则返回false
          */
         hasDirective(typeName) {
-            return (this.directives &&
-                this.directives.findIndex((item) => item.type.name === typeName) !== -1);
+            return this.directives && this.directives.find(item => item.type.name === typeName) !== undefined;
         }
         /**
          * 获取某个类型的指令
@@ -3284,13 +3157,13 @@ var nodom = (function (exports) {
                                     ? match[3].substring(1, match[3].length - 1)
                                     : match[3];
                         if (value && value.startsWith('{{')) {
-                            value = new Expression(value.substring(2, value.length - 2));
+                            value = new Expression(value.substring(2, value.length - 2), this.module);
                             //表达式 staticNum为-1
                             this.current.staticNum = -1;
                         }
                         if (name.startsWith('x-')) {
                             // 指令
-                            this.current.addDirective(new Directive(name.substring(2), value));
+                            this.current.addDirective(new Directive(name.substring(2), value, this.module.id));
                         }
                         else if (name.startsWith('e-')) {
                             // 事件
@@ -3356,7 +3229,7 @@ var nodom = (function (exports) {
                     const matchExp = /^{{([\s\S]*?)}}/i.exec(srcStr);
                     if (matchExp) {
                         // 抓取成功
-                        this.textArr.push(new Expression(matchExp[1]));
+                        this.textArr.push(new Expression(matchExp[1], this.module));
                         this.isExprText = true;
                         srcStr = srcStr.substring(matchExp.index + matchExp[0].length);
                     }
@@ -3380,7 +3253,9 @@ var nodom = (function (exports) {
                         else {
                             txt = this.preHandleText(srcStr.substring(0, match.index + match[0].length).trim());
                         }
-                        this.textArr.push(txt);
+                        if (txt !== '') {
+                            this.textArr.push(txt);
+                        }
                     }
                     srcStr = srcStr.substring(match.index + match[0].length);
                 }
@@ -3414,7 +3289,6 @@ var nodom = (function (exports) {
             if (reg.test(str)) {
                 let div = document.createElement('div');
                 div.innerHTML = str;
-                console.log(str, "'" + div.textContent + "'");
                 return div.textContent;
             }
             return str;
@@ -3430,9 +3304,7 @@ var nodom = (function (exports) {
             }
             // 是否是模块类
             if (ModuleFactory.hasClass(dom.tagName)) {
-                const dir = new Directive('module', dom.tagName);
-                dir.params = { srcId: this.module.id };
-                dom.addDirective(dir);
+                dom.addDirective(new Directive('module', dom.tagName, this.module.id));
                 dom.tagName = 'div';
             }
         }
@@ -3453,15 +3325,14 @@ var nodom = (function (exports) {
                     //带slot的不处理
                     continue;
                 }
-                //@ts-ignore
-                if (!slotCt) {
+                if (!slotCt) { //初始化default slot container
                     //第一个直接被slotCt替换
                     slotCt = new VirtualDom('div', this.genKey());
-                    slotCt.addDirective(new Directive('slot'));
+                    slotCt.addDirective(new Directive('slot', 'default', this.module.id));
                     //当前位置，用slot替代
                     dom.children.splice(j, 1, slotCt);
                 }
-                else {
+                else { //添加到default slot container
                     //直接删除
                     dom.children.splice(j--, 1);
                 }
@@ -3540,7 +3411,7 @@ var nodom = (function (exports) {
                         addChange(5, src, dst, dst.parent);
                     }
                     else { //节点类型相同，但有一个不是静态节点，进行属性比较
-                        if ((src.staticNum || dst.staticNum) && isChange(src, dst)) {
+                        if ((src.staticNum || dst.staticNum) && isChanged(src, dst)) {
                             addChange(2, src, null, dst.parent);
                         }
                         if (!src.moduleId) { //子模块不比较子节点
@@ -3582,7 +3453,7 @@ var nodom = (function (exports) {
                             if (oldStartNode.key === newStartNode.key) { //新前旧前
                                 compare(newStartNode, oldStartNode);
                                 if (newStartIdx !== oldStartIdx) {
-                                    addChange(4, newStartNode, null, dst, newStartIdx);
+                                    addChange(4, newStartNode, null, dst, newStartIdx, oldStartIdx);
                                 }
                                 newStartNode = src.children[++newStartIdx];
                                 oldStartNode = dst.children[++oldStartIdx];
@@ -3590,7 +3461,7 @@ var nodom = (function (exports) {
                             else if (oldEndNode.key === newEndNode.key) { //新后旧后
                                 compare(newEndNode, oldEndNode);
                                 if (oldEndIdx !== newEndIdx) {
-                                    addChange(4, newEndNode, null, dst, newEndIdx);
+                                    addChange(4, newEndNode, null, dst, newEndIdx, oldEndIdx);
                                 }
                                 newEndNode = src.children[--newEndIdx];
                                 oldEndNode = dst.children[--oldEndIdx];
@@ -3600,7 +3471,7 @@ var nodom = (function (exports) {
                                 compare(newStartNode, oldEndNode);
                                 //放在指定位置
                                 if (newStartIdx !== oldEndIdx) {
-                                    addChange(4, newStartNode, null, dst, newStartIdx);
+                                    addChange(4, newStartNode, null, dst, newStartIdx, oldEndIdx);
                                 }
                                 newStartNode = src.children[++newStartIdx];
                                 oldEndNode = dst.children[--oldEndIdx];
@@ -3608,7 +3479,7 @@ var nodom = (function (exports) {
                             else if (newEndNode.key === oldStartNode.key) { //新后旧前
                                 compare(newEndNode, oldStartNode);
                                 if (newEndIdx !== oldStartIdx) {
-                                    addChange(4, newEndNode, null, dst, newEndIdx);
+                                    addChange(4, newEndNode, null, dst, newEndIdx, oldStartIdx);
                                 }
                                 newEndNode = src.children[--newEndIdx];
                                 oldStartNode = dst.children[++oldStartIdx];
@@ -3634,8 +3505,10 @@ var nodom = (function (exports) {
                                 //如果要删除的节点在addArr中，则表示move，否则表示删除
                                 if (addObj.hasOwnProperty(ch.key)) {
                                     let o = addObj[ch.key];
-                                    if (index !== o[4]) { //修改为move
+                                    if (index !== o[4]) { //修改add为move
                                         o[0] = 4;
+                                        //设置move前位置
+                                        o[5] = i;
                                         //从add转为move，需要比较新旧节点
                                         compare(o[1], ch);
                                     }
@@ -3660,9 +3533,9 @@ var nodom = (function (exports) {
              * 判断节点是否修改
              * @parma src   新树节点
              * @param dst   旧树节点
-             *
+             * @returns     true/false
              */
-            function isChange(src, dst) {
+            function isChanged(src, dst) {
                 for (let p of ['props', 'assets']) {
                     //属性比较
                     if (!src[p] && dst[p] || src[p] && !dst[p]) {
@@ -3686,16 +3559,17 @@ var nodom = (function (exports) {
                 return false;
             }
             /**
-             * 添加刪除替換
+             * 添加到修改数组
              * @param type      类型 add 1, upd 2,del 3,move 4 ,rep 5
-             * @param dom       虚拟节点
-             * @param dom1      相对节点
+             * @param dom       目标节点
+             * @param dom1      相对节点（被替换）
              * @param parent    父节点
              * @param loc       添加或移动的目标index
+             * @param loc1      被移动前位置
              * @returns         添加的change数组
             */
-            function addChange(type, dom, dom1, parent, loc) {
-                const o = [type, dom, dom1, parent, loc];
+            function addChange(type, dom, dom1, parent, loc, loc1) {
+                const o = [type, dom, dom1, parent, loc, loc1];
                 changeArr.push(o);
                 return o;
             }
@@ -3751,10 +3625,10 @@ var nodom = (function (exports) {
             return true;
         }
         /**
-          * 注册扩展事件
-          * @param eventName    事件名
-          * @param handleObj    事件处理集
-          */
+         * 注册扩展事件
+         * @param eventName    事件名
+         * @param handleObj    事件处理集
+         */
         static regist(eventName, handleObj) {
             this.extendEventMap.set(eventName, handleObj);
         }
@@ -3870,6 +3744,19 @@ var nodom = (function (exports) {
             return this.eventMap.get(key);
         }
         /**
+         * 移除所有事件
+         * @param dom
+         */
+        removeAllEvents(dom) {
+            if (!this.addedEvents.has(dom.key)) {
+                return;
+            }
+            for (let ev of this.addedEvents.get(dom.key)) {
+                this.removeEvent(dom, ev);
+            }
+            this.addedEvents.delete(dom.key);
+        }
+        /**
          * 删除事件
          * @param event     事件对象
          * @param key       对应dom keys
@@ -3896,9 +3783,9 @@ var nodom = (function (exports) {
                 if (index !== -1) {
                     obj.delg.splice(index, 1);
                     // 解绑事件
-                    if (obj.delg.length === 0 && obj.own.length === 0) {
-                        this.unbind(dom.parent.key, event.name);
-                    }
+                    // if(obj.delg.length===0 && obj.own.length===0){
+                    //     this.unbind(dom.parent.key,event.name);
+                    // }
                 }
             }
             else { //own
@@ -3911,9 +3798,9 @@ var nodom = (function (exports) {
                 if (index !== -1) {
                     obj.own.splice(index, 1);
                     // 解绑事件
-                    if (obj.delg.length === 0 && obj.own.length === 0) {
-                        this.unbind(dom.key, event.name);
-                    }
+                    // if(obj.delg.length === 0 && obj.own.length===0){
+                    //     this.unbind(dom.key,event.name);
+                    // }
                 }
             }
         }
@@ -4041,7 +3928,7 @@ var nodom = (function (exports) {
                 for (let i = 0; i < events.length; i++) {
                     const ev = events[i];
                     if (typeof ev.handler === 'string') {
-                        module.invokeMethod(ev.handler, dom.model, dom, ev, e);
+                        ev.module.invokeMethod(ev.handler, dom.model, dom, ev, e);
                     }
                     else if (typeof ev.handler === 'function') {
                         ev.handler.apply(module, [dom.model, dom, ev, e]);
@@ -4074,10 +3961,10 @@ var nodom = (function (exports) {
                         if (k === evo.key) {
                             const dom1 = module.domManager.getRenderedDom(k);
                             if (typeof ev.handler === 'string') {
-                                module.invokeMethod(ev.handler, dom1.model, dom1, ev, e);
+                                ev.module.invokeMethod(ev.handler, dom1.model, dom1, ev, e);
                             }
                             else if (typeof ev.handler === 'function') {
-                                ev.handler.apply(module, [dom1.model, dom1, ev, e]);
+                                ev.handler.apply(ev.module, dom1.model, dom1, ev, e);
                             }
                             // 保留nopopo
                             nopopo = ev.nopopo;
@@ -4838,6 +4725,10 @@ var nodom = (function (exports) {
      * dom 管理器，用于管理模块的虚拟dom，旧渲染树
      */
     class DomManager {
+        /**
+         * 构造方法
+         * @param module    所属模块
+         */
         constructor(module) {
             /**
              *  key:html node映射
@@ -4847,7 +4738,8 @@ var nodom = (function (exports) {
         }
         /**
          * 从origin tree 获取虚拟dom节点
-         * @param key   dom key
+         * @param key   dom key 或 props 键值对
+         * @returns     编译后虚拟节点
          */
         getOriginDom(key) {
             if (!this.vdomTree) {
@@ -4855,7 +4747,13 @@ var nodom = (function (exports) {
             }
             return find(this.vdomTree);
             function find(dom) {
-                if (dom.key === key) {
+                //对象表示未props查找
+                if (typeof key === 'object') {
+                    if (!Object.keys(key).find(k => key[k] !== dom.props.get(k))) {
+                        return dom;
+                    }
+                }
+                else if (dom.key === key) { //key查找
                     return dom;
                 }
                 if (dom.children) {
@@ -4870,7 +4768,8 @@ var nodom = (function (exports) {
         }
         /**
          * 从渲染树中获取key对应的渲染节点
-         * @param key   dom key
+         * @param key   dom key或props键值对
+         * @returns     渲染后虚拟节点
          */
         getRenderedDom(key) {
             if (!this.renderedTree) {
@@ -4884,7 +4783,13 @@ var nodom = (function (exports) {
              * @returns     key对应renderdom 或 undefined
              */
             function find(dom, key) {
-                if (dom.key === key) {
+                //对象表示未props查找
+                if (typeof key === 'object') {
+                    if (!Object.keys(key).find(k => key[k] !== dom.props[k])) {
+                        return dom;
+                    }
+                }
+                else if (dom.key === key) { //key查找
                     return dom;
                 }
                 if (dom.children) {
@@ -4899,50 +4804,6 @@ var nodom = (function (exports) {
                     }
                 }
             }
-        }
-        /**
-         * 克隆渲染后的dom节点
-         * @param key   dom key或dom节点
-         * @param deep  是否深度复制（复制子节点）
-         */
-        cloneRenderedDom(key, deep) {
-            let src;
-            if (typeof key === 'string') {
-                src = this.getRenderedDom(key);
-            }
-            else {
-                src = key;
-            }
-            if (!src) {
-                return null;
-            }
-            let dst = {
-                key: key,
-                vdom: src.vdom,
-                tagName: src.tagName,
-                staticNum: src.staticNum,
-                textContent: src.textContent,
-                moduleId: src.moduleId
-            };
-            if (src.props) {
-                dst.props = {};
-                for (let k of Object.keys(src.props)) {
-                    dst.props[k] = src.props[k];
-                }
-            }
-            if (src.assets) {
-                dst.assets = {};
-                for (let k of Object.keys(src.assets)) {
-                    dst.assets[k] = src.assets[k];
-                }
-            }
-            if (deep && src.children) {
-                dst.children = [];
-                for (let c of src.children) {
-                    dst.children.push(this.cloneRenderedDom(c));
-                }
-            }
-            return dst;
         }
         /**
          * 清除html element map 节点
@@ -4962,10 +4823,13 @@ var nodom = (function (exports) {
         }
         /**
          * 获取html node
-         * @param key   dom key
+         * @param key   dom key 或 props 键值对
          * @returns     html node
          */
         getElement(key) {
+            if (typeof key === 'object') {
+                key = this.getRenderedDom(key);
+            }
             return this.elementMap.get(key);
         }
         /**
@@ -5017,27 +4881,24 @@ var nodom = (function (exports) {
      *      事件参数: model(当前按钮对应model),dom(事件对应虚拟dom),eventObj(事件对象),e(实际触发的html event)
      *      表达式方法：参数按照表达式方式给定即可
      * 模块事件
-     *      onBeforeFirstRender 首次渲染前
-     *      onFirstRender       首次渲染后
-     *      onBeforeRender      增量渲染前
-     *      onRender            增量渲染后
+     *      onInit              初始化后（constructor后，已经有model对象，但是尚未编译，只执行1次）
+     *      onBeforeFirstRender 首次渲染前（只执行1次）
+     *      onFirstRender       首次渲染后（只执行1次）
+     *      onBeforeRender      渲染前
+     *      onRender            渲染后
      *      onCompile           编译后
-     *      onBeforeMount       挂载到html dom树前（onFirstRender渲染后）
-     *      onMount             挂载到html dom树后(首次渲染到html树后)
-     *      onBeforeUnMount     从html dom树解挂前
-     *      onUnmount           从html dom树解挂后
-     *      onBeforeUpdate      更新到html dom树前（onRender后，针对增量渲染）
-     *      onUpdate            更新到html dom树后（针对增量渲染）
+     *      onBeforeMount       挂载到document前
+     *      onMount             挂载到document后
+     *      onBeforeUnMount     从document脱离前
+     *      onUnmount           从document脱离后
+     *      onBeforeUpdate      更新到document前
+     *      onUpdate            更新到document后
      */
     class Module {
         /**
          * 构造器
          */
         constructor() {
-            /**
-             * 编译后的根结点props
-             */
-            this.originProps = new Map();
             /**
              * 子模块id数组
              */
@@ -5047,12 +4908,17 @@ var nodom = (function (exports) {
             this.domManager = new DomManager(this);
             this.objectManager = new ObjectManager(this);
             this.eventFactory = new EventFactory(this);
-            //初始化model
-            this.model = new Model(this.data() || {}, this);
-            // 设置状态为未挂载
-            this.state = exports.EModuleState.UNMOUNTED;
             //加入模块工厂
             ModuleFactory.add(this);
+        }
+        /**
+         * 初始化操作
+         */
+        init() {
+            this.state = exports.EModuleState.INIT;
+            //初始化model
+            this.model = new Model(this.data() || {}, this);
+            this.doModuleEvent('onInit');
         }
         /**
          * 模板串方法，使用时重载
@@ -5064,7 +4930,7 @@ var nodom = (function (exports) {
         }
         /**
          * 数据方法，使用时重载
-         * @returns      model数据
+         * @returns     数据对象
          */
         data() {
             return {};
@@ -5077,7 +4943,8 @@ var nodom = (function (exports) {
                 return;
             }
             //检测模板并编译
-            let templateStr = this.template(this.props);
+            const templateStr = this.template(this.props);
+            const firstRender = this.oldTemplate === undefined;
             //与旧模板不一样，需要重新编译
             if (templateStr !== this.oldTemplate) {
                 this.oldTemplate = templateStr;
@@ -5087,7 +4954,8 @@ var nodom = (function (exports) {
             if (!this.domManager.vdomTree) {
                 return;
             }
-            if (!this.hasRendered) { //首次渲染
+            //首次渲染
+            if (firstRender) {
                 this.doModuleEvent('onBeforeFirstRender');
             }
             //渲染前事件
@@ -5096,28 +4964,27 @@ var nodom = (function (exports) {
             const oldTree = this.domManager.renderedTree;
             //渲染
             this.domManager.renderedTree = Renderer.renderDom(this, this.domManager.vdomTree, this.model);
-            if (!this.hasRendered) { //首次渲染
-                this.doModuleEvent('onFirstRender');
-                this.hasRendered = true;
-            }
             //每次渲染后事件
             this.doModuleEvent('onRender');
-            //渲染树为空，解挂
+            //首次渲染
+            if (firstRender) {
+                this.doModuleEvent('onFirstRender');
+            }
+            //渲染树为空，从html卸载
             if (!this.domManager.renderedTree) {
                 this.unmount();
-                this.hasRendered = true;
                 return;
             }
-            //已经挂载
-            if (this.state === exports.EModuleState.MOUNTED) {
+            if (this.state === exports.EModuleState.MOUNTED) { //已经挂载
                 if (oldTree && this.model) {
-                    // 比较节点
-                    let changeDoms = DiffTool.compare(this.domManager.renderedTree, oldTree);
-                    this.doModuleEvent('onBeforeUpdate');
+                    //新旧渲染树节点diff
+                    const changeDoms = DiffTool.compare(this.domManager.renderedTree, oldTree);
                     //执行更改
                     if (changeDoms.length > 0) {
+                        //html节点更新前事件
+                        this.doModuleEvent('onBeforeUpdate');
                         Renderer.handleChangedDoms(this, changeDoms);
-                        //执行更新到html事件
+                        //html节点更新后事件
                         this.doModuleEvent('onUpdate');
                     }
                 }
@@ -5154,20 +5021,19 @@ var nodom = (function (exports) {
         }
         /**
          * 激活模块(准备渲染)
-         * @param type  0 手动， 1父节点setProps激活，默认0
          */
         active() {
-            //如果为unmounted，则设置渲染为准备好状态
+            //如果为unmounted，则设置为准备好状态
             if (this.state === exports.EModuleState.UNMOUNTED) {
-                this.state = exports.EModuleState.READY;
+                this.state = exports.EModuleState.INIT;
             }
             Renderer.add(this);
         }
         /**
-         * 挂载到html dom
+         * 挂载到document
          */
         mount() {
-            //执行挂载事件
+            //执行挂载前事件
             this.doModuleEvent('onBeforeMount');
             //渲染到fragment
             let rootEl = new DocumentFragment();
@@ -5187,12 +5053,12 @@ var nodom = (function (exports) {
                 }
                 pm.saveElement(this.srcDom.key, el);
             }
-            //执行挂载事件
+            //执行挂载后事件
             this.doModuleEvent('onMount');
             this.state = exports.EModuleState.MOUNTED;
         }
         /**
-         * 解挂，从htmldom 移除
+         * 解挂，从document移除
          */
         unmount() {
             // 主模块或状态为unmounted的模块不用处理
@@ -5203,7 +5069,7 @@ var nodom = (function (exports) {
             Renderer.remove(this.id);
             //清空event factory
             this.eventFactory.clear();
-            // this.hasRendered = false;
+            //执行卸载前事件
             this.doModuleEvent('onBeforeUnMount');
             //module根与源el切换
             const el = this.getElement(1);
@@ -5225,7 +5091,6 @@ var nodom = (function (exports) {
             this.domManager.reset();
             //设置状态
             this.state = exports.EModuleState.UNMOUNTED;
-            this.doModuleEvent('onUnMount');
             //子模块递归卸载
             if (this.children) {
                 for (let id of this.children) {
@@ -5235,6 +5100,8 @@ var nodom = (function (exports) {
                     }
                 }
             }
+            //执行卸载后事件
+            this.doModuleEvent('onUnMount');
         }
         /**
          * 获取父模块
@@ -5273,34 +5140,12 @@ var nodom = (function (exports) {
             this.container = el;
         }
         /**
-         * 调用方法
-         * @param methodName    方法名
-         */
-        invokeMethod(methodName, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
-            let m = this;
-            let foo = m[methodName];
-            if (!foo && this.compileMid) {
-                m = ModuleFactory.get(this.compileMid);
-                if (m) {
-                    foo = m[methodName];
-                }
-            }
-            if (foo && typeof foo === 'function') {
-                let args = [];
-                for (let i = 1; i < arguments.length; i++) {
-                    args.push(arguments[i]);
-                }
-                return foo.apply(m, args);
-            }
-        }
-        /**
          * 设置props
          * @param props     属性值
          * @param dom       子模块对应渲染后节点
          */
         setProps(props, dom) {
             let dataObj = props.$data;
-            this.changedProps = {};
             delete props.$data;
             //props数据复制到模块model
             if (dataObj) {
@@ -5313,7 +5158,6 @@ var nodom = (function (exports) {
             //如果不存在旧的props，则change为true，否则初始化为false
             let change = false;
             if (!this.props) {
-                this.changedProps = props;
                 change = true;
             }
             else {
@@ -5321,17 +5165,11 @@ var nodom = (function (exports) {
                     // object 默认改变
                     if (props[k] !== this.props[k]) {
                         change = true;
-                        //保留更改的属性
-                        this.changedProps[k] = props[k];
                     }
                 }
             }
             //保存事件数组
             this.events = dom.vdom.events;
-            //合并根dom属性
-            if (change) {
-                this.mergeProps(this.changedProps);
-            }
             //props发生改变或unmounted，激活模块
             if (change || this.state === exports.EModuleState.UNMOUNTED) {
                 this.active();
@@ -5366,14 +5204,6 @@ var nodom = (function (exports) {
             if (!this.domManager.vdomTree) {
                 return;
             }
-            //保存originProps(由编译后的节点属性确认)
-            if (this.domManager.vdomTree.props) {
-                for (let p of this.domManager.vdomTree.props) {
-                    this.originProps.set(p[0], p[1]);
-                }
-            }
-            //合并属性
-            this.mergeProps(this.props);
             //添加从源dom传递的事件
             if (this.events) {
                 for (let ev of this.events) {
@@ -5391,36 +5221,74 @@ var nodom = (function (exports) {
             this.excludedProps = props;
         }
         /**
-        * 合并根节点属性
-        * @param dom       dom节点
-        * @param props     属性集合
-        * @returns         是否改变
-        */
-        mergeProps(props) {
-            if (!props || !this.domManager.vdomTree) {
-                return;
+         * 处理根节点属性
+         * @param src       编译节点
+         * @param dst       dom节点
+         */
+        handleRootProps(src, dst) {
+            //已合并属性集合
+            const added = {};
+            if (src.props && src.props.size > 0) {
+                for (let k of src.props) {
+                    let value;
+                    if (this.excludedProps && this.excludedProps.includes(k[0])) {
+                        continue;
+                    }
+                    if (k[1] instanceof Expression) {
+                        value = k[1].val(this, dst.model);
+                    }
+                    else {
+                        value = k[1];
+                    }
+                    // 合并属性
+                    if (this.props && this.props.hasOwnProperty(k[0])) {
+                        let v = this.props[k[0]];
+                        if (v) {
+                            if ('style' === k[0]) {
+                                v = v.trim();
+                                if (!value) {
+                                    value = v;
+                                }
+                                else {
+                                    value = (value + ';' + v).replace(/;{2,}/g, ';');
+                                }
+                            }
+                            else if ('class' === k[0]) {
+                                v = v.trim();
+                                if (!value) {
+                                    value = v;
+                                }
+                                else {
+                                    value += ' ' + v;
+                                }
+                            }
+                            else {
+                                value = v;
+                            }
+                        }
+                        // 设置已处理标志
+                        added[k[0]] = true;
+                    }
+                    dst.props[k[0]] = value;
+                }
             }
-            //设置根属性
-            for (let k of Object.keys(props)) {
-                //排除的props不添加到属性
-                if (!this.excludedProps || !this.excludedProps.includes(k)) {
-                    //如果dom自己有k属性，则处理为数组
-                    if (this.originProps.has(k)) {
-                        this.domManager.vdomTree.setProp(k, [props[k], this.originProps.get(k)]);
+            if (this.props) {
+                //处理未添加的属性
+                for (let p of Object.keys(this.props)) {
+                    if (added[p] || this.excludedProps && this.excludedProps.includes(p)) {
+                        continue;
                     }
-                    else { //dom自己无此属性
-                        this.domManager.vdomTree.setProp(k, props[k]);
-                    }
+                    dst.props[p] = this.props[p];
                 }
             }
         }
         /**
          * 获取html node
-         * @param key   dom key
+         * @param key   dom key 或 props键值对
          * @returns     html node
          */
         getElement(key) {
-            return this.domManager.elementMap.get(key);
+            return this.domManager.getElement(key);
         }
         /**
          * save html node
@@ -5428,7 +5296,7 @@ var nodom = (function (exports) {
          * @param node  html node
          */
         saveElement(key, node) {
-            this.domManager.elementMap.set(key, node);
+            this.domManager.saveElement(key, node);
         }
         /**
          * 获取模块类名对应的第一个子模块(如果设置deep，则深度优先)
@@ -5567,6 +5435,16 @@ var nodom = (function (exports) {
             }
         }
         /**
+         * 调用方法
+         * @param methodName    方法名
+         * @param pn            参数，最多10个参数
+         */
+        invokeMethod(methodName, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) {
+            if (typeof this[methodName] === 'function') {
+                return this[methodName].call(this, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
+            }
+        }
+        /**
          * 获取dom key id
          * @returns     key id
          */
@@ -5587,7 +5465,7 @@ var nodom = (function (exports) {
                 throw new NError('itemnotempty', exports.NodomMessage.TipWords['element'], 'MODULE', 'className');
             }
             node.delProp('name');
-            node.addDirective(new Directive('module', clazz));
+            node.addDirective(new Directive('module', clazz, module.id));
         }
     }
     /**
@@ -5602,7 +5480,7 @@ var nodom = (function (exports) {
                 throw new NError('itemnotempty', exports.NodomMessage.TipWords['element'], 'FOR', 'cond');
             }
             node.delProp('cond');
-            node.addDirective(new Directive('repeat', cond));
+            node.addDirective(new Directive('repeat', cond, module.id));
         }
     }
     /**
@@ -5614,7 +5492,7 @@ var nodom = (function (exports) {
             //条件
             let cond = node.getProp('cond');
             node.delProp('cond');
-            node.addDirective(new Directive('recur', cond));
+            node.addDirective(new Directive('recur', cond, module.id));
         }
     }
     /**
@@ -5629,13 +5507,13 @@ var nodom = (function (exports) {
                 throw new NError('itemnotempty', exports.NodomMessage.TipWords['element'], 'IF', 'cond');
             }
             node.delProp('cond');
-            node.addDirective(new Directive('if', cond));
+            node.addDirective(new Directive('if', cond, module.id));
         }
     }
     class ELSE extends DefineElement {
         constructor(node, module) {
             super(node);
-            node.addDirective(new Directive('else', null));
+            node.addDirective(new Directive('else', null, module.id));
         }
     }
     /**
@@ -5650,7 +5528,7 @@ var nodom = (function (exports) {
                 throw new NError('itemnotempty', exports.NodomMessage.TipWords['element'], 'ELSEIF', 'cond');
             }
             node.delProp('cond');
-            node.addDirective(new Directive('elseif', cond));
+            node.addDirective(new Directive('elseif', cond, module.id));
         }
     }
     /**
@@ -5659,7 +5537,7 @@ var nodom = (function (exports) {
     class ENDIF extends DefineElement {
         constructor(node, module) {
             super(node);
-            node.addDirective(new Directive('endif', null));
+            node.addDirective(new Directive('endif', null, module.id));
         }
     }
     /**
@@ -5671,7 +5549,7 @@ var nodom = (function (exports) {
             //条件
             let cond = node.getProp('name') || 'default';
             node.delProp('name');
-            node.addDirective(new Directive('slot', cond));
+            node.addDirective(new Directive('slot', cond, module.id));
         }
     }
     DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
@@ -5698,25 +5576,19 @@ var nodom = (function (exports) {
             }
             else {
                 let cls = this.value;
-                if (typeof cls === 'string') {
-                    cls = cls.toLocaleLowerCase();
-                }
                 m = ModuleFactory.get(cls);
                 if (!m) {
                     return true;
                 }
-                //设置编译源id
-                if (this.params && this.params.srcId) {
-                    m.compileMid = this.params.srcId;
-                }
+                m.templateModuleId = this.templateModuleId;
                 mid = m.id;
                 //保留modelId
                 module.objectManager.setDomParam(dom.key, 'moduleId', mid);
-                module.addChild(m);
+                Renderer.currentModule.addChild(m);
             }
             //保存到dom上，提升渲染性能
             dom.moduleId = mid;
-            //变成文本节点，作为子模块占位符，子模块渲染后插入到占位符前面
+            //变成文本节点，作为子模块占位符，子模块渲染后替换占位符
             delete dom.tagName;
             //设置props，如果改变了props，启动渲染
             let o = {};
@@ -5744,7 +5616,7 @@ var nodom = (function (exports) {
          *  model指令
          */
         createDirective('model', function (module, dom) {
-            let model = module.get(this.value, dom.model);
+            let model = module.get(dom.model, this.value);
             if (model) {
                 dom.model = model;
             }
@@ -5767,7 +5639,6 @@ var nodom = (function (exports) {
             //禁用该指令
             this.disabled = true;
             //避免在渲染时对src设置了model，此处需要删除
-            delete src.model;
             for (let i = 0; i < rows.length; i++) {
                 if (!rows[i]) {
                     continue;
@@ -5775,10 +5646,8 @@ var nodom = (function (exports) {
                 if (idxName) {
                     rows[i][idxName] = i;
                 }
-                //渲染一次-1，所以需要+1
-                src.staticNum++;
                 let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].__key);
-                //删除$index属性
+                //删除index属性
                 if (idxName) {
                     delete d.props['index'];
                 }
@@ -5795,8 +5664,8 @@ var nodom = (function (exports) {
          * 典型模版
          * ```
          * <recur name='r1'>
-         *      <div>...</div>
-         *      <p>...</p>
+         *      <element1>...</element1>
+         *      <element2>...</element2>
          *      <recur ref='r1' />
          * </recur>
          * ```
@@ -5822,14 +5691,14 @@ var nodom = (function (exports) {
                 }
                 //克隆，后续可以继续用
                 let node1 = node.clone();
-                //recur子节点不为数组，依赖子层数据，否则依赖repeat数据
-                if (!Array.isArray(m)) {
-                    node1.model = m;
-                    //避免key相同，进行子节点key处理
-                    Util.setNodeKey(node1, m.__key, true);
+                node1.removeDirective('recur');
+                dom.children || (dom.children = []);
+                if (!Array.isArray(m)) { //非数组recur
+                    Renderer.renderDom(module, node1, m, dom, m.__key);
                 }
-                src.children = [node1];
-                node1.parent = src;
+                else { //数组内recur，依赖repeat得到model，repeat会取一次数组元素，所以需要dom model
+                    Renderer.renderDom(module, node1, model, dom, m.__key);
+                }
             }
             else { //递归节点
                 let data = dom.model[this.value];
@@ -5967,45 +5836,45 @@ var nodom = (function (exports) {
          * 描述：字段指令
          */
         createDirective('field', function (module, dom) {
-            const type = dom.props['type'] || 'text';
-            const tgname = dom.tagName.toLowerCase();
-            const model = dom.model;
-            if (!model) {
-                return true;
+            dom.assets || (dom.assets = {});
+            //修正staticnum
+            if (dom.staticNum === 0) {
+                dom.staticNum = 1;
             }
-            let dataValue = module.get(this.value, model);
-            if (type === 'radio') {
-                let value = dom.props['value'];
-                if (dataValue == value) {
-                    dom.props['checked'] = 'checked';
-                    Util.setDomAsset(dom, 'checked', true);
-                }
-                else {
-                    delete dom.props['checked'];
-                    Util.setDomAsset(dom, 'checked', false);
-                }
-            }
-            else if (type === 'checkbox') {
-                //设置状态和value
-                let yv = dom.props['yes-value'];
-                //当前值为yes-value
-                if (dataValue == yv) {
-                    dom.props['value'] = yv;
-                    Util.setDomAsset(dom, 'checked', true);
-                }
-                else { //当前值为no-value
-                    dom.props['value'] = dom.props['no-value'];
-                    Util.setDomAsset(dom, 'checked', false);
-                }
-            }
-            else if (tgname === 'select') { //下拉框
-                dom.props['value'] = dataValue;
-                Util.setDomAsset(dom, 'value', dataValue);
-            }
-            else {
-                let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
-                dom.props['value'] = v;
-                Util.setDomAsset(dom, 'value', v);
+            let dataValue = module.get(dom.model, this.value);
+            switch (dom.props['type']) {
+                case 'radio':
+                    let value = dom.props['value'];
+                    dom.props['name'] = this.value;
+                    if (dataValue == value) {
+                        dom.props['checked'] = 'checked';
+                        dom.assets['checked'] = true;
+                    }
+                    else {
+                        delete dom.props['checked'];
+                        dom.assets['checked'] = false;
+                    }
+                    break;
+                case 'checkbox':
+                    //设置状态和value
+                    let yv = dom.props['yes-value'];
+                    //当前值为yes-value
+                    if (dataValue == yv) {
+                        dom.props['value'] = yv;
+                        dom.assets['checked'] = true;
+                    }
+                    else { //当前值为no-value
+                        dom.props['value'] = dom.props['no-value'];
+                        dom.assets['checked'] = false;
+                    }
+                    break;
+                case 'select':
+                    dom.props['value'] = dataValue;
+                    dom.assets['value'] = dataValue;
+                default:
+                    let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
+                    dom.props['value'] = v;
+                    dom.assets['value'] = v;
             }
             let event = GlobalCache.get('$fieldChangeEvent');
             if (!event) {
@@ -6014,8 +5883,8 @@ var nodom = (function (exports) {
                     if (!el) {
                         return;
                     }
-                    let directive = dom.vdom.getDirective('field');
-                    let type = dom.props['type'];
+                    const directive = dom.vdom.getDirective('field');
+                    const type = dom.props['type'];
                     let field = directive.value;
                     let v = el.value;
                     //根据选中状态设置checkbox的value
@@ -6048,6 +5917,7 @@ var nodom = (function (exports) {
                         }
                     }
                 });
+                //存储字段change事件钩子
                 GlobalCache.set('$fieldChangeEvent', event);
             }
             dom.vdom.addEvent(event);
@@ -6075,7 +5945,7 @@ var nodom = (function (exports) {
             //添加click事件,避免重复创建事件对象，创建后缓存
             let event = GlobalCache.get('$routeClickEvent');
             if (!event) {
-                event = new NEvent(null, 'click', function (model, dom, evObj, e) {
+                event = new NEvent(module, 'click', function (model, dom, evObj, e) {
                     let path = dom.props['path'];
                     if (Util.isEmpty(path)) {
                         return;
@@ -6108,26 +5978,29 @@ var nodom = (function (exports) {
                 let m = ModuleFactory.get(mid);
                 if (m) {
                     //缓存当前替换节点
-                    m.objectManager.set('$slots.' + this.value, { dom: src, model: dom.model });
+                    m.objectManager.set('$slots.' + this.value, {
+                        dom: src,
+                        model: dom.model,
+                        module: ModuleFactory.get(this.templateModuleId)
+                    });
                 }
             }
             else { //源slot节点
-                //获取替换节点进行替换，如果没有，则渲染子节点
                 const cfg = module.objectManager.get('$slots.' + this.value);
                 const children = cfg ? cfg.dom.children : src.children;
-                if (children) {
-                    for (let d of children) {
-                        let model;
-                        if (src.hasProp('innerrender')) { //内部数据渲染
-                            model = dom.model;
+                if (children && children.length > 0) {
+                    //渲染时添加s作为后缀，避免与模块内dom key冲突（相同model情况下）
+                    if (src.hasProp('innerrender')) { //inner render模式
+                        for (let d of children) {
+                            Renderer.renderDom(module, d, dom.model, dom.parent, dom.model['__key'] + 's');
                         }
-                        else if (cfg) { //外部数据渲染
-                            model = cfg.model;
-                            //绑定数据
-                            model.__module.modelManager.bindModel(model, module);
+                    }
+                    else if (cfg) { // 默认模式
+                        //绑定数据
+                        cfg.module.modelManager.bindModel(cfg.model, module);
+                        for (let d of cfg.dom.children) {
+                            Renderer.renderDom(cfg.module, d, cfg.model, dom.parent, cfg.model['__key'] + 's');
                         }
-                        //以dom key作为附加key
-                        Renderer.renderDom(module, d, model, dom.parent, src.key + 's');
                     }
                 }
             }

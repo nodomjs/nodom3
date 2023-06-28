@@ -42,9 +42,9 @@ export interface IRouteCfg {
  */
 export declare enum EModuleState {
     /**
-     * 准备好，可渲染
+     * 已初始化
      */
-    READY = 1,
+    INIT = 1,
     /**
      * 未挂载到html dom
      */
@@ -103,7 +103,7 @@ export interface IRenderedDom {
      */
     moduleId?: number;
     /**
-     * 源虚拟dom
+     * 源虚拟dom(vdomTree中的对应节点)
      */
     vdom?: VirtualDom;
     /**

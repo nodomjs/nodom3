@@ -108,7 +108,7 @@ EventManager.regist('tap',{
             if (evtObj.dependEvent.name === sname) {
                 let foo = evtObj.dependEvent.handler;
                 if(typeof foo === 'string'){
-                    module.invokeMethod(foo,dom.model, dom,evtObj.dependEvent, e);
+                    module.invokeMethod(foo,dom.model,dom,evtObj.dependEvent, e);
                 }else if(typeof foo === 'function'){
                     foo.apply(module,[dom.model,dom,evtObj.dependEvent,e]);
                 }

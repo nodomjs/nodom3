@@ -17,26 +17,12 @@ export class ModuleE extends Module{
         `
     }
 
-    onBeforeFirstRender(){
-        console.log(this.model);
-    }
-
     change(){
         this.model.o2 = {name:'nodom'};
     }
     change1(){
         this.model.o2.name = 'nodom3';
     }
-    // data(){
-    //     return {
-    //         xxx:1,
-    //         rows:[
-    //             {id:1,name:'nodom1'},
-    //             {id:2,name:'noomi1'},
-    //             {id:3,name:'relaen1'}
-    //         ]
-    //     }
-    // }
 }
 
 registModule(ModuleE,'mod-e');

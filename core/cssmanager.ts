@@ -1,6 +1,5 @@
 import {Module} from "./module";
 import { IRenderedDom } from "./types";
-import { VirtualDom } from "./virtualdom";
 /**
  * css 管理器
  * 针对不同的rule，处理方式不同
@@ -37,11 +36,8 @@ export class CssManager{
      * @param add       是否添加根模块类名
      * @returns         如果是styledom，则返回true，否则返回false
      */
-    public static handleStyleDom(module:Module,dom:IRenderedDom,root:IRenderedDom,add?:boolean):boolean{
-        if(dom.tagName.toLowerCase() !== 'style'){
-            return false;
-        }
-        if(add){
+    public static handleStyleDom(module:Module,dom:IRenderedDom,root:IRenderedDom):void{
+        if(dom.props['scope'] === 'this'){
             let cls = this.cssPreName + module.id;
             if(root.props['class']){
                 root.props['class'] = dom.props['class'] + ' ' + cls;
@@ -49,7 +45,6 @@ export class CssManager{
                 root.props['class'] = cls;
             }
         }
-        return true;
     }
 
     /**
@@ -59,11 +54,11 @@ export class CssManager{
      * @returns         如果是styleTextdom返回true，否则返回false
      */
     public static handleStyleTextDom(module:Module,dom:IRenderedDom):boolean{
-        if(!dom.parent || dom.parent.tagName.toLowerCase() !== 'style'){
+        if(!dom.parent || dom.parent.tagName !== 'style'){
             return false;
         }
         //scope=this，在模块根节点添加 限定 class
-        CssManager.addRules(module,dom.textContent,dom.parent.props['scope'] === 'this'?'.' + this.cssPreName + module.id:undefined);
+        CssManager.addRules(module,dom.textContent,dom.parent&&dom.parent.props['scope'] === 'this'?'.' + this.cssPreName + module.id:undefined);
         return true;
     }
 

@@ -1,5 +1,4 @@
 import { Model } from "./model";
-import { Module } from "./module";
 import { Route } from "./route";
 import { VirtualDom } from "./virtualdom";
 
@@ -49,17 +48,17 @@ export interface IRouteCfg {
  */
 export enum EModuleState {
     /**
-     * 准备好，可渲染
+     * 已初始化
      */
-    READY = 1,
+    INIT = 1,
     /**
      * 未挂载到html dom
      */
-    UNMOUNTED=3,
+    UNMOUNTED = 3,
     /**
      * 已挂载到dom树
      */
-    MOUNTED=4
+    MOUNTED = 4
 }
 
 /**
@@ -121,7 +120,7 @@ export interface IRenderedDom{
     moduleId?: number;
 
     /**
-     * 源虚拟dom
+     * 源虚拟dom(vdomTree中的对应节点)
      */
     vdom?: VirtualDom;
 

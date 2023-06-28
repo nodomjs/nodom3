@@ -1,4 +1,5 @@
 import { Util } from "./util";
+import { Expression } from "./expression";
 /**
  * 事件类
  * @remarks
@@ -17,43 +18,72 @@ export class NEvent {
         this.id = Util.genId();
         this.module = module;
         this.name = eventName;
-        // GlobalCache.saveEvent(this);
         //如果事件串不为空，则不需要处理
         if (eventStr) {
             let tp = typeof eventStr;
             if (tp === 'string') {
-                let eStr = eventStr.trim();
-                eStr.split(':').forEach((item, i) => {
-                    item = item.trim();
-                    if (i === 0) { //事件方法
-                        this.handler = item;
-                    }
-                    else { //事件附加参数
-                        switch (item) {
-                            case 'delg':
-                                this.delg = true;
-                                break;
-                            case 'nopopo':
-                                this.nopopo = true;
-                                break;
-                            case 'once':
-                                this.once = true;
-                                break;
-                            case 'capture':
-                                this.capture = true;
-                                break;
-                        }
-                    }
-                });
+                this.parseEvent(eventStr.trim());
             }
             else if (tp === 'function') {
-                handler = eventStr;
+                this.handler = eventStr;
+            }
+            else if (eventStr instanceof Expression) {
+                this.expr = eventStr;
             }
         }
         //新增事件方法（不在methods中定义）
         if (handler) {
             this.handler = handler;
         }
+        this.touchOrNot();
+    }
+    /**
+     * 表达式处理，当handler为expression时有效
+     * @param module    模块
+     * @param model     对应model
+     */
+    handleExpr(module, model) {
+        if (!this.expr) {
+            return this;
+        }
+        const evtStr = this.expr.val(module, model);
+        if (evtStr) {
+            //新建事件对象
+            return new NEvent(module, this.name, evtStr);
+        }
+    }
+    /**
+     * 解析事件字符串
+     * @param eventStr  待解析的字符串
+     */
+    parseEvent(eventStr) {
+        eventStr.split(':').forEach((item, i) => {
+            item = item.trim();
+            if (i === 0) { //事件方法
+                this.handler = item;
+            }
+            else { //事件附加参数
+                switch (item) {
+                    case 'delg':
+                        this.delg = true;
+                        break;
+                    case 'nopopo':
+                        this.nopopo = true;
+                        break;
+                    case 'once':
+                        this.once = true;
+                        break;
+                    case 'capture':
+                        this.capture = true;
+                        break;
+                }
+            }
+        });
+    }
+    /**
+     * 触屏转换
+     */
+    touchOrNot() {
         if (document.ontouchend) { //触屏设备
             switch (this.name) {
                 case 'click':

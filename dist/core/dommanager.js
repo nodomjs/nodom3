@@ -3,6 +3,10 @@ import { ModuleFactory } from "./modulefactory";
  * dom 管理器，用于管理模块的虚拟dom，旧渲染树
  */
 export class DomManager {
+    /**
+     * 构造方法
+     * @param module    所属模块
+     */
     constructor(module) {
         /**
          *  key:html node映射
@@ -12,7 +16,8 @@ export class DomManager {
     }
     /**
      * 从origin tree 获取虚拟dom节点
-     * @param key   dom key
+     * @param key   dom key 或 props 键值对
+     * @returns     编译后虚拟节点
      */
     getOriginDom(key) {
         if (!this.vdomTree) {
@@ -20,7 +25,13 @@ export class DomManager {
         }
         return find(this.vdomTree);
         function find(dom) {
-            if (dom.key === key) {
+            //对象表示未props查找
+            if (typeof key === 'object') {
+                if (!Object.keys(key).find(k => key[k] !== dom.props.get(k))) {
+                    return dom;
+                }
+            }
+            else if (dom.key === key) { //key查找
                 return dom;
             }
             if (dom.children) {
@@ -35,7 +46,8 @@ export class DomManager {
     }
     /**
      * 从渲染树中获取key对应的渲染节点
-     * @param key   dom key
+     * @param key   dom key或props键值对
+     * @returns     渲染后虚拟节点
      */
     getRenderedDom(key) {
         if (!this.renderedTree) {
@@ -49,7 +61,13 @@ export class DomManager {
          * @returns     key对应renderdom 或 undefined
          */
         function find(dom, key) {
-            if (dom.key === key) {
+            //对象表示未props查找
+            if (typeof key === 'object') {
+                if (!Object.keys(key).find(k => key[k] !== dom.props[k])) {
+                    return dom;
+                }
+            }
+            else if (dom.key === key) { //key查找
                 return dom;
             }
             if (dom.children) {
@@ -64,50 +82,6 @@ export class DomManager {
                 }
             }
         }
-    }
-    /**
-     * 克隆渲染后的dom节点
-     * @param key   dom key或dom节点
-     * @param deep  是否深度复制（复制子节点）
-     */
-    cloneRenderedDom(key, deep) {
-        let src;
-        if (typeof key === 'string') {
-            src = this.getRenderedDom(key);
-        }
-        else {
-            src = key;
-        }
-        if (!src) {
-            return null;
-        }
-        let dst = {
-            key: key,
-            vdom: src.vdom,
-            tagName: src.tagName,
-            staticNum: src.staticNum,
-            textContent: src.textContent,
-            moduleId: src.moduleId
-        };
-        if (src.props) {
-            dst.props = {};
-            for (let k of Object.keys(src.props)) {
-                dst.props[k] = src.props[k];
-            }
-        }
-        if (src.assets) {
-            dst.assets = {};
-            for (let k of Object.keys(src.assets)) {
-                dst.assets[k] = src.assets[k];
-            }
-        }
-        if (deep && src.children) {
-            dst.children = [];
-            for (let c of src.children) {
-                dst.children.push(this.cloneRenderedDom(c));
-            }
-        }
-        return dst;
     }
     /**
      * 清除html element map 节点
@@ -127,10 +101,13 @@ export class DomManager {
     }
     /**
      * 获取html node
-     * @param key   dom key
+     * @param key   dom key 或 props 键值对
      * @returns     html node
      */
     getElement(key) {
+        if (typeof key === 'object') {
+            key = this.getRenderedDom(key);
+        }
         return this.elementMap.get(key);
     }
     /**

@@ -66,11 +66,11 @@
 		class ModuleB extends Module {
 			template(props) {
 				return `
-			<div type='moduleb'>
-				<div>subscribe data is:{{subname}}</div>
-				<slot/>
-			</div>
-		`
+					<div type='moduleb'>
+						<div>subscribe data is:{{subname}}</div>
+						<slot/>
+					</div>
+				`
 			}
 			data() {
 				return {
@@ -78,7 +78,7 @@
 				}
 			}
 
-			onBeforeFirstRender() {
+			onInit() {
 				GlobalCache.subscribe(this, 'userName', (value)=> {
 					this.model['subname'] = value
 					console.log(this,this.state)
@@ -148,9 +148,9 @@
 							<!-- class={{genCls()}} $dd={{dd}} $rows1={{rows1}} style={{style}}-->
 						<modulea $rows1={{rows1}}>
 							<for tag='uibutton' e-click='clickBtn' title={{name}} cond={{rows}}/>
-							<module name='ModuleB' style='font-size:18px;' x-repeat={{rows}} $index='idx'>
+							<moduleb style='font-size:18px;' x-repeat={{rows}} index='idx'>
 								<div>id is:{{idx}},name is:<span style='color:red;font-weight:bold;padding-left:10px'>{{name}}</span></div>
-							</module>
+							</moduleb>
 						</modulea>
 					</div>
 				`

@@ -78,7 +78,7 @@
                 name:'nodom',
                 user: {
                     name: {
-                        firstName: 'Xiaoming',
+                        firstName: 'San',
                         lastName: 'Zhang'
                     },
                     order: {
@@ -137,13 +137,13 @@
             this.cancer();
         }
 
-        onBeforeFirstRender(model){
+        onInit(model){
             /**
              * 非深度监听，执行change1时，第二条不会触发监听事件
              */ 
-            //this.cancer = this.watch(['user','name','datas'],(m,key,oldValue,newValue)=>{
-            //    console.log(this,m,key,oldValue,newValue)
-            //},true)
+            this.cancer = this.watch(['user','name','datas'],(m,key,oldValue,newValue)=>{
+                console.log(this,m,key,oldValue,newValue)
+            },true)
 
             /**
              * 深度监听，执行change1时，第二条会触发监听事件
@@ -178,8 +178,7 @@
             this.model.out.xxx = 'nodom3';
         }
 
-        onBeforeFirstRender(){
-            console.log(this,this.model)
+        onInit(){
             this.watch('out.xxx',(model,key,ov,nv)=>{
                 console.log(this,model,key,ov,nv);
             })

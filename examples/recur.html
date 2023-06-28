@@ -57,14 +57,14 @@
 					<div>
 						<button e-click='change'>change</button>
 						<h3>简单使用</h3>
-						<div x-recur='ritem' class='first'>
+						<recur cond='ritem' class='first'>
 							<p e-click='itemClick'>
 								<span class={{cls}}>{{title}}</span>
 							</p>
 							<recur ref/>
-						</div>
+						</recur>
 						<h3>递归带repeat</h3>
-						<div x-model='ritem2'>
+						<div x-model='ritem1'>
 							<recur cond='items' name='r1' class='secondct'>
 								<for cond={{items}} >
 									<div class='second' e-click='itemClick'>id is:{{id}}-{{title}}</div>
@@ -90,19 +90,7 @@
 							},
 						},
 					},
-					ritem1: {
-						cls: "cls1",
-						items: [{ title: "数据11" }, { title: "数据12" }],
-						ritem1: {
-							cls: "cls2",
-							items: [{ title: "数据21" }, { title: "数据22" }],
-							ritem1: {
-								cls: "cls3",
-								items: [{ title: "数据31" }, { title: "数据32" }, { title: "数据33" }],
-							},
-						},
-					},
-					ritem2:{
+					ritem1:{
 						items:[
 							{
 								title:'aaa',
@@ -155,8 +143,8 @@
 			}
 			
 			change(model){
-				model.ritem2.items[0].items[1].title='hahaha';
-				model.ritem.ritem.title='hahaha1';
+				model.ritem.ritem.title='hahaha1111';
+				model.ritem1.items[0].items[1].title='hahaha2222';
 			}
 
 			itemClick(model){

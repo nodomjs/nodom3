@@ -1,7 +1,4 @@
 import {Module} from '../../../dist/nodom.esm.js'
-/**
- * 路由主模块
- */
 export class MdlMod4 extends Module {
     template(){
         return `
@@ -27,9 +24,5 @@ export class MdlMod4 extends Module {
                 }
             ]
         }
-    }
-    
-    onBeforeFirstRender(model){
-        console.log(model);
     }
 }
