@@ -161,7 +161,7 @@ export class Compiler {
                                 ? match[3].substring(1, match[3].length - 1)
                                 : match[3];
                     if (value && value.startsWith('{{')) {
-                        value = new Expression(value.substring(2, value.length - 2), this.module);
+                        value = new Expression(value.substring(2, value.length - 2));
                         //表达式 staticNum为-1
                         this.current.staticNum = -1;
                     }
@@ -233,7 +233,7 @@ export class Compiler {
                 const matchExp = /^{{([\s\S]*?)}}/i.exec(srcStr);
                 if (matchExp) {
                     // 抓取成功
-                    this.textArr.push(new Expression(matchExp[1], this.module));
+                    this.textArr.push(new Expression(matchExp[1]));
                     this.isExprText = true;
                     srcStr = srcStr.substring(matchExp.index + matchExp[0].length);
                 }

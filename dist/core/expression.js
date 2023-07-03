@@ -10,9 +10,9 @@ export class Expression {
     /**
      * @param exprStr	表达式串
      */
-    constructor(exprStr, module) {
+    constructor(exprStr) {
         this.id = Util.genId();
-        if (!exprStr) {
+        if (!exprStr || (exprStr = exprStr.trim()) === '') {
             return;
         }
         this.exprStr = exprStr;
@@ -100,6 +100,9 @@ export class Expression {
      * @returns 		计算结果
      */
     val(module, model) {
+        if (!this.execFunc) {
+            return;
+        }
         let v;
         try {
             v = this.execFunc.call(module, model);

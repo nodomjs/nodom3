@@ -33,9 +33,9 @@ export class Expression {
     /**
      * @param exprStr	表达式串
      */
-    constructor(exprStr: string,module?:Module) {
+    constructor(exprStr: string) {
         this.id = Util.genId();
-        if (!exprStr) {
+        if (!exprStr || (exprStr=exprStr.trim())==='') {
             return;
         }
         this.exprStr = exprStr;
@@ -124,6 +124,9 @@ export class Expression {
      * @returns 		计算结果
      */
     public val(module:Module,model: Model) {
+        if(!this.execFunc){
+            return;
+        }
         let v;
         try {
             v = this.execFunc.call(module,model);

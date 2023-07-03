@@ -418,9 +418,9 @@ class Expression {
     /**
      * @param exprStr	表达式串
      */
-    constructor(exprStr, module) {
+    constructor(exprStr) {
         this.id = Util.genId();
-        if (!exprStr) {
+        if (!exprStr || (exprStr = exprStr.trim()) === '') {
             return;
         }
         this.exprStr = exprStr;
@@ -508,6 +508,9 @@ class Expression {
      * @returns 		计算结果
      */
     val(module, model) {
+        if (!this.execFunc) {
+            return;
+        }
         let v;
         try {
             v = this.execFunc.call(module, model);
@@ -3176,7 +3179,7 @@ class Compiler {
                                 ? match[3].substring(1, match[3].length - 1)
                                 : match[3];
                     if (value && value.startsWith('{{')) {
-                        value = new Expression(value.substring(2, value.length - 2), this.module);
+                        value = new Expression(value.substring(2, value.length - 2));
                         //表达式 staticNum为-1
                         this.current.staticNum = -1;
                     }
@@ -3248,7 +3251,7 @@ class Compiler {
                 const matchExp = /^{{([\s\S]*?)}}/i.exec(srcStr);
                 if (matchExp) {
                     // 抓取成功
-                    this.textArr.push(new Expression(matchExp[1], this.module));
+                    this.textArr.push(new Expression(matchExp[1]));
                     this.isExprText = true;
                     srcStr = srcStr.substring(matchExp.index + matchExp[0].length);
                 }
@@ -5288,6 +5291,7 @@ class Module {
                     // 设置已处理标志
                     added[k[0]] = true;
                 }
+                console.log(dst, k[0], value);
                 dst.props[k[0]] = value;
             }
         }
