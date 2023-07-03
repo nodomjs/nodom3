@@ -5291,7 +5291,6 @@ class Module {
                     // 设置已处理标志
                     added[k[0]] = true;
                 }
-                console.log(dst, k[0], value);
                 dst.props[k[0]] = value;
             }
         }
