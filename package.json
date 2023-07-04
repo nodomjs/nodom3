@@ -1,6 +1,6 @@
 {
   "name": "nodom3",
-  "version": "0.2.1-beta10",
+  "version": "0.2.1-beta12",
   "private": false,
   "main": "index.ts",
   "scripts": {
@@ -25,11 +25,15 @@
     "mvvm",
     "web"
   ],
-  "license": "MIT",
   "bugs": {
     "url": "https://github.com/nodomjs/nodom3/issues"
   },
   "homepage": "https://github.com/nodomjs/nodom3",
   "description": "nodom是一款基于数据驱动的web mvvm框架,用于搭建单页应用(SPA)",
-  "dependencies": {}
+  "dependencies": {
+    "@rollup/plugin-commonjs": "^25.0.2",
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "rollup": "^3.26.0",
+    "rollup-plugin-typescript2": "^0.35.0"
+  }
 }

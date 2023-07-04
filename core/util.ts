@@ -38,7 +38,7 @@ export class Util {
             'typeof','var','while','with','Array',
             'Date','JSON', 'Set','Map','eval',
             'Infinity','isFinite','isNaN','isPrototypeOf','Math',
-            'NaN','Number','Object','prototype','String',
+            'new','NaN','Number','Object','prototype','String',
             'isPrototypeOf','undefined','valueOf'
         ].forEach(item=>{
             this.keyWordMap.set(item,true);

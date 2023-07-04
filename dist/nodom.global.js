@@ -2038,7 +2038,7 @@ var nodom = (function (exports) {
                 'typeof', 'var', 'while', 'with', 'Array',
                 'Date', 'JSON', 'Set', 'Map', 'eval',
                 'Infinity', 'isFinite', 'isNaN', 'isPrototypeOf', 'Math',
-                'NaN', 'Number', 'Object', 'prototype', 'String',
+                'new', 'NaN', 'Number', 'Object', 'prototype', 'String',
                 'isPrototypeOf', 'undefined', 'valueOf'
             ].forEach(item => {
                 this.keyWordMap.set(item, true);
@@ -5446,6 +5446,21 @@ var nodom = (function (exports) {
             if (typeof this[methodName] === 'function') {
                 return this[methodName].call(this, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
             }
+        }
+        /**
+         * 调用外部方法，当该模块作为子模块使用时，方法属于使用该模块的模板对应的module
+         * @param methodName    方法名
+         * @param pn            参数，最多10个参数
+         */
+        invokeOuterMethod(methodName, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) {
+            if (!this.templateModuleId) {
+                return;
+            }
+            const m = ModuleFactory.get(this.templateModuleId);
+            if (!m) {
+                return;
+            }
+            return m.invokeMethod(methodName, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
         }
         /**
          * 获取dom key id

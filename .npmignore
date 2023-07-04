@@ -1,6 +1,7 @@
 tsconfig.json
-/.vscode/
-/examples/
+.vscode/
+examples/
+node_modules/
 #index.ts
 #/core/
 #/extend/

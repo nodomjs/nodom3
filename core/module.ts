@@ -510,8 +510,6 @@ export class Module {
                     // 设置已处理标志
                     added[k[0]] = true;
                 }
-                console.log(dst,k[0],value)
-                
                 dst.props[k[0]] = value;
             }
         }
@@ -694,6 +692,24 @@ export class Module {
             return this[methodName].call(this,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10);
         }
     }
+
+    /**
+     * 调用外部方法，当该模块作为子模块使用时，方法属于使用该模块的模板对应的module
+     * @param methodName    方法名
+     * @param pn            参数，最多10个参数
+     */
+    public invokeOuterMethod(methodName:string,p1?,p2?,p3?,p4?,p5?,p6?,p7?,p8?,p9?,p10?){
+        if(!this.templateModuleId){
+            return;
+        }
+        const m = ModuleFactory.get(this.templateModuleId);
+        if(!m){
+            return;
+        }
+        return m.invokeMethod(methodName,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10);
+    }
+
+    
     /**
      * 获取dom key id
      * @returns     key id

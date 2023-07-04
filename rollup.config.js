@@ -41,6 +41,10 @@ export default {
 			file: resolve("nodom.global.js"),
 			format: "iife",
 			...commonOpt
+		}, {
+			file: resolve("nodom.global.min.js"),
+			format: "iife",
+			...pluginOpt
 		}
 	],
 	plugins: [
