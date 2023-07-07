@@ -427,7 +427,7 @@ export class Renderer {
         for(let item of addArr){
             const pEl = <HTMLElement>module.getElement(item[3].key);
             const n1 = Renderer.renderToHtml(module, item[1], null, true);
-            if (pEl.childNodes && pEl.childNodes.length - 1 > item[4]) {
+            if (pEl.childNodes && pEl.childNodes.length > item[4]) {
                 pEl.insertBefore(n1, pEl.childNodes[item[4]]);
             }
             else {
@@ -449,7 +449,7 @@ export class Renderer {
             if(!opMap[item[3].key + '_' + item[5]]){
                 const emptyDom = document.createTextNode('');
                 //新放到指定位置
-                if (pEl.childNodes.length - 1 > item[5]) {
+                if (pEl.childNodes.length > item[5]) {
                     pEl.insertBefore(emptyDom, pEl.childNodes[item[5]]);
                 }else { //最后一个与当前节点不相同，则放在最后
                     pEl.appendChild(emptyDom);

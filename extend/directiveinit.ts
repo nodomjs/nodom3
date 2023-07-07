@@ -306,10 +306,12 @@ export default (function () {
                 //设置渲染标志
                 showParam.rendered = true;
                 if(display === 'none'){
-                    if(showParam.origin){
-                        style = style.substring(0,regResult.index) + 'display:' + showParam.origin + style.substring(regResult.index + regResult[0].length);
-                    }else{
-                        style = style.substring(0,regResult.index) + style.substring(regResult.index + regResult[0].length);
+                    if(style){
+                        if(showParam.origin){
+                            style = style.substring(0,regResult.index) + 'display:' + showParam.origin + style.substring(regResult.index + regResult[0].length);
+                        }else{
+                            style = style.substring(0,regResult.index) + style.substring(regResult.index + regResult[0].length);
+                        }
                     }
                 }
             }
