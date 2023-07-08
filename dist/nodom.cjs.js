@@ -3946,14 +3946,18 @@ class EventFactory {
             if (!events) {
                 return;
             }
+            //如果为子模块，则model为子模块对应节点的model
             let nopopo = false;
             for (let i = 0; i < events.length; i++) {
                 const ev = events[i];
+                //外部事件且为根dom，表示为父模块外部传递事件，则model为模块srcDom对应model，否则使用dom对应model
+                const model = ev.module !== module && dom.key === 1 ? module.srcDom.model : dom.model;
+                //判断为方法名还是函数
                 if (typeof ev.handler === 'string') {
-                    ev.module.invokeMethod(ev.handler, dom.model, dom, ev, e);
+                    ev.module.invokeMethod(ev.handler, model, dom, ev, e);
                 }
                 else if (typeof ev.handler === 'function') {
-                    ev.handler.apply(module, [dom.model, dom, ev, e]);
+                    ev.handler.apply(module, [model, dom, ev, e]);
                 }
                 if (ev.once) { //移除事件
                     events.splice(i--, 1);
@@ -3981,12 +3985,17 @@ class EventFactory {
                 for (let j = 0; j < elArr.length && elArr[j] !== el; j++) {
                     const k = elArr[j].key;
                     if (k === evo.key) {
-                        const dom1 = module.domManager.getRenderedDom(k);
+                        const dom1 = dom.children.find(item => item.key === k);
+                        if (!dom1) {
+                            continue;
+                        }
+                        //外部事件且为根dom，表示为父模块外部传递事件，则model为模块srcDom对应model，否则使用dom对应model
+                        const model = ev.module !== module && dom1.key === 1 ? module.srcDom.model : dom1.model;
                         if (typeof ev.handler === 'string') {
-                            ev.module.invokeMethod(ev.handler, dom1.model, dom1, ev, e);
+                            ev.module.invokeMethod(ev.handler, model, dom1, ev, e);
                         }
                         else if (typeof ev.handler === 'function') {
-                            ev.handler.apply(ev.module, dom1.model, dom1, ev, e);
+                            ev.handler.apply(ev.module, model, dom1, ev, e);
                         }
                         // 保留nopopo
                         nopopo = ev.nopopo;
