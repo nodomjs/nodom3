@@ -5,7 +5,6 @@ import { Model } from "./model";
 import { Expression } from "./expression";
 import { CssManager } from "./cssmanager";
 import { IRenderedDom } from "./types";
-import { Util } from "./util";
 
 /**
  * 渲染器
@@ -134,7 +133,7 @@ export class Renderer {
                 module.eventFactory.removeAllEvents(dst);
                 for(let evt of src.events){
                     //当事件串为表达式时，需要处理
-                    module.eventFactory.addEvent(dst,evt.handleExpr(module,model));
+                    this.currentModule.eventFactory.addEvent(dst,evt.handleExpr(module,model));
                 }
             }
             //子节点渲染

@@ -786,7 +786,7 @@ class Renderer {
                 module.eventFactory.removeAllEvents(dst);
                 for (let evt of src.events) {
                     //当事件串为表达式时，需要处理
-                    module.eventFactory.addEvent(dst, evt.handleExpr(module, model));
+                    this.currentModule.eventFactory.addEvent(dst, evt.handleExpr(module, model));
                 }
             }
             //子节点渲染
@@ -1407,11 +1407,11 @@ var EModuleState;
     /**
      * 未挂载到html dom
      */
-    EModuleState[EModuleState["UNMOUNTED"] = 3] = "UNMOUNTED";
+    EModuleState[EModuleState["UNMOUNTED"] = 2] = "UNMOUNTED";
     /**
      * 已挂载到dom树
      */
-    EModuleState[EModuleState["MOUNTED"] = 4] = "MOUNTED";
+    EModuleState[EModuleState["MOUNTED"] = 3] = "MOUNTED";
 })(EModuleState || (EModuleState = {}));
 
 /**

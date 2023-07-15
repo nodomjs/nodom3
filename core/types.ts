@@ -54,11 +54,11 @@ export enum EModuleState {
     /**
      * 未挂载到html dom
      */
-    UNMOUNTED = 3,
+    UNMOUNTED = 2,
     /**
      * 已挂载到dom树
      */
-    MOUNTED = 4
+    MOUNTED = 3
 }
 
 /**
