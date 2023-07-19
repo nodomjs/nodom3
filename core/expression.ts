@@ -1,6 +1,7 @@
 import { NError } from "./error";
 import { Model } from "./model";
 import { Module } from "./module";
+import { Nodom } from "./nodom";
 import { Util } from "./util";
 
 /**
@@ -38,7 +39,9 @@ export class Expression {
         if (!exprStr || (exprStr=exprStr.trim())==='') {
             return;
         }
-        this.exprStr = exprStr;
+        if(Nodom.isDebug){
+            this.exprStr = exprStr;
+        }
         const funStr = this.compile(exprStr);
         this.execFunc = new Function('$model','return ' + funStr);
     }
@@ -131,8 +134,10 @@ export class Expression {
         try {
             v = this.execFunc.call(module,model);
         } catch (e) {
-            console.error(new NError("wrongExpression",this.exprStr).message);
-            console.error(e);
+            if(Nodom.isDebug){
+                console.error(new NError("wrongExpression",this.exprStr).message);
+                console.error(e);
+            }
         }
         this.value = v;
         return v;

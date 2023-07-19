@@ -5,7 +5,14 @@ import { Util } from "./util";
  * 调度器，用于每次空闲的待操作序列调度
  */
 export class Scheduler{
+	/**
+	 * 待执行任务列表
+	 */
 	private static tasks:Array<any> = [];
+	
+	/**
+	 * 执行任务
+	 */
 	public static dispatch(){
 		Scheduler.tasks.forEach((item)=>{
 			if(Util.isFunction(item.func)){
@@ -20,7 +27,7 @@ export class Scheduler{
 
 	/**
 	 * 启动调度器
-	 * @param scheduleTick 	渲染间隔
+	 * @param scheduleTick 	渲染间隔（ms），默认50ms
 	 */
 	public static start(scheduleTick?:number){
 		Scheduler.dispatch();

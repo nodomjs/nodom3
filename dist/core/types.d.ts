@@ -2,9 +2,6 @@ import { Model } from "./model";
 import { Route } from "./route";
 import { VirtualDom } from "./virtualdom";
 /**
- * 应用初始化配置类型
- */
-/**
  * 路由配置
  */
 export interface IRouteCfg {

@@ -7,7 +7,7 @@ import { Module } from './module'
 import { Util } from './util'
 
 /**
- * 虚拟dom
+ * 虚拟dom，编译后的dom节点，与渲染后的dom节点(IRenderedDom)不同
  */
 export class VirtualDom {
 	/**
@@ -80,7 +80,7 @@ export class VirtualDom {
 	/**
 	 * 是否为svg节点
 	 */
-	isSvg:boolean;
+	public isSvg:boolean;
 
 	/**
 	 * staticNum 静态标识数
@@ -230,140 +230,6 @@ export class VirtualDom {
 	}
 
 	/**
-	 * 添加css class
-	 * @param cls class名或表达式,可以多个，以“空格”分割
-	 */
-	public addClass(cls: string | Expression) {
-		this.addProp('class', cls)
-		//需要从remove class map 移除
-		if (this.removedClassMap && this.removedClassMap.size > 0) {
-			let arr = (<string>cls).trim().split(/\s+/)
-			for (let a of arr) {
-				if (a === '') {
-					continue
-				}
-				this.removedClassMap.delete(a)
-			}
-		}
-	}
-
-	/**
-	 * 删除css class，因为涉及到表达式，此处只记录删除标识
-	 * @param cls class名,可以多个，以“空格”分割
-	 */
-	public removeClass(cls: string) {
-		let pv = this.getProp('class')
-		if (!pv) {
-			return
-		}
-		if (!this.removedClassMap) {
-			this.removedClassMap = new Map()
-		}
-		let arr = cls.trim().split(/\s+/)
-		for (let a of arr) {
-			if (a === '') {
-				continue
-			}
-			this.removedClassMap.set(a, true)
-		}
-		this.setStaticOnce()
-	}
-
-	/**
-	 * 获取class串
-	 * @returns class 串
-	 */
-	public getClassString(values): string {
-		let clsArr = []
-		for (let pv of values) {
-			let arr = pv.trim().split(/\s+/)
-			for (let a of arr) {
-				if (!this.removedClassMap || !this.removedClassMap.has(a)) {
-					if (!clsArr.includes(a)) {
-						clsArr.push(a)
-					}
-				}
-			}
-		}
-		if (clsArr.length > 0) {
-			return clsArr.join(' ')
-		}
-	}
-
-	/**
-	 * 添加style
-	 *  @param style style字符串或表达式
-	 */
-	public addStyle(style: string | Expression) {
-		if(!style){
-			return;
-		}
-		this.addProp('style', style)
-		if (typeof style === 'string') {
-			//需要从remove class map 移除
-			if (this.removedStyleMap && this.removedStyleMap.size > 0) {
-				let arr = style.trim().split(/\s*;\s*/)
-				for (let a of arr) {
-					if (a === '') {
-						continue
-					}
-					let sa1 = a.split(/\s*:\s*/)
-					let p = sa1[0].trim()
-					if (p !== '') {
-						this.removedClassMap.delete(sa1[0].trim())
-					}
-				}
-			}
-		}
-		this.setStaticOnce();
-	}
-
-	/**
-	 * 删除style
-	 * @param styleStr style字符串，多个style以空格' '分割
-	 */
-	public removeStyle(styleStr: string) {
-		if (!this.removedClassMap) {
-			this.removedClassMap = new Map()
-		}
-		let arr = styleStr.trim().split(/\s+/)
-		for (let a of arr) {
-			if (a === '') {
-				continue
-			}
-			this.removedClassMap.set(a, true)
-		}
-		this.setStaticOnce()
-	}
-
-	/**
-	 * 获取style串
-	 * @returns style 串
-	 */
-	public getStyleString(values): string {
-		let map = new Map()
-		for (let pv of values) {
-			if(!pv){
-				continue;
-			}
-			let sa = pv.trim().split(/\s*;\s*/)
-			for (let s of sa) {
-				if (s === '') {
-					continue
-				}
-				let sa1 = s.split(/\s*:\s*/)
-				//不在移除style map才能加入
-				if (!this.removedStyleMap || !this.removedStyleMap.has(sa1[0])) {
-					map.set(sa1[0], sa1[1])
-				}
-			}
-		}
-
-		if (map.size > 0) {
-			return [...map].map((item) => item.join(':')).join(';')
-		}
-	}
-	/**
 	 * 是否拥有属性
 	 * @param propName  属性名
 	 * @param isExpr    是否只检查表达式属性
@@ -409,28 +275,6 @@ export class VirtualDom {
 		}
 		this.props.set(propName, v)
 		this.setStaticOnce();
-	}
-
-	/**
-	 * 添加属性，如果原来的值存在，则属性值变成数组
-	 * @param pName     属性名
-	 * @param pValue    属性值
-	 */
-	public addProp(pName, pValue): boolean {
-		let pv = this.getProp(pName)
-		if (!pv) {
-			this.setProp(pName, pValue)
-		} else if (Array.isArray(pv)) {
-			if (pv.includes(pValue)) {
-				return false
-			}
-			pv.push(pValue)
-		} else if (pv !== pValue) {
-			this.setProp(pName, [pv, pValue])
-		} else {
-			return false
-		}
-		return true
 	}
 
 	/**

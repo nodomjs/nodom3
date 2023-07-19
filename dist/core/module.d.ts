@@ -35,23 +35,6 @@ export declare class Module {
      */
     model: Model;
     /**
-     * 子模块类集合，模板中引用的模块类需要声明
-     * 如果类已经通过registModule注册过，这里不再需要定义，只需import即可
-     */
-    modules: any;
-    /**
-     * 父模块通过dom节点传递的属性
-     */
-    props: any;
-    /**
-     * 不渲染的属性（这些属性用于生产模板，不作为属性渲染到模块根节点）
-     */
-    private excludedProps;
-    /**
-     * 父模块 id
-     */
-    parentId: number;
-    /**
      * 子模块id数组
      */
     children: Array<number>;
@@ -80,13 +63,34 @@ export declare class Module {
      */
     srcDom: IRenderedDom;
     /**
-     * 源element
-     */
-    srcElement: Node;
-    /**
      * 源节点传递的事件，需要追加到模块根节点上
      */
     events: NEvent[];
+    /**
+     * 模板对应模块id，作为子模块时有效
+     */
+    templateModuleId: number;
+    /**
+     * 子模块类集合，模板中引用的模块类需要声明
+     * 如果类已经通过registModule注册过，这里不再需要定义，只需import即可
+     */
+    private modules;
+    /**
+     * 父模块通过dom节点传递的属性
+     */
+    private props;
+    /**
+     * 不渲染的属性（这些属性用于生产模板，不作为属性渲染到模块根节点）
+     */
+    private excludedProps;
+    /**
+     * 父模块 id
+     */
+    private parentId;
+    /**
+     * 源element
+     */
+    private srcElement;
     /**
      * 生成dom时的keyid，每次编译置0
      */
@@ -95,10 +99,6 @@ export declare class Module {
      * 旧模板串
      */
     private oldTemplate;
-    /**
-     * 模板对应模块id，作为子模块时有效
-     */
-    templateModuleId: number;
     /**
      * 构造器
      */

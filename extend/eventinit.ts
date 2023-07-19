@@ -31,7 +31,6 @@ EventManager.regist('tap',{
         }
         evtObj.dependEvent.removeParam(module,dom,'pos');
         let dt = Date.now() - pos.t;
-        
         //点下时间不超过200ms,触发事件
         if (!pos.move && dt < 200) {
             let foo = evtObj.dependEvent.handler;
@@ -73,7 +72,6 @@ EventManager.regist('tap',{
     touchend(dom:IRenderedDom,module:Module,evtObj:NEvent,e: any){
         let mv = evtObj.dependEvent.getParam(module,dom,'swipe');
         let nt = Date.now();
-
         //取值序号 0 或 1，默认1，如果释放时间与上次事件太短，则取0
         let ind = (nt - mv.oldTime[1] < 30) ? 0 : 1;
         let dx = mv.oldLoc.x - mv.speedLoc[ind].x;
@@ -143,13 +141,9 @@ EventManager.regist('dblclick',{
         }else{
             evtObj.dependEvent.setParam(module,dom,'firstClick', Date.now());
         }
-        
         //延迟清理firstClick
         setTimeout(()=>{
             evtObj.dependEvent.removeParam(module,dom,'firstClick')
         },500);
-        
-        
     },
-    
 });

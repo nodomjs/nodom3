@@ -145,7 +145,7 @@ import { Util } from "./util";
      * 克隆
      * @returns 克隆对象
      */
-    clone(){
+    public clone(){
         let r = new Route();
         Object.getOwnPropertyNames(this).forEach(item=>{
             if(item === 'data'){    

@@ -6,13 +6,13 @@ export class RequestManager{
     /**
      * 拒绝相同请求（url，参数）时间间隔
      */
-    static rejectReqTick:number = 500;
+    public static rejectReqTick:number = 500;
     /**
      * 请求map，用于缓存之前的请求url和参数
      * key:     url
      * value:   请求参数
      */
-    static requestMap:Map<string,any> = new Map();
+    private static requestMap:Map<string,any> = new Map();
     /**
      * ajax 请求
      * @param config    object 或 string
@@ -32,14 +32,18 @@ export class RequestManager{
      *                  pwd|string|无|否|无|需要认证的请求对应的密码
      *                  rand|bool|无|否|无|请求随机数，设置则浏览器缓存失效
      */
-    static async request(config): Promise<any> {
+    public static async request(config): Promise<any> {
         const time = Date.now();
+        //重复请求判断
         if(this.requestMap.has(config.url)){
             const obj = this.requestMap.get(config.url);
             if(time - obj.time < this.rejectReqTick && Util.compare(obj.params,config.params)){
-                return;
+                return new Promise((resolve,reject)=>{
+                    resolve(null)
+                });
             }
         }
+        //加入请求集合
         this.requestMap.set(config.url,{
             time:time,
             params:config.params
@@ -66,6 +70,7 @@ export class RequestManager{
             req.timeout = async ? config.timeout : 0;
 
             req.onload = () => {
+                //正常返回处理
                 if (req.status === 200) {
                     let r = req.responseText;
                     if (config.type === 'json') {
@@ -76,11 +81,11 @@ export class RequestManager{
                         }
                     }
                     resolve(r);
-                } else {
+                } else { //异常返回处理
                     reject({ type: 'error', url: url });
                 }
             }
-
+            //设置timeout和error
             req.ontimeout = () => reject({ type: 'timeout' });
             req.onerror = () => reject({ type: 'error', url: url });
             //上传数据
@@ -107,7 +112,6 @@ export class RequestManager{
                             url += '?' + pa;
                         }
                     }
-
                     break;
                 case 'POST':
                     if (config.params instanceof FormData) {
@@ -125,7 +129,7 @@ export class RequestManager{
                     }
                     break;
             }
-
+            //打开请求
             req.open(method, url, async, config.user, config.pwd);
             //设置request header
             if (config.header) {
@@ -133,6 +137,7 @@ export class RequestManager{
                     req.setRequestHeader(item, config.header[item]);
                 })
             }
+            //发送请求
             req.send(data);
         }).catch((re) => {
             switch (re.type) {
@@ -149,12 +154,15 @@ export class RequestManager{
     /**
      * 清除超时缓存请求信息
      */
-    static clearCache(){
+    public static clearCache(){
         const time = Date.now();
-        for(let key of this.requestMap.keys()){
-            if(time - this.requestMap.get(key).time > this.rejectReqTick){
-                this.requestMap.delete(key);
+        if(this.requestMap){
+            for(let kv of this.requestMap){
+                if(time - kv[1].time > this.rejectReqTick){
+                    this.requestMap.delete(kv[0]);
+                }
             }
         }
+        
     }
 }

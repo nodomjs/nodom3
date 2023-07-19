@@ -1,19 +1,11 @@
 import { NCache } from "./cache";
-import { Directive } from "./directive";
-import { VirtualDom } from "./virtualdom";
-import { NEvent } from "./event";
-import { Expression } from "./expression";
-import { GlobalCache } from "./globalcache";
 import { Module } from "./module";
-import { IRenderedDom } from "./types";
 
 /**
- * 指令管理器
- * $directives  指令集
- * $expressions 表达式集
- * $events      事件集
- * $savedoms    dom相关缓存 包括 html dom 和 参数
- * $doms        渲染树
+ * 对象管理器，用于存储模块的内存变量
+ * 默认属性集
+ *  $events     事件集
+ *  $domparam   dom参数
  */
 export  class ObjectManager {
     /**
@@ -98,7 +90,7 @@ export  class ObjectManager {
      * @param id        事件id
      * @param key       dom key 
      */
-    public clearEventParam(id:number,key?:number){
+    public clearEventParams(id:number,key?:number){
         if(key){    //删除对应dom的事件参数
             this.remove('$events.' + id + '.$params.' + key);    
         }else{      //删除所有事件参数

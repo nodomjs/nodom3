@@ -3,9 +3,6 @@ import { Route } from "./route";
 import { VirtualDom } from "./virtualdom";
 
 /**
- * 应用初始化配置类型
- */
-/**
  * 路由配置
  */
 export interface IRouteCfg {
@@ -106,12 +103,12 @@ export interface IRenderedDom{
      */
     parent?: IRenderedDom;
 
-     /**
-      * staticNum 静态标识数
-      *  0 表示静态，不进行比较
-      *  > 0 每次比较后-1
-      *  < 0 不处理
-      */
+    /**
+     * staticNum 静态标识数
+     *  0 表示静态，不进行比较
+     *  > 0 每次比较后-1
+     *  < 0 不处理
+     */
     staticNum?: number;
  
     /**

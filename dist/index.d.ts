@@ -13,7 +13,6 @@ export { EventManager } from "./core/eventmanager";
 export { EventFactory } from "./core/eventfactory";
 export { GlobalCache } from "./core/globalcache";
 export { Expression } from "./core/expression";
-export { NFactory } from "./core/factory";
 export { Model } from "./core/model";
 export { ModelManager } from "./core/modelmanager";
 export { Module } from "./core/module";

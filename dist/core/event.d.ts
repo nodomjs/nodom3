@@ -4,7 +4,7 @@ import { Expression } from "./expression";
 /**
  * 事件类
  * @remarks
- * 事件分为自有事件和代理事件
+ * 事件分为自有事件和代理事件，事件默认传递参数为 model(事件对应数据模型),dom(事件target对应的虚拟dom节点),evObj(NEvent对象),e(html event对象)
  * @author      yanglei
  * @since       1.0
  */

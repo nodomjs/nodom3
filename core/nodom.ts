@@ -20,20 +20,33 @@ export var NodomMessage=NodomMessage_zh;
  */
 export class Nodom{
     /**
+     * 是否为debug模式，开启后，表达式编译异常会输出到控制台
+     */
+    public static isDebug:boolean;
+
+    /**
      * 新建一个App
      * @param clazz     模块类
-     * @param selector  el选择器
+     * @param selector  根容器标签选择器，如果不写，则使用document.body
      */
     public static app(clazz:any,selector:string){
         //设置渲染器的根 element
         Renderer.setRootEl(document.querySelector(selector)||document.body);
-        //渲染器启动渲染
+        //渲染器启动渲染任务
         Scheduler.addTask(Renderer.render, Renderer);
+        //添加请求清理任务
+        Scheduler.addTask(RequestManager.clearCache);
         //启动调度器
         Scheduler.start();
-        
         let mdl:any = ModuleFactory.get(clazz);
         mdl.active();
+    }
+
+    /**
+     * 启用debug模式
+     */
+    public static debug(){
+        this.isDebug = true;
     }
 
     /**
@@ -110,7 +123,7 @@ export class Nodom{
     }
 
     /**
-     * ajax 请求
+     * ajax 请求，如果需要用第三方ajax插件替代，重载该方法
      * @param config    object 或 string
      *                  如果为string，则直接以get方式获取资源
      *                  object 项如下:
@@ -136,10 +149,10 @@ export class Nodom{
 /**
  * Nodom.app的简写方式
  * @param clazz     模块类
- * @param el        根容器
+ * @param selector  根容器标签选择器，如果不写，则使用document.body
  */
-export function nodom(clazz:any,el:string){
-    return Nodom.app(clazz,el);
+export function nodom(clazz:any,selector?:string){
+    return Nodom.app(clazz,selector);
 }
 
 

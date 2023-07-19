@@ -9,6 +9,11 @@ export declare class ModelManager {
      */
     module: Module;
     /**
+     * 绑定module map，slot引用外部数据时有效
+     * {model:[moduleid1,moduleid2,...]}
+     */
+    bindMap: WeakMap<object, number[]>;
+    /**
      * 数据map
      * {data:{model:model,key:key}
      * 其中：
@@ -33,11 +38,6 @@ export declare class ModelManager {
      * 是否存在深度watcher
      */
     private hasDeepWatch;
-    /**
-     * 绑定module map，slot引用外部数据时有效
-     * {model:[moduleid1,moduleid2,...]}
-     */
-    bindMap: WeakMap<object, number[]>;
     /**
      * 构造器
      * @param module    模块

@@ -12,7 +12,7 @@
     </div>
 </body>
 <script type='module'>
-    import{nodom,Module} from '/dist/nodom.esm.js'
+    import{nodom,Module,Nodom} from '/dist/nodom.esm.js'
     class Module1 extends Module{
         modules = [Module2];
         template(){
@@ -54,6 +54,7 @@
                 <button e-click='setValue'>设置值</button>
                 <div>设置的值是:{{x.xx.xxx}}</div>
                 <module2 $out={{x.xx}}/>
+                <div>{{wrongfield.xxx}}</div>
             </div>
             `
         }

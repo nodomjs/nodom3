@@ -1,4 +1,3 @@
-import { ModuleFactory } from "./modulefactory";
 import { NEvent } from "./event";
 import { Module } from "./module";
 import { IRenderedDom } from "./types";
@@ -168,10 +167,6 @@ export class EventFactory{
             let index = obj.delg.findIndex(item=>item.key===dom.key && item.event===event);
             if(index !== -1){
                 obj.delg.splice(index,1);
-                // 解绑事件
-                // if(obj.delg.length===0 && obj.own.length===0){
-                //     this.unbind(dom.parent.key,event.name);
-                // }
             }
         }else{ //own
             let cfg = this.eventMap.get(dom.key);
@@ -182,10 +177,6 @@ export class EventFactory{
             let index = obj.own.findIndex(item=>item===event);
             if(index !== -1){
                 obj.own.splice(index,1);
-                // 解绑事件
-                // if(obj.delg.length === 0 && obj.own.length===0){
-                //     this.unbind(dom.key,event.name);
-                // }
             }
         }
     }
@@ -285,7 +276,6 @@ export class EventFactory{
      * @param module    模块
      * @param e         HTML Event
      */
-    
     private handler(module,e){
         //从事件element获取事件
         let el = e.currentTarget;

@@ -123,18 +123,19 @@ export class ModuleFactory {
             }
         }
     }
+    
     /**
      * 从工厂移除模块
      * @param id    模块id
      */
-    static remove(id: number) {
+    public static remove(id: number) {
         this.modules.delete(id);
     }
     /**
      * 设置主模块
      * @param m 	模块 
      */
-    static setMain(m: Module) {
+    public static setMain(m: Module) {
         this.mainModule = m;
     }
 
@@ -142,7 +143,7 @@ export class ModuleFactory {
      * 获取主模块
      * @returns 	应用的主模块
      */
-    static getMain() {
+    public static getMain() {
         return this.mainModule;
     }
 }

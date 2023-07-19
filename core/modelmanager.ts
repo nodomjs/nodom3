@@ -14,6 +14,12 @@ export class ModelManager {
     public module:Module;
 
     /**
+     * 绑定module map，slot引用外部数据时有效
+     * {model:[moduleid1,moduleid2,...]}
+     */
+    public bindMap:WeakMap<object,number[]> = new WeakMap();
+
+    /**
      * 数据map
      * {data:{model:model,key:key}
      * 其中：
@@ -27,6 +33,7 @@ export class ModelManager {
      * key: model
      * value: model名字
      */
+    
     private nameMap:WeakMap<object,any> = new WeakMap();
     /** 
      * model对应监听器map 
@@ -41,13 +48,6 @@ export class ModelManager {
      */
     private hasDeepWatch:boolean = false;
 
-    /**
-     * 绑定module map，slot引用外部数据时有效
-     * {model:[moduleid1,moduleid2,...]}
-     */
-    public bindMap:WeakMap<object,number[]> = new WeakMap();
-
-    
     /**
      * 构造器
      * @param module    模块

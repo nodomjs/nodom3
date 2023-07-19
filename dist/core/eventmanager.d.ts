@@ -2,7 +2,7 @@ import { NEvent } from "./event";
 import { Module } from "./module";
 import { IRenderedDom } from "./types";
 /**
- * 事件管理器
+ * 事件管理器，用于管理自定义事件
  */
 export declare class EventManager {
     /**

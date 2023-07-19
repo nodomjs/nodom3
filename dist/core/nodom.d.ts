@@ -63,11 +63,19 @@ export declare var NodomMessage: {
  */
 export declare class Nodom {
     /**
+     * 是否为debug模式，开启后，表达式编译异常会输出到控制台
+     */
+    static isDebug: boolean;
+    /**
      * 新建一个App
      * @param clazz     模块类
-     * @param selector  el选择器
+     * @param selector  根容器标签选择器，如果不写，则使用document.body
      */
     static app(clazz: any, selector: string): void;
+    /**
+     * 启用debug模式
+     */
+    static debug(): void;
     /**
      * 设置语言
      * @param lang  语言（zh,en），默认zh
@@ -101,7 +109,7 @@ export declare class Nodom {
      */
     static registModule(clazz: any, name?: string): void;
     /**
-     * ajax 请求
+     * ajax 请求，如果需要用第三方ajax插件替代，重载该方法
      * @param config    object 或 string
      *                  如果为string，则直接以get方式获取资源
      *                  object 项如下:
@@ -124,6 +132,6 @@ export declare class Nodom {
 /**
  * Nodom.app的简写方式
  * @param clazz     模块类
- * @param el        根容器
+ * @param selector  根容器标签选择器，如果不写，则使用document.body
  */
-export declare function nodom(clazz: any, el: string): void;
+export declare function nodom(clazz: any, selector?: string): void;

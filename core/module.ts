@@ -45,27 +45,6 @@ export class Module {
     public model:Model;
 
     /**
-     * 子模块类集合，模板中引用的模块类需要声明
-     * 如果类已经通过registModule注册过，这里不再需要定义，只需import即可
-     */
-    public modules: any;
-
-    /**
-     * 父模块通过dom节点传递的属性
-     */
-    public props:any;
-
-    /**
-     * 不渲染的属性（这些属性用于生产模板，不作为属性渲染到模块根节点）
-     */
-    private excludedProps:string[];
-
-    /**
-     * 父模块 id
-     */
-    public parentId: number;
-
-    /**
      * 子模块id数组
      */
     public children: Array<number> = [];
@@ -101,14 +80,40 @@ export class Module {
     public srcDom:IRenderedDom;
 
     /**
-     * 源element
-     */
-    public srcElement:Node;
-
-    /**
      * 源节点传递的事件，需要追加到模块根节点上
      */
     public events:NEvent[];
+
+    /**
+     * 模板对应模块id，作为子模块时有效
+     */
+    public templateModuleId:number;
+    
+    /**
+     * 子模块类集合，模板中引用的模块类需要声明
+     * 如果类已经通过registModule注册过，这里不再需要定义，只需import即可
+     */
+    private modules: any;
+
+    /**
+     * 父模块通过dom节点传递的属性
+     */
+    private props:any;
+
+    /**
+     * 不渲染的属性（这些属性用于生产模板，不作为属性渲染到模块根节点）
+     */
+    private excludedProps:string[];
+
+    /**
+     * 父模块 id
+     */
+    private parentId: number;
+
+    /**
+     * 源element
+     */
+    private srcElement:Node;
 
     /**
      * 生成dom时的keyid，每次编译置0
@@ -119,11 +124,6 @@ export class Module {
      * 旧模板串
      */
     private oldTemplate:string;
-
-    /**
-     * 模板对应模块id，作为子模块时有效
-     */
-    public templateModuleId:number;
 
     /**
      * 构造器
@@ -618,7 +618,6 @@ export class Module {
         }
     }
 
-
     /**
      * 监听
      * 如果第一个参数为属性名，则第二个参数为钩子函数，第三个参数为deep，默认model为根模型
@@ -695,7 +694,6 @@ export class Module {
         }
         return m.invokeMethod(methodName,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10);
     }
-
     
     /**
      * 获取dom key id

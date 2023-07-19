@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+</body>
+<script type='module'>
+    import{Nodom,nodom,Module} from '/dist/nodom.esm.js'
+    class Mdl extends Module{
+        template(){
+            return `
+                <div>
+                    <p>nodom通过Nodom.request提供ajax请求，如果选用第三方ajax插件，需要重载Nodom.request方法</p>
+                    <p>示例中，请求1次和连续请求2次都只执行一次请求，重复请求将返回null，输出结果查看console</p>
+                    <button e-click='req1'>请求1次</button>
+                    <button e-click='req2'>请求2次</button>
+                </div>
+            `
+        }
+
+        req1(){
+            Nodom.request({
+                url:'./data/data1.json',
+                type:'json'
+            }).then(r=>{
+                console.log(r);
+            })
+        }
+    
+        req2(){
+            this.req1();
+            this.req1();
+        }
+    }
+
+    nodom(Mdl);
+
+</script>
+</html>

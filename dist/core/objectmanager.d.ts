@@ -1,12 +1,10 @@
 import { NCache } from "./cache";
 import { Module } from "./module";
 /**
- * 指令管理器
- * $directives  指令集
- * $expressions 表达式集
- * $events      事件集
- * $savedoms    dom相关缓存 包括 html dom 和 参数
- * $doms        渲染树
+ * 对象管理器，用于存储模块的内存变量
+ * 默认属性集
+ *  $events     事件集
+ *  $domparam   dom参数
  */
 export declare class ObjectManager {
     /**
@@ -67,7 +65,7 @@ export declare class ObjectManager {
      * @param id        事件id
      * @param key       dom key
      */
-    clearEventParam(id: number, key?: number): void;
+    clearEventParams(id: number, key?: number): void;
     /**
      * 设置dom参数值
      * @param key       dom key

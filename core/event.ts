@@ -6,7 +6,7 @@ import { Expression } from "./expression";
 /**
  * 事件类
  * @remarks
- * 事件分为自有事件和代理事件
+ * 事件分为自有事件和代理事件，事件默认传递参数为 model(事件对应数据模型),dom(事件target对应的虚拟dom节点),evObj(NEvent对象),e(html event对象)
  * @author      yanglei
  * @since       1.0
  */
@@ -15,30 +15,37 @@ export class NEvent {
      * 事件id
      */
     public id: number;
+
     /**
      * 事件所属模块
      */
     public module:Module;
+
     /**
      * 事件名
      */
     public name: string;
+
     /**
      * 事件处理方法名(需要在模块中定义)、方法函数或表达式
      */
     public handler: string | Function;
+
     /**
      * 表达式，当传递事件串为表达式时有效
      */
     private expr:Expression;
+
     /**
      * 代理模式，事件代理到父对象
      */
     public delg: boolean;
+
     /**
      * 禁止冒泡，代理模式下无效
      */
     public nopopo: boolean;
+
     /**
      * 只执行一次
      */
@@ -200,6 +207,6 @@ export class NEvent {
      * @param dom       虚拟dom
      */
     public clearParam(module:Module,dom:IRenderedDom){
-        module.objectManager.clearEventParam(this.id,dom.key);
+        module.objectManager.clearEventParams(this.id,dom.key);
     }
 }

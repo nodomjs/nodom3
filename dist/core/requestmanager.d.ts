@@ -8,7 +8,7 @@ export declare class RequestManager {
      * key:     url
      * value:   请求参数
      */
-    static requestMap: Map<string, any>;
+    private static requestMap;
     /**
      * ajax 请求
      * @param config    object 或 string

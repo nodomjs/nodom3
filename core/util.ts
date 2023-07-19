@@ -44,6 +44,7 @@ export class Util {
             this.keyWordMap.set(item,true);
         });
     }
+
     /**
      * 是否为 js 保留关键字
      * @param name  名字
@@ -173,6 +174,7 @@ export class Util {
             return true;
         }
     }
+    
     /**
      * 获取对象自有属性
      * @param obj   需要获取属性的对象
@@ -184,6 +186,7 @@ export class Util {
         }
         return Object.getOwnPropertyNames(obj);
     }
+    
     /**************对象判断相关************/
     /**
      * 判断是否为函数
@@ -228,13 +231,12 @@ export class Util {
     public static isEmpty(obj): boolean {
         if (obj === null || obj === undefined)
             return true;
-        let tp = typeof obj;
         if (this.isObject(obj)) {
             let keys = Object.keys(obj);
             if (keys !== undefined) {
                 return keys.length === 0;
             }
-        } else if (tp === 'string') {
+        } else if (typeof obj === 'string') {
             return obj === '';
         }
         return false;
@@ -311,21 +313,6 @@ export class Util {
             }
         }
         return src;
-    }
-
-    /**
-     * 改造 dom key，避免克隆时重复，格式为：key_id
-     * @param node    节点
-     * @param id      附加id
-     * @param deep    是否深度处理
-     */
-    public static setNodeKey(node:VirtualDom, id?:number,deep?:boolean){
-        node.key = node.key + '_' + id;
-        if(deep && node.children){
-            for(let c of node.children) {
-                Util.setNodeKey(c,id,true);
-            }
-        }
     }
 }
 

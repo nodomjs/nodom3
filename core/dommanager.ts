@@ -69,7 +69,7 @@ export class DomManager{
      * @param key   dom key或props键值对
      * @returns     渲染后虚拟节点
      */
-     public getRenderedDom(key:any):IRenderedDom{
+    public getRenderedDom(key:any):IRenderedDom{
         if(!this.renderedTree){
             return;
         }

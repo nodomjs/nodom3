@@ -4,7 +4,7 @@ import { Expression } from './expression';
 import { Model } from './model';
 import { Module } from './module';
 /**
- * 虚拟dom
+ * 虚拟dom，编译后的dom节点，与渲染后的dom节点(IRenderedDom)不同
  */
 export declare class VirtualDom {
     /**
@@ -128,36 +128,6 @@ export declare class VirtualDom {
      */
     remove(dom: VirtualDom): void;
     /**
-     * 添加css class
-     * @param cls class名或表达式,可以多个，以“空格”分割
-     */
-    addClass(cls: string | Expression): void;
-    /**
-     * 删除css class，因为涉及到表达式，此处只记录删除标识
-     * @param cls class名,可以多个，以“空格”分割
-     */
-    removeClass(cls: string): void;
-    /**
-     * 获取class串
-     * @returns class 串
-     */
-    getClassString(values: any): string;
-    /**
-     * 添加style
-     *  @param style style字符串或表达式
-     */
-    addStyle(style: string | Expression): void;
-    /**
-     * 删除style
-     * @param styleStr style字符串，多个style以空格' '分割
-     */
-    removeStyle(styleStr: string): void;
-    /**
-     * 获取style串
-     * @returns style 串
-     */
-    getStyleString(values: any): string;
-    /**
      * 是否拥有属性
      * @param propName  属性名
      * @param isExpr    是否只检查表达式属性
@@ -177,12 +147,6 @@ export declare class VirtualDom {
      * @param v         属性值
      */
     setProp(propName: string, v: any): void;
-    /**
-     * 添加属性，如果原来的值存在，则属性值变成数组
-     * @param pName     属性名
-     * @param pValue    属性值
-     */
-    addProp(pName: any, pValue: any): boolean;
     /**
      * 删除属性
      * @param props     属性名或属性名数组

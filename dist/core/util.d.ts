@@ -1,4 +1,3 @@
-import { VirtualDom } from "./virtualdom";
 /**
  * 基础服务库
  * @since       1.0.0
@@ -93,11 +92,4 @@ export declare class Util {
      * @returns     转换后的消息
      */
     static compileStr(src: string, p1?: any, p2?: any, p3?: any, p4?: any, p5?: any): string;
-    /**
-     * 改造 dom key，避免克隆时重复，格式为：key_id
-     * @param node    节点
-     * @param id      附加id
-     * @param deep    是否深度处理
-     */
-    static setNodeKey(node: VirtualDom, id?: number, deep?: boolean): void;
 }

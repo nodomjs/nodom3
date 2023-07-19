@@ -425,7 +425,6 @@ export class Renderer {
                     repArr.push(item);
             }
         }
-
         //替换
         if(repArr.length>0){
             for(let item of repArr){
@@ -445,7 +444,6 @@ export class Renderer {
                 }
             }
         }
-
         //addArr 按index排序
         if(addArr.length > 1){
             addArr.sort((a,b)=>a[4]>b[4]?1:-1);
