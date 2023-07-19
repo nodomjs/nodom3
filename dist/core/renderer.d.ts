@@ -7,17 +7,36 @@ import { IRenderedDom } from "./types";
  */
 export declare class Renderer {
     /**
+     * 根rootEl
+     */
+    private static rootEl;
+    /**
      * 等待渲染列表（模块名）
      */
-    static waitList: Array<number>;
+    private static waitList;
     /**
      * 当前module
      */
-    static currentModule: Module;
+    private static currentModule;
     /**
      * 当前模块根dom
      */
     private static currentRootDom;
+    /**
+     * 设置根
+     * @param rootEl
+     */
+    static setRootEl(rootEl: any): void;
+    /**
+     * 获取根element
+     * @returns 根element
+     */
+    static getRootEl(): HTMLElement;
+    /**
+     * 获取当前渲染模块
+     * @returns     当前渲染模块
+     */
+    static getCurrentModule(): Module;
     /**
      * 添加到渲染列表
      * @param module 模块

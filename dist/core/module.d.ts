@@ -60,10 +60,6 @@ export declare class Module {
      */
     state: EModuleState;
     /**
-     * 放置模块的容器
-     */
-    private container;
-    /**
      * 模型管理器
      */
     modelManager: ModelManager;
@@ -166,11 +162,6 @@ export declare class Module {
      * @returns     方法
      */
     getMethod(name: string): Function;
-    /**
-     * 设置渲染容器
-     * @param el        容器
-     */
-    setContainer(el: HTMLElement): void;
     /**
      * 设置props
      * @param props     属性值

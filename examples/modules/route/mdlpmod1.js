@@ -1,4 +1,4 @@
-import {Module,Router} from '../../../dist/nodom.esm.js'
+import {Module,Nodom} from '/dist/nodom.esm.js'
 export class MdlPMod1 extends Module {
     template(){
         return `
@@ -24,6 +24,6 @@ export class MdlPMod1 extends Module {
     }
     
     redirect(){
-        Router.redirect("/router/route3/r1/r2");
+        Nodom['$Router'].redirect("/router/route3/r1/r2");
     }
 }

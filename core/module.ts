@@ -76,11 +76,6 @@ export class Module {
     public state: EModuleState;
 
     /**
-     * 放置模块的容器
-     */
-    private container: HTMLElement;
-
-    /**
      * 模型管理器
      */
     public modelManager:ModelManager;
@@ -210,8 +205,8 @@ export class Module {
             this.unmount();
             return;
         }
-        
-        if(this.state === EModuleState.MOUNTED){//已经挂载
+        //已经挂载
+        if(this.state === EModuleState.MOUNTED){
             if(oldTree && this.model){
                 //新旧渲染树节点diff
                 const changeDoms = DiffTool.compare(this.domManager.renderedTree,oldTree);
@@ -277,9 +272,10 @@ export class Module {
         //渲染到fragment
         let rootEl = new DocumentFragment();
         const el = Renderer.renderToHtml(this,this.domManager.renderedTree,rootEl,true);
-        if(this.container){ //自带容器（主模块或路由模块）
-            this.container.appendChild(rootEl);
-        }else if(this.srcDom){
+        //主模块，直接添加到根模块
+        if(this === ModuleFactory.getMain()){
+            Renderer.getRootEl().append(el);
+        }else if(this.srcDom){ //挂载到父模块中
             const pm = this.getParent();
             if(!pm){
                 return;
@@ -289,6 +285,7 @@ export class Module {
             if (this.srcElement) {
                 this.srcElement.parentElement.replaceChild(el, this.srcElement);
             }
+            //保存对应key
             pm.saveElement(this.srcDom.key, el);
         }
         //执行挂载后事件
@@ -313,9 +310,7 @@ export class Module {
         //module根与源el切换
         const el = this.getElement(1);
         if (el) {
-            if (this.container) { //带容器(路由方法加载)
-                this.container.removeChild(el);
-            } else if (this.srcDom) {
+            if (this.srcDom) {
                 const pm = this.getParent();
                 if (pm) {
                     //设置模块占位符
@@ -372,14 +367,6 @@ export class Module {
      */
     public getMethod(name: string): Function {
         return this[name];
-    }
-
-    /**
-     * 设置渲染容器
-     * @param el        容器
-     */
-    public setContainer(el:HTMLElement){
-        this.container = el;
     }
 
     /**

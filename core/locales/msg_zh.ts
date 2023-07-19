@@ -9,6 +9,7 @@ export const NodomMessage_zh = {
         application: "应用",
         system: "系统",
         module: "模块",
+        clazz:"类",
         moduleClass: '模块类',
         model: "模型",
         directive: "指令",
@@ -32,6 +33,7 @@ export const NodomMessage_zh = {
      */
     ErrorMsgs: {
         unknown: "未知错误",
+        uninit:"{0}未初始化",
         paramException: "{0}'{1}'方法参数错误，请参考api",
         invoke: "{0} 方法参数 {1} 必须为 {2}",
         invoke1: "{0} 方法参数 {1} 必须为 {2} 或 {3}",

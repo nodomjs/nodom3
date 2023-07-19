@@ -1,4 +1,4 @@
-import {Module} from '../../../dist/nodom.esm.js'
+import {Module} from '/dist/nodom.esm.js'
 export class MdlMod4 extends Module {
     template(){
         return `

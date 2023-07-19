@@ -1,4 +1,4 @@
-import {createRoute, Router} from "../../../dist/nodom.esm.js";
+import {Nodom} from "/dist/nodom.esm.js";
 import {MdlRouteDir} from "./mdlroutedir.js";
 import {MdlPMod1} from "./mdlpmod1.js";
 import {MdlPMod2} from "./mdlpmod2.js";
@@ -10,17 +10,13 @@ import {MdlMod7} from "./mdlmod7.js";
 import {MdlMod8} from "./mdlmod8.js";
 
 export function initRoute(){
-    // Router.basePath = '/webroute';
-    createRoute([{
+    Nodom.createRoute([{
         path: '/router',
         module: MdlRouteDir,
         routes: [
             {
                 path: '/route1',
                 module: MdlPMod1,
-                // module:()=>{
-                //     return import('/examples/modules/route/mdlmod1.js')
-                // },
                 routes: [{
                     path: '/home',
                     module:'/examples/modules/route/mdlmod1.js'
@@ -30,22 +26,22 @@ export function initRoute(){
                 }, {
                     path: '/data',
                     module:'/examples/modules/route/mdlmod3.js'
-                }],
-                onLeave:function(model){
-                    // console.log(this,model);
-                }
+                }]
             },
             {
                 path: '/route2',
                 module: MdlPMod2,
-                onEnter: function () {
-                    // console.log('route2');
+                onEnter: function (module,path) {
+                    console.log('route2 enter',module,path);
+                },
+                onLeave: function (module,path) {
+                    console.log('route2 leave',module,path);
                 },
                 routes: [{
                     path: '/rparam/:page/:id',
                     module: MdlMod4,
                     onEnter: function () {
-                        // console.log('route2/rparam');
+                        console.log('route2/rparam');
                     },
                     routes:[{
                         path:'/desc',

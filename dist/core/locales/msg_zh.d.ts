@@ -6,6 +6,7 @@ export declare const NodomMessage_zh: {
         application: string;
         system: string;
         module: string;
+        clazz: string;
         moduleClass: string;
         model: string;
         directive: string;
@@ -29,6 +30,7 @@ export declare const NodomMessage_zh: {
      */
     ErrorMsgs: {
         unknown: string;
+        uninit: string;
         paramException: string;
         invoke: string;
         invoke1: string;

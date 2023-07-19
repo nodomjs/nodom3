@@ -1,4 +1,4 @@
-import {Module,request} from '../../../dist/nodom.esm.js'
+import {Module,Nodom} from '/dist/nodom.esm.js'
 
 class Module61 extends Module{
     template(props){
@@ -37,7 +37,7 @@ export class MdlMod6 extends Module {
         }
     }
     onInit(model){
-        request({
+        Nodom.request({
             url:'/examples/data/data1.json',
             type:'json'
         }).then(r=>{

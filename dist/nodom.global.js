@@ -137,6 +137,7 @@ var nodom = (function (exports) {
             application: "Application",
             system: "System",
             module: "Module",
+            clazz: "类",
             moduleClass: 'ModuleClass',
             model: "Model",
             directive: "Directive",
@@ -160,6 +161,7 @@ var nodom = (function (exports) {
          */
         ErrorMsgs: {
             unknown: "unknown error",
+            uninit: "{0}未初始化",
             paramException: "{0} '{1}' parameter error，see api",
             invoke: "method {0} parameter {1} must be {2}",
             invoke1: "method {0} parameter {1} must be {2} or {3}",
@@ -200,6 +202,7 @@ var nodom = (function (exports) {
             application: "应用",
             system: "系统",
             module: "模块",
+            clazz: "类",
             moduleClass: '模块类',
             model: "模型",
             directive: "指令",
@@ -223,6 +226,7 @@ var nodom = (function (exports) {
          */
         ErrorMsgs: {
             unknown: "未知错误",
+            uninit: "{0}未初始化",
             paramException: "{0}'{1}'方法参数错误，请参考api",
             invoke: "{0} 方法参数 {1} 必须为 {2}",
             invoke1: "{0} 方法参数 {1} 必须为 {2} 或 {3}",
@@ -685,6 +689,27 @@ var nodom = (function (exports) {
      * 渲染器
      */
     class Renderer {
+        /**
+         * 设置根
+         * @param rootEl
+         */
+        static setRootEl(rootEl) {
+            this.rootEl = rootEl;
+        }
+        /**
+         * 获取根element
+         * @returns 根element
+         */
+        static getRootEl() {
+            return this.rootEl;
+        }
+        /**
+         * 获取当前渲染模块
+         * @returns     当前渲染模块
+         */
+        static getCurrentModule() {
+            return this.currentModule;
+        }
         /**
          * 添加到渲染列表
          * @param module 模块
@@ -1399,433 +1424,6 @@ var nodom = (function (exports) {
     }
 
     /**
-     * 模块状态类型
-     */
-    exports.EModuleState = void 0;
-    (function (EModuleState) {
-        /**
-         * 已初始化
-         */
-        EModuleState[EModuleState["INIT"] = 1] = "INIT";
-        /**
-         * 未挂载到html dom
-         */
-        EModuleState[EModuleState["UNMOUNTED"] = 2] = "UNMOUNTED";
-        /**
-         * 已挂载到dom树
-         */
-        EModuleState[EModuleState["MOUNTED"] = 3] = "MOUNTED";
-    })(exports.EModuleState || (exports.EModuleState = {}));
-
-    /**
-     * 路由管理类
-     * @since 	1.0
-     */
-    class Router {
-        /**
-         * 把路径加入跳转列表(准备跳往该路由)
-         * @param path 	路径
-         */
-        static go(path) {
-            //相同路径不加入
-            if (path === this.currentPath) {
-                return;
-            }
-            //添加路径到等待列表，已存在，不加入
-            if (this.waitList.indexOf(path) === -1) {
-                this.waitList.push(path);
-            }
-            //延迟加载，避免同一个路径多次加入
-            setTimeout(() => {
-                this.load();
-            }, 0);
-        }
-        /**
-         * 启动加载
-         */
-        static load() {
-            //在加载，或无等待列表，则返回
-            if (this.waitList.length === 0) {
-                return;
-            }
-            let path = this.waitList.shift();
-            this.start(path).then(() => {
-                //继续加载
-                this.load();
-            });
-        }
-        /**
-         * 切换路由
-         * @param path 	路径
-         */
-        static start(path) {
-            return __awaiter(this, void 0, void 0, function* () {
-                let diff = this.compare(this.currentPath, path);
-                // 当前路由依赖的容器模块
-                let parentModule;
-                if (diff[0] === null) { //不存在上一级模块
-                    //默认为主模块
-                    parentModule = ModuleFactory.getMain();
-                    // 当router key map不为空且主模块无router容器时，则取第一个key对应的模块为父模块
-                    if (this.routerKeyMap.size > 0) {
-                        const mid = this.routerKeyMap.keys().next().value;
-                        if (mid !== parentModule.id) {
-                            const m = ModuleFactory.get(mid);
-                            if (m) {
-                                parentModule = m;
-                            }
-                        }
-                    }
-                }
-                else {
-                    parentModule = yield this.getModule(diff[0]);
-                }
-                //onleave事件，从末往前执行
-                for (let i = diff[1].length - 1; i >= 0; i--) {
-                    const r = diff[1][i];
-                    if (!r.module) {
-                        continue;
-                    }
-                    const module = yield this.getModule(r);
-                    if (Util.isFunction(this.onDefaultLeave)) {
-                        this.onDefaultLeave(module.model);
-                    }
-                    if (Util.isFunction(r.onLeave)) {
-                        r.onLeave(module.model);
-                    }
-                    // 清理map映射
-                    this.activeFieldMap.delete(module.id);
-                    // 取消挂载
-                    module.unmount();
-                }
-                if (diff[2].length === 0) { //路由相同，参数不同
-                    let route = diff[0];
-                    if (route !== null) {
-                        const module = yield this.getModule(route);
-                        // 模块处理
-                        this.dependHandle(module, route, diff[3] ? diff[3].module : null);
-                    }
-                }
-                else { //路由不同
-                    //加载模块
-                    for (let ii = 0; ii < diff[2].length; ii++) {
-                        const route = diff[2][ii];
-                        //路由不存在或路由没有模块（空路由）
-                        if (!route || !route.module) {
-                            continue;
-                        }
-                        const module = yield this.getModule(route);
-                        // 模块处理
-                        this.dependHandle(module, route, parentModule);
-                        //默认全局路由enter事件
-                        if (Util.isFunction(this.onDefaultEnter)) {
-                            this.onDefaultEnter(module.model);
-                        }
-                        //当前路由进入事件
-                        if (Util.isFunction(route.onEnter)) {
-                            route.onEnter(module.model);
-                        }
-                        parentModule = module;
-                    }
-                }
-                //如果是history popstate，则不加入history
-                if (this.startStyle === 0) {
-                    let path1 = (Router.basePath || '') + path;
-                    //子路由，替换state
-                    if (path.startsWith(this.currentPath)) {
-                        history.replaceState(path1, '', path1);
-                    }
-                    else { //路径push进history
-                        history.pushState(path1, '', path1);
-                    }
-                }
-                //修改currentPath
-                this.currentPath = path;
-                //设置start类型为正常start
-                this.startStyle = 0;
-            });
-        }
-        /*
-         * 重定向
-         * @param path 	路径
-         */
-        static redirect(path) {
-            this.go(path);
-        }
-        /**
-         * 获取module
-         * @param route 路由对象
-         * @returns     路由对应模块
-         */
-        static getModule(route) {
-            return __awaiter(this, void 0, void 0, function* () {
-                let module = route.module;
-                //已经是模块实例
-                if (typeof module === 'object') {
-                    return module;
-                }
-                //模块路径
-                if (typeof module === 'string') {
-                    module = yield ModuleFactory.load(module);
-                }
-                //模块类
-                if (typeof module === 'function') {
-                    route.module = ModuleFactory.get(module);
-                }
-                return route.module;
-            });
-        }
-        /**
-         * 比较两个路径对应的路由链
-         * @param path1 	第一个路径
-         * @param path2 	第二个路径
-         * @returns 		数组 [父路由或不同参数的路由，第一个需要销毁的路由数组，第二个需要增加的路由数组，不同参数路由的父路由]
-         */
-        static compare(path1, path2) {
-            // 获取路由id数组
-            let arr1 = null;
-            let arr2 = null;
-            if (path1) {
-                //采用克隆方式复制，避免被第二个路径返回的路由覆盖参数
-                arr1 = this.getRouteList(path1, true);
-            }
-            if (path2) {
-                arr2 = this.getRouteList(path2);
-            }
-            let len = 0;
-            if (arr1 !== null) {
-                len = arr1.length;
-            }
-            if (arr2 !== null) {
-                if (arr2.length < len) {
-                    len = arr2.length;
-                }
-            }
-            else {
-                len = 0;
-            }
-            //需要销毁的旧路由数组
-            let retArr1 = [];
-            //需要加入的新路由数组
-            let retArr2 = [];
-            let i = 0;
-            for (i = 0; i < len; i++) {
-                //找到不同路由开始位置
-                if (arr1[i].id === arr2[i].id) {
-                    //比较参数
-                    if (JSON.stringify(arr1[i].data) !== JSON.stringify(arr2[i].data)) {
-                        i++;
-                        break;
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-            //旧路由改变数组
-            if (arr1 !== null) {
-                retArr1 = arr1.slice(i);
-            }
-            //新路由改变数组（相对于旧路由）
-            if (arr2 !== null) {
-                retArr2 = arr2.slice(i);
-            }
-            //上一级路由或参数不同的当前路由
-            let p1 = null;
-            //上二级路由或参数不同路由的上一级路由
-            let p2 = null;
-            if (arr2 && i > 0) {
-                // 可能存在空路由，需要向前遍历
-                for (let j = i - 1; j >= 0; j--) {
-                    if (!p1) {
-                        if (arr2[j].module) {
-                            p1 = arr2[j];
-                            continue;
-                        }
-                    }
-                    else if (!p2) {
-                        if (arr2[j].module) {
-                            p2 = arr2[j];
-                            break;
-                        }
-                    }
-                }
-            }
-            return [p1, retArr1, retArr2, p2];
-        }
-        /**
-         * 添加激活字段
-         * @param module    模块
-         * @param path      路由路径
-         * @param model     激活字段所在model
-         * @param field     字段名
-         */
-        static addActiveField(module, path, model, field) {
-            if (!model || !field) {
-                return;
-            }
-            let arr = Router.activeFieldMap.get(module.id);
-            if (!arr) { //尚未存在，新建
-                Router.activeFieldMap.set(module.id, [{ path: path, model: model, field: field }]);
-            }
-            else if (arr.find(item => item.model === model && item.field === field) === undefined) { //不重复添加
-                arr.push({ path: path, model: model, field: field });
-            }
-        }
-        /**
-         * 依赖模块相关处理
-         * @param module 	模块
-         * @param pm        依赖模块
-         * @param path 		view对应的route路径
-         */
-        static dependHandle(module, route, pm) {
-            const me = this;
-            //设置参数
-            let o = {
-                path: route.path
-            };
-            if (!Util.isEmpty(route.data)) {
-                o['data'] = route.data;
-            }
-            module.model['$route'] = o;
-            if (pm) {
-                if (pm.state === exports.EModuleState.MOUNTED) { //被依赖已挂载在html dom树中
-                    module.setContainer(pm.getElement(Router.routerKeyMap.get(pm.id)));
-                    //激活
-                    module.active();
-                    this.setDomActive(pm, route.fullPath);
-                }
-                else { //被依赖模块不处于被渲染后状态
-                    if (pm['onMount']) {
-                        const foo = pm['onMount'];
-                        pm['onMount'] = (model) => {
-                            foo(model);
-                            module.setContainer(pm.getElement(Router.routerKeyMap.get(pm.id)));
-                            //激活
-                            module.active();
-                            me.setDomActive(pm, route.fullPath);
-                            //还原onMount方法
-                            pm['onMount'] = foo;
-                        };
-                    }
-                    else {
-                        pm['onMount'] = (model) => {
-                            module.setContainer(pm.getElement(Router.routerKeyMap.get(pm.id)));
-                            //激活
-                            module.active();
-                            me.setDomActive(pm, route.fullPath);
-                            //只执行一次
-                            delete pm['onMount'];
-                        };
-                    }
-                }
-            }
-        }
-        /**
-         * 设置路由元素激活属性
-         * @param module    模块
-         * @param path      路径
-         * @returns
-         */
-        static setDomActive(module, path) {
-            let arr = Router.activeFieldMap.get(module.id);
-            if (!arr) {
-                return;
-            }
-            for (let o of arr) {
-                o.model[o.field] = o.path === path;
-            }
-        }
-        /**
-         * 获取路由数组
-         * @param path 	要解析的路径
-         * @param clone 是否clone，如果为false，则返回路由树的路由对象，否则返回克隆对象
-         * @returns     路由对象数组
-         */
-        static getRouteList(path, clone) {
-            if (!this.root) {
-                return [];
-            }
-            let pathArr = path.split('/');
-            let node = this.root;
-            let paramIndex = 0; //参数索引
-            let retArr = [];
-            let fullPath = ''; //完整路径
-            let preNode = this.root; //前一个节点
-            for (let i = 0; i < pathArr.length; i++) {
-                let v = pathArr[i].trim();
-                if (v === '') {
-                    continue;
-                }
-                let find = false;
-                for (let j = 0; j < node.children.length; j++) {
-                    if (node.children[j].path === v) {
-                        //设置完整路径
-                        if (preNode !== this.root) {
-                            preNode.fullPath = fullPath;
-                            preNode.data = node.data;
-                            retArr.push(preNode);
-                        }
-                        //设置新的查找节点
-                        node = clone ? node.children[j].clone() : node.children[j];
-                        //参数清空
-                        node.data = {};
-                        preNode = node;
-                        find = true;
-                        //参数索引置0
-                        paramIndex = 0;
-                        break;
-                    }
-                }
-                //路径叠加
-                fullPath += '/' + v;
-                //不是孩子节点,作为参数
-                if (!find) {
-                    if (paramIndex < node.params.length) { //超出参数长度的废弃
-                        node.data[node.params[paramIndex++]] = v;
-                    }
-                }
-            }
-            //最后一个节点
-            if (node !== this.root) {
-                node.fullPath = fullPath;
-                retArr.push(node);
-            }
-            return retArr;
-        }
-    }
-    /**
-     * path等待链表
-     */
-    Router.waitList = [];
-    /**
-     * 启动方式 0:直接启动 1:popstate 启动
-     */
-    Router.startStyle = 0;
-    /**
-     * 激活Dom map，格式为{moduleId:[]}
-     */
-    Router.activeFieldMap = new Map();
-    /**
-     * 绑定到module的router指令对应的key，即router容器对应的key，格式为 {moduleId:routerKey,...}
-     */
-    Router.routerKeyMap = new Map();
-    /**
-     * 根路由
-     */
-    Router.root = new Route();
-    //处理popstate事件
-    window.addEventListener('popstate', function (e) {
-        //根据state切换module
-        const state = history.state;
-        if (!state) {
-            return;
-        }
-        Router.startStyle = 1;
-        Router.go(state);
-    });
-
-    /**
      * 调度器，用于每次空闲的待操作序列调度
      */
     class Scheduler {
@@ -1884,90 +1482,126 @@ var nodom = (function (exports) {
     /**
      * nodom提示消息
      */
-    exports.NodomMessage = void 0;
+    exports.NodomMessage = NodomMessage_zh;
     /**
-     * 新建一个App
-     * @param clazz     模块类
-     * @param el        el选择器
-     * @param language  语言（zh,en），默认zh
+     * nodom 类
      */
-    function nodom(clazz, el, language) {
-        return __awaiter(this, void 0, void 0, function* () {
+    class Nodom {
+        /**
+         * 新建一个App
+         * @param clazz     模块类
+         * @param selector  el选择器
+         */
+        static app(clazz, selector) {
+            //设置渲染器的根 element
+            Renderer.setRootEl(document.querySelector(selector) || document.body);
+            //渲染器启动渲染
+            Scheduler.addTask(Renderer.render, Renderer);
+            //启动调度器
+            Scheduler.start();
+            let mdl = ModuleFactory.get(clazz);
+            mdl.active();
+        }
+        /**
+         * 设置语言
+         * @param lang  语言（zh,en），默认zh
+         */
+        static setLang(lang) {
             //设置nodom语言
-            switch (language || 'zh') {
+            switch (lang || 'zh') {
                 case 'zh':
                     exports.NodomMessage = NodomMessage_zh;
                     break;
                 case 'en':
                     exports.NodomMessage = NodomMessage_en;
             }
-            //渲染器启动渲染
-            Scheduler.addTask(Renderer.render, Renderer);
-            //启动调度器
-            Scheduler.start();
-            let mdl = ModuleFactory.get(clazz);
-            mdl.setContainer(document.querySelector(el));
-            mdl.active();
-        });
-    }
-    /**
-     * 暴露的创建路由方法
-     * @param config  数组或单个配置
-     */
-    function createRoute(config, parent) {
-        let route;
-        parent = parent || Router.root;
-        if (Util.isArray(config)) {
-            for (let item of config) {
-                route = new Route(item, parent);
+        }
+        /**
+         * use插件（实例化）
+         * 插件实例化后以单例方式存在，第二次use同一个插件，将不进行任何操作，实例化后可通过Nodom['$类名']方式获取
+         * @param clazz     插件类
+         * @param params    参数
+         * @returns         实例化后的插件对象
+         */
+        static use(clazz, params) {
+            if (!clazz.name) {
+                new NError('notexist', exports.NodomMessage.TipWords.plugin);
             }
+            if (!this['$' + clazz.name]) {
+                this['$' + clazz.name] = Reflect.construct(clazz, params || []);
+            }
+            return this['$' + clazz.name];
         }
-        else {
-            route = new Route(config, parent);
+        /**
+         * 暴露的创建路由方法
+         * @param config  数组或单个配置
+         */
+        static createRoute(config, parent) {
+            if (!Nodom['$Router']) {
+                throw new NError('uninit', exports.NodomMessage.TipWords.route);
+            }
+            let route;
+            parent = parent || Nodom['$Router'].getRoot();
+            if (Util.isArray(config)) {
+                for (let item of config) {
+                    route = new Route(item, parent);
+                }
+            }
+            else {
+                route = new Route(config, parent);
+            }
+            return route;
         }
-        return route;
+        /**
+         * 创建指令
+         * @param name      指令名
+         * @param priority  优先级（1最小，1-10为框架保留优先级）
+         * @param init      初始化方法
+         * @param handler   渲染时方法
+         */
+        static createDirective(name, handler, priority) {
+            return DirectiveManager.addType(name, handler, priority);
+        }
+        /**
+         * 注册模块
+         * @param clazz     模块类
+         * @param name      注册名，如果没有，则为类名
+         */
+        static registModule(clazz, name) {
+            ModuleFactory.addClass(clazz, name);
+        }
+        /**
+         * ajax 请求
+         * @param config    object 或 string
+         *                  如果为string，则直接以get方式获取资源
+         *                  object 项如下:
+         *                  参数名|类型|默认值|必填|可选值|描述
+         *                  -|-|-|-|-|-
+         *                  url|string|无|是|无|请求url
+         *					method|string|GET|否|GET,POST,HEAD|请求类型
+         *					params|Object/FormData|{}|否|无|参数，json格式
+         *					async|bool|true|否|true,false|是否异步
+         *  				    timeout|number|0|否|无|请求超时时间
+         *                  type|string|text|否|json,text|
+         *					withCredentials|bool|false|否|true,false|同源策略，跨域时cookie保存
+         *                  header|Object|无|否|无|request header 对象
+         *                  user|string|无|否|无|需要认证的请求对应的用户名
+         *                  pwd|string|无|否|无|需要认证的请求对应的密码
+         *                  rand|bool|无|否|无|请求随机数，设置则浏览器缓存失效
+         */
+        static request(config) {
+            return __awaiter(this, void 0, void 0, function* () {
+                return yield RequestManager.request(config);
+            });
+        }
     }
     /**
-     * 创建指令
-     * @param name      指令名
-     * @param priority  优先级（1最小，1-10为框架保留优先级）
-     * @param init      初始化方法
-     * @param handler   渲染时方法
-     */
-    function createDirective(name, handler, priority) {
-        return DirectiveManager.addType(name, handler, priority);
-    }
-    /**
-     * 注册模块
+     * Nodom.app的简写方式
      * @param clazz     模块类
-     * @param name      注册名，如果没有，则为类名
+     * @param el        根容器
      */
-    function registModule(clazz, name) {
-        ModuleFactory.addClass(clazz, name);
-    }
-    /**
-     * ajax 请求
-     * @param config    object 或 string
-     *                  如果为string，则直接以get方式获取资源
-     *                  object 项如下:
-     *                  参数名|类型|默认值|必填|可选值|描述
-     *                  -|-|-|-|-|-
-     *                  url|string|无|是|无|请求url
-     *					method|string|GET|否|GET,POST,HEAD|请求类型
-     *					params|Object/FormData|{}|否|无|参数，json格式
-     *					async|bool|true|否|true,false|是否异步
-     *  				timeout|number|0|否|无|请求超时时间
-     *                  type|string|text|否|json,text|
-     *					withCredentials|bool|false|否|true,false|同源策略，跨域时cookie保存
-     *                  header|Object|无|否|无|request header 对象
-     *                  user|string|无|否|无|需要认证的请求对应的用户名
-     *                  pwd|string|无|否|无|需要认证的请求对应的密码
-     *                  rand|bool|无|否|无|请求随机数，设置则浏览器缓存失效
-     */
-    function request(config) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield RequestManager.request(config);
-        });
+    function nodom(clazz, el) {
+        return Nodom.app(clazz, el);
     }
 
     /**
@@ -4734,6 +4368,25 @@ var nodom = (function (exports) {
     }
 
     /**
+     * 模块状态类型
+     */
+    exports.EModuleState = void 0;
+    (function (EModuleState) {
+        /**
+         * 已初始化
+         */
+        EModuleState[EModuleState["INIT"] = 1] = "INIT";
+        /**
+         * 未挂载到html dom
+         */
+        EModuleState[EModuleState["UNMOUNTED"] = 2] = "UNMOUNTED";
+        /**
+         * 已挂载到dom树
+         */
+        EModuleState[EModuleState["MOUNTED"] = 3] = "MOUNTED";
+    })(exports.EModuleState || (exports.EModuleState = {}));
+
+    /**
      * dom 管理器，用于管理模块的虚拟dom，旧渲染树
      */
     class DomManager {
@@ -4987,7 +4640,8 @@ var nodom = (function (exports) {
                 this.unmount();
                 return;
             }
-            if (this.state === exports.EModuleState.MOUNTED) { //已经挂载
+            //已经挂载
+            if (this.state === exports.EModuleState.MOUNTED) {
                 if (oldTree && this.model) {
                     //新旧渲染树节点diff
                     const changeDoms = DiffTool.compare(this.domManager.renderedTree, oldTree);
@@ -5050,10 +4704,11 @@ var nodom = (function (exports) {
             //渲染到fragment
             let rootEl = new DocumentFragment();
             const el = Renderer.renderToHtml(this, this.domManager.renderedTree, rootEl, true);
-            if (this.container) { //自带容器（主模块或路由模块）
-                this.container.appendChild(rootEl);
+            //主模块，直接添加到根模块
+            if (this === ModuleFactory.getMain()) {
+                Renderer.getRootEl().append(el);
             }
-            else if (this.srcDom) {
+            else if (this.srcDom) { //挂载到父模块中
                 const pm = this.getParent();
                 if (!pm) {
                     return;
@@ -5063,6 +4718,7 @@ var nodom = (function (exports) {
                 if (this.srcElement) {
                     this.srcElement.parentElement.replaceChild(el, this.srcElement);
                 }
+                //保存对应key
                 pm.saveElement(this.srcDom.key, el);
             }
             //执行挂载后事件
@@ -5086,10 +4742,7 @@ var nodom = (function (exports) {
             //module根与源el切换
             const el = this.getElement(1);
             if (el) {
-                if (this.container) { //带容器(路由方法加载)
-                    this.container.removeChild(el);
-                }
-                else if (this.srcDom) {
+                if (this.srcDom) {
                     const pm = this.getParent();
                     if (pm) {
                         //设置模块占位符
@@ -5143,13 +4796,6 @@ var nodom = (function (exports) {
          */
         getMethod(name) {
             return this[name];
-        }
-        /**
-         * 设置渲染容器
-         * @param el        容器
-         */
-        setContainer(el) {
-            this.container = el;
         }
         /**
          * 设置props
@@ -5481,6 +5127,468 @@ var nodom = (function (exports) {
     }
 
     /**
+     * 路由管理类
+     * @since 	1.0
+     */
+    class Router {
+        /**
+         * 构造器
+         * @param basePath          路由基础路径，显示的完整路径为 basePath + route.path
+         * @param defaultEnter      默认进入时事件函数，传递参数： module,离开前路径
+         * @param defaultLeave      默认离开时事件函数，传递参数： module,进入时路径
+         */
+        constructor(basePath, defaultEnter, defaultLeave) {
+            /**
+             * 根路由
+             */
+            this.root = new Route();
+            /**
+             * path等待链表
+             */
+            this.waitList = [];
+            /**
+             * 激活Dom map
+             * key: path
+             * value:{moduleId:dom所属模板模块id，model:对应model,field:激活字段名}
+             */
+            this.activeModelMap = new Map();
+            /**
+             * 绑定到module的router指令对应的key，即router容器对应的key，格式为
+             *  {
+             *      moduleId:{
+             *          mid:router所在模块id,
+             *          key:routerKey(路由key),
+             *          paths:active路径数组
+             *          wait:{mid:待渲染的模块id,path:route.path}
+             *      }
+             *      ,...
+             *  }
+             *  moduleId: router所属模块id（如果为slot且slot不是innerRender，则为模板对应模块id，否则为当前模块id）
+             */
+            this.routerMap = new Map();
+            this.basePath = basePath;
+            this.onDefaultEnter = defaultEnter;
+            this.onDefaultLeave = defaultLeave;
+            //添加popstate事件
+            window.addEventListener('popstate', e => {
+                //根据state切换module
+                const state = history.state;
+                if (!state) {
+                    return;
+                }
+                this.startType = 1;
+                this.go(state);
+            });
+        }
+        /**
+         * 把路径加入跳转列表(准备跳往该路由)
+         * @param path 	路径
+         * @param type  启动路由类型，参考startType，默认0
+         */
+        go(path) {
+            //相同路径不加入
+            if (path === this.currentPath) {
+                return;
+            }
+            //添加路径到等待列表，已存在，不加入
+            if (this.waitList.indexOf(path) === -1) {
+                this.waitList.push(path);
+            }
+            //延迟加载，避免同一个路径多次加入
+            setTimeout(() => {
+                this.load();
+            }, 0);
+        }
+        /**
+         * 启动加载
+         */
+        load() {
+            //在加载，或无等待列表，则返回
+            if (this.waitList.length === 0) {
+                return;
+            }
+            //从等待队列拿路径加载
+            let path = this.waitList.shift();
+            this.start(path).then(() => {
+                //继续加载
+                this.load();
+            });
+        }
+        /**
+         * 切换路由
+         * @param path 	路径
+         */
+        start(path) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let diff = this.compare(this.currentPath, path);
+                // 不存在上一级模块,则为主模块，否则为上一级模块
+                let parentModule = diff[0] === null ? ModuleFactory.getMain() : yield this.getModule(diff[0]);
+                //onleave事件，从末往前执行
+                for (let i = diff[1].length - 1; i >= 0; i--) {
+                    const r = diff[1][i];
+                    if (!r.module) {
+                        continue;
+                    }
+                    const module = yield this.getModule(r);
+                    if (Util.isFunction(this.onDefaultLeave)) {
+                        this.onDefaultLeave(module, this.currentPath);
+                    }
+                    if (Util.isFunction(r.onLeave)) {
+                        r.onLeave(module, path, this.currentPath);
+                    }
+                    //从父模块移除
+                    const pm = module.getParent();
+                    if (pm) {
+                        pm.removeChild(module);
+                    }
+                    // 取消挂载
+                    module.unmount();
+                }
+                if (diff[2].length === 0) { //路由相同，参数不同
+                    let route = diff[0];
+                    if (route !== null) {
+                        const module = yield this.getModule(route);
+                        // 模块处理
+                        this.dependHandle(module, route, diff[3] ? diff[3].module : null);
+                    }
+                }
+                else { //路由不同
+                    //加载模块
+                    for (let ii = 0; ii < diff[2].length; ii++) {
+                        const route = diff[2][ii];
+                        //路由不存在或路由没有模块（空路由）
+                        if (!route || !route.module) {
+                            continue;
+                        }
+                        const module = yield this.getModule(route);
+                        // 模块处理
+                        this.dependHandle(module, route, parentModule);
+                        //默认全局路由enter事件
+                        if (Util.isFunction(this.onDefaultEnter)) {
+                            this.onDefaultEnter(module, path);
+                        }
+                        //当前路由进入事件
+                        if (Util.isFunction(route.onEnter)) {
+                            route.onEnter(module, path);
+                        }
+                        parentModule = module;
+                    }
+                }
+                //如果是history popstate，则不加入history
+                if (this.startType === 0) {
+                    let path1 = (this.basePath || '') + path;
+                    //子路由，替换state
+                    if (path.startsWith(this.currentPath)) {
+                        history.replaceState(path1, '', path1);
+                    }
+                    else { //路径push进history
+                        history.pushState(path1, '', path1);
+                    }
+                }
+                //修改currentPath
+                this.currentPath = path;
+                //设置start类型为正常start
+                this.startType = 0;
+            });
+        }
+        /**
+         * 获取module
+         * @param route 路由对象
+         * @returns     路由对应模块
+         */
+        getModule(route) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let module = route.module;
+                //已经是模块实例
+                if (typeof module === 'object') {
+                    return module;
+                }
+                //模块路径
+                if (typeof module === 'string') {
+                    module = yield ModuleFactory.load(module);
+                }
+                //模块类
+                if (typeof module === 'function') {
+                    route.module = ModuleFactory.get(module);
+                }
+                return route.module;
+            });
+        }
+        /**
+         * 比较两个路径对应的路由链
+         * @param path1 	第一个路径
+         * @param path2 	第二个路径
+         * @returns 		数组 [父路由或不同参数的路由，需要销毁的路由数组，需要增加的路由数组，不同参数路由的父路由]
+         */
+        compare(path1, path2) {
+            // 获取路由id数组
+            let arr1 = null;
+            let arr2 = null;
+            if (path1) {
+                //采用克隆方式复制，避免被第二个路径返回的路由覆盖参数
+                arr1 = this.getRouteList(path1, true);
+            }
+            if (path2) {
+                arr2 = this.getRouteList(path2);
+            }
+            let len = 0;
+            if (arr1 !== null) {
+                len = arr1.length;
+            }
+            if (arr2 !== null) {
+                if (arr2.length < len) {
+                    len = arr2.length;
+                }
+            }
+            else {
+                len = 0;
+            }
+            //需要销毁的旧路由数组
+            let retArr1 = [];
+            //需要加入的新路由数组
+            let retArr2 = [];
+            let i = 0;
+            for (i = 0; i < len; i++) {
+                //找到不同路由开始位置
+                if (arr1[i].id === arr2[i].id) {
+                    //比较参数
+                    if (JSON.stringify(arr1[i].data) !== JSON.stringify(arr2[i].data)) {
+                        i++;
+                        break;
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+            //旧路由改变数组
+            if (arr1 !== null) {
+                retArr1 = arr1.slice(i);
+            }
+            //新路由改变数组（相对于旧路由）
+            if (arr2 !== null) {
+                retArr2 = arr2.slice(i);
+            }
+            //上一级路由或参数不同的当前路由
+            let p1 = null;
+            //上二级路由或参数不同路由的上一级路由
+            let p2 = null;
+            if (arr2 && i > 0) {
+                // 可能存在空路由，需要向前遍历
+                for (let j = i - 1; j >= 0; j--) {
+                    if (!p1) {
+                        if (arr2[j].module) {
+                            p1 = arr2[j];
+                            continue;
+                        }
+                    }
+                    else if (!p2) {
+                        if (arr2[j].module) {
+                            p2 = arr2[j];
+                            break;
+                        }
+                    }
+                }
+            }
+            return [p1, retArr1, retArr2, p2];
+        }
+        /**
+         * 添加激活对象
+         * @param moduleId  模块id
+         * @param path      路由路径
+         * @param model     激活字段所在model
+         * @param field     字段名
+         */
+        addActiveModel(moduleId, path, model, field) {
+            if (!model || !field) {
+                return;
+            }
+            //保存path对应active 模型信息
+            this.activeModelMap.set(path, { moduleId: moduleId, model: model, field: field });
+            //保存path到routerMap
+            if (this.routerMap.has(moduleId)) {
+                const o = this.routerMap.get(moduleId);
+                if (!o.paths) {
+                    o.paths = [path];
+                }
+                else {
+                    if (!o.paths.includes(path)) {
+                        o.paths.push(path);
+                    }
+                }
+            }
+            else {
+                this.routerMap.set(moduleId, { paths: [path] });
+            }
+        }
+        /**
+         * 依赖模块相关处理
+         * @param module 	模块
+         * @param pm        依赖模块
+         * @param path 		view对应的route路径
+         */
+        dependHandle(module, route, pm) {
+            //设置参数
+            let o = {
+                path: route.path
+            };
+            if (!Util.isEmpty(route.data)) {
+                o['data'] = route.data;
+            }
+            module.model['$route'] = o;
+            if (pm) {
+                const mobj = this.routerMap.get(pm.id);
+                //尚未渲染，添加到等待渲染对象
+                if (!mobj) {
+                    this.routerMap.set(pm.id, { wait: { mid: module.id, path: route.path } });
+                    // this.waitedRenderMap.set(pm.id,);
+                }
+                else {
+                    //得到router实际所在module
+                    pm = ModuleFactory.get(mobj.mid);
+                    module.srcDom = mobj.dom.children[0];
+                    pm.addChild(module);
+                    //激活
+                    module.active();
+                    this.setDomActive(route.fullPath);
+                }
+            }
+        }
+        /**
+         * 设置路由元素激活属性
+         * @param module    模块
+         * @param path      路径
+         * @returns
+         */
+        setDomActive(path) {
+            if (!this.activeModelMap.has(path)) {
+                return;
+            }
+            const obj = this.activeModelMap.get(path);
+            if (!this.routerMap.has(obj.moduleId)) {
+                return;
+            }
+            //获取模块 active path数组
+            const arr = this.routerMap.get(obj.moduleId).paths;
+            if (!arr) {
+                return;
+            }
+            //当前路径对应model置true
+            obj.model[obj.field] = true;
+            //同模块下的其他路径对应model置false
+            for (let p of arr) {
+                if (p !== path && this.activeModelMap.has(p)) {
+                    let o = this.activeModelMap.get(p);
+                    o.model[o.field] = false;
+                }
+            }
+        }
+        /**
+         * 获取路由数组
+         * @param path 	要解析的路径
+         * @param clone 是否clone，如果为false，则返回路由树的路由对象，否则返回克隆对象
+         * @returns     路由对象数组
+         */
+        getRouteList(path, clone) {
+            if (!this.root) {
+                return [];
+            }
+            let pathArr = path.split('/');
+            let node = this.root;
+            let paramIndex = 0; //参数索引
+            let retArr = [];
+            let fullPath = ''; //完整路径
+            let preNode = this.root; //前一个节点
+            for (let i = 0; i < pathArr.length; i++) {
+                let v = pathArr[i].trim();
+                if (v === '') {
+                    continue;
+                }
+                let find = false;
+                for (let j = 0; j < node.children.length; j++) {
+                    if (node.children[j].path === v) {
+                        //设置完整路径
+                        if (preNode !== this.root) {
+                            preNode.fullPath = fullPath;
+                            preNode.data = node.data;
+                            retArr.push(preNode);
+                        }
+                        //设置新的查找节点
+                        node = clone ? node.children[j].clone() : node.children[j];
+                        //参数清空
+                        node.data = {};
+                        preNode = node;
+                        find = true;
+                        //参数索引置0
+                        paramIndex = 0;
+                        break;
+                    }
+                }
+                //路径叠加
+                fullPath += '/' + v;
+                //不是孩子节点,作为参数
+                if (!find) {
+                    if (paramIndex < node.params.length) { //超出参数长度的废弃
+                        node.data[node.params[paramIndex++]] = v;
+                    }
+                }
+            }
+            //最后一个节点
+            if (node !== this.root) {
+                node.fullPath = fullPath;
+                retArr.push(node);
+            }
+            return retArr;
+        }
+        /**
+         * 获取根路由
+         * @returns     根路由对象
+         */
+        getRoot() {
+            return this.root;
+        }
+        /**
+         * 登记路由容器到管理器中
+         * @param moduleId      模块id
+         * @param module        路由实际所在模块（当使用slot时，与moduleId对应模块不同）
+         * @param key           路由容器key
+         */
+        registRouter(moduleId, module, dom) {
+            let obj;
+            if (!this.routerMap.has(moduleId)) {
+                obj = { mid: module.id, dom: dom };
+                this.routerMap.set(moduleId, obj);
+            }
+            else {
+                obj = this.routerMap.get(moduleId);
+                obj.mid = module.id;
+                obj.dom = dom;
+            }
+            if (obj.wait) {
+                const m = ModuleFactory.get(obj.wait.mid);
+                m.srcDom = dom.children[0];
+                module.addChild(m);
+                //激活
+                m.active();
+                //处理带active属性的dom
+                this.setDomActive(obj.path);
+                //执行后删除
+                delete obj.wait;
+            }
+        }
+        /**
+         * 尝试激活路径
+         * @param path  待激活的路径
+         */
+        activePath(path) {
+            // 如果当前路径为空或待激活路径是当前路径的子路径
+            if (!this.currentPath || path.startsWith(this.currentPath)) {
+                this.go(path);
+            }
+        }
+    }
+
+    /**
      * module 元素
      */
     class MODULE extends DefineElement {
@@ -5594,7 +5702,7 @@ var nodom = (function (exports) {
          * 用于指定该元素为模块容器，表示子模块
          * 用法 x-module='模块类名'
          */
-        createDirective('module', function (module, dom) {
+        Nodom.createDirective('module', function (module, dom) {
             let m;
             //存在moduleId，表示已经渲染过，不渲染
             let mid = module.objectManager.getDomParam(dom.key, 'moduleId');
@@ -5611,7 +5719,7 @@ var nodom = (function (exports) {
                 mid = m.id;
                 //保留modelId
                 module.objectManager.setDomParam(dom.key, 'moduleId', mid);
-                Renderer.currentModule.addChild(m);
+                Renderer.getCurrentModule().addChild(m);
             }
             //保存到dom上，提升渲染性能
             dom.moduleId = mid;
@@ -5642,7 +5750,7 @@ var nodom = (function (exports) {
         /**
          *  model指令
          */
-        createDirective('model', function (module, dom) {
+        Nodom.createDirective('model', function (module, dom) {
             let model = module.get(dom.model, this.value);
             if (model) {
                 dom.model = model;
@@ -5653,7 +5761,7 @@ var nodom = (function (exports) {
          * 指令名 repeat
          * 描述：重复指令
          */
-        createDirective('repeat', function (module, dom) {
+        Nodom.createDirective('repeat', function (module, dom) {
             let rows = this.value;
             // 无数据，不渲染
             if (!Util.isArray(rows) || rows.length === 0) {
@@ -5697,7 +5805,7 @@ var nodom = (function (exports) {
          * </recur>
          * ```
          */
-        createDirective('recur', function (module, dom) {
+        Nodom.createDirective('recur', function (module, dom) {
             const src = dom.vdom;
             //当前节点是递归节点存放容器
             if (dom.props.hasOwnProperty('ref')) {
@@ -5744,7 +5852,7 @@ var nodom = (function (exports) {
          * 指令名 if
          * 描述：条件指令
          */
-        createDirective('if', function (module, dom) {
+        Nodom.createDirective('if', function (module, dom) {
             if (!dom.parent) {
                 return;
             }
@@ -5755,7 +5863,7 @@ var nodom = (function (exports) {
          * 指令名 else
          * 描述：else指令
          */
-        createDirective('else', function (module, dom) {
+        Nodom.createDirective('else', function (module, dom) {
             if (!dom.parent) {
                 return;
             }
@@ -5764,7 +5872,7 @@ var nodom = (function (exports) {
         /**
          * elseif 指令
          */
-        createDirective('elseif', function (module, dom) {
+        Nodom.createDirective('elseif', function (module, dom) {
             if (!dom.parent) {
                 return;
             }
@@ -5785,7 +5893,7 @@ var nodom = (function (exports) {
         /**
          * elseif 指令
          */
-        createDirective('endif', function (module, dom) {
+        Nodom.createDirective('endif', function (module, dom) {
             if (!dom.parent) {
                 return;
             }
@@ -5797,7 +5905,7 @@ var nodom = (function (exports) {
          * 指令名 show
          * 描述：显示指令
          */
-        createDirective('show', function (module, dom) {
+        Nodom.createDirective('show', function (module, dom) {
             //show指令参数 {origin:通过style设置的初始display属性,rendered:是否渲染过}
             let showParam = module.objectManager.getDomParam(dom.key, '$show');
             //为false且未渲染过，则不渲染
@@ -5864,7 +5972,7 @@ var nodom = (function (exports) {
          * 指令名 field
          * 描述：字段指令
          */
-        createDirective('field', function (module, dom) {
+        Nodom.createDirective('field', function (module, dom) {
             dom.assets || (dom.assets = {});
             //修正staticnum
             if (dom.staticNum === 0) {
@@ -5955,9 +6063,12 @@ var nodom = (function (exports) {
         /**
          * route指令
          */
-        createDirective('route', function (module, dom) {
+        Nodom.createDirective('route', function (module, dom) {
+            if (!Nodom['$Router']) {
+                throw new NError('uninit', exports.NodomMessage.TipWords.route);
+            }
             //a标签需要设置href
-            if (dom.tagName.toLowerCase() === 'a') {
+            if (dom.tagName === 'a') {
                 dom.props['href'] = 'javascript:void(0)';
             }
             dom.props['path'] = this.value;
@@ -5966,9 +6077,12 @@ var nodom = (function (exports) {
                 let acName = dom.props['active'];
                 delete dom.props['active'];
                 //active 转expression
-                Router.addActiveField(module, this.value, dom.model, acName);
-                if ((Router.currentPath && this.value.startsWith(Router.currentPath) || !Router.currentPath) && dom.model[acName]) {
-                    Router.go(this.value);
+                const router = Nodom['$Router'];
+                //添加激活model
+                router.addActiveModel(module.id, this.value, dom.model, acName);
+                //路由状态为激活，尝试激活路径
+                if (dom.model[acName]) {
+                    router.activePath(this.value);
                 }
             }
             //添加click事件,避免重复创建事件对象，创建后缓存
@@ -5979,7 +6093,7 @@ var nodom = (function (exports) {
                     if (Util.isEmpty(path)) {
                         return;
                     }
-                    Router.go(path);
+                    Nodom['$Router'].go(path);
                 });
                 GlobalCache.set('$routeClickEvent', event);
             }
@@ -5990,43 +6104,87 @@ var nodom = (function (exports) {
         /**
          * 增加router指令
          */
-        createDirective('router', function (module, dom) {
-            Router.routerKeyMap.set(module.id, dom.key);
+        Nodom.createDirective('router', function (module, dom) {
+            if (!Nodom['$Router']) {
+                throw new NError('uninit', exports.NodomMessage.TipWords.route);
+            }
+            //建立新子节点            
+            dom.children = [{ key: dom.key + '_r', model: dom.model }];
+            Nodom['$Router'].registRouter(module.id, Renderer.getCurrentModule(), dom);
             return true;
         }, 10);
         /**
          * 插头指令
          * 用于模块中，可实现同名替换
          */
-        createDirective('slot', function (module, dom) {
+        Nodom.createDirective('slot', function (module, dom) {
             this.value = this.value || 'default';
             let mid = dom.parent.moduleId;
             const src = dom.vdom;
+            const slotName = '$slots.' + this.value;
             //父dom有module指令，表示为替代节点，替换子模块中的对应的slot节点；否则为子模块定义slot节点
             if (mid) {
                 let m = ModuleFactory.get(mid);
                 if (m) {
-                    //缓存当前替换节点
-                    m.objectManager.set('$slots.' + this.value, {
-                        dom: src,
-                        model: dom.model,
-                        module: ModuleFactory.get(this.templateModuleId)
-                    });
+                    let cfg = m.objectManager.get(slotName);
+                    if (!cfg) {
+                        cfg = {};
+                        m.objectManager.set(slotName, cfg);
+                    }
+                    cfg.dom = src;
+                    cfg.model = dom.model;
+                    cfg.module = module;
                 }
             }
             else { //源slot节点
-                const cfg = module.objectManager.get('$slots.' + this.value);
-                const children = cfg ? cfg.dom.children : src.children;
-                if (children && children.length > 0) {
+                let cfg = module.objectManager.get(slotName);
+                //内部有slot，但是使用时并未设置slot
+                if (!cfg) {
+                    cfg = { type: 1 };
+                }
+                else if (!cfg.type) {
+                    //1 innerrender(通过当前模块渲染），2outerrender(通过模板所属模块渲染)
+                    cfg.type = src.hasProp('innerrender') ? 1 : 2;
+                    //首次渲染，需要检测是否绑定父dom model
+                    for (let d of cfg.dom.children) {
+                        if (check(d)) {
+                            //设定bind标志
+                            cfg.needBind = true;
+                            break;
+                        }
+                    }
+                    /**
+                     * 检测是否存在节点的statickNum=-1
+                     * @param d     带检测节点
+                     * @returns     true/false
+                     */
+                    function check(d) {
+                        if (d.staticNum === -1) {
+                            return true;
+                        }
+                        //深度检测
+                        if (d.children) {
+                            for (let d1 of d.children) {
+                                if (check(d1)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                //渲染时添加s作为后缀，避免与模块内dom key冲突（相同model情况下）
+                if (cfg.dom && cfg.dom.children && cfg.dom.children.length > 0) {
                     //渲染时添加s作为后缀，避免与模块内dom key冲突（相同model情况下）
-                    if (src.hasProp('innerrender')) { //inner render模式
-                        for (let d of children) {
+                    if (cfg.type === 1) { //inner render模式
+                        for (let d of cfg.dom.children) {
                             Renderer.renderDom(module, d, dom.model, dom.parent, dom.model['__key'] + 's');
                         }
                     }
-                    else if (cfg) { // 默认模式
+                    else { // 外部渲染模式
                         //绑定数据
-                        cfg.module.modelManager.bindModel(cfg.model, module);
+                        if (cfg.needBind) {
+                            cfg.module.modelManager.bindModel(cfg.model, module);
+                        }
                         for (let d of cfg.dom.children) {
                             Renderer.renderDom(cfg.module, d, cfg.model, dom.parent, cfg.model['__key'] + 's');
                         }
@@ -6203,6 +6361,7 @@ var nodom = (function (exports) {
     exports.NError = NError;
     exports.NEvent = NEvent;
     exports.NFactory = NFactory;
+    exports.Nodom = Nodom;
     exports.NodomMessage_en = NodomMessage_en;
     exports.NodomMessage_zh = NodomMessage_zh;
     exports.Renderer = Renderer;
@@ -6211,11 +6370,7 @@ var nodom = (function (exports) {
     exports.Scheduler = Scheduler;
     exports.Util = Util;
     exports.VirtualDom = VirtualDom;
-    exports.createDirective = createDirective;
-    exports.createRoute = createRoute;
     exports.nodom = nodom;
-    exports.registModule = registModule;
-    exports.request = request;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

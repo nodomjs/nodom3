@@ -1,4 +1,11 @@
-import {Module, Router, Util} from '../../../dist/nodom.esm.js'
+import {Module, Nodom,Router, Util} from '/dist/nodom.esm.js'
+//启用路由
+Nodom.use(Router,['/router',function(mdl,path){
+    console.log('enter',mdl,path)
+},function(mdl,path){
+    console.log('leave',mdl,path)
+}]);
+
 export class MdlRouteMain extends Module {
     template(){
         return `
@@ -23,9 +30,9 @@ export class MdlRouteMain extends Module {
     onInit(){
         let hash = location.hash;
         if(hash){
-            Router.go(hash.substr(1));
+            Nodom['$Router'].go(hash.substr(1));
         }else{
-            Router.go('/router/route1/home');
+            Nodom['$Router'].go('/router/route1/home');
         }
     }
 

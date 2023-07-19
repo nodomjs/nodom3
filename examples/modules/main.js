@@ -1,4 +1,4 @@
-import {Module} from '../../dist/nodom.esm.js'
+import {Module} from '/dist/nodom.esm.js'
 import {ModuleA} from './modulea.js'
 import {ModuleB} from './moduleb.js'
 import {ModuleC} from './modulec.js'

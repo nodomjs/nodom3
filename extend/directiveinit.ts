@@ -1,11 +1,11 @@
+import { NError } from "../core/error";
 import { NEvent } from "../core/event";
 import { GlobalCache } from "../core/globalcache";
 import { Model } from "../core/model";
 import { Module } from "../core/module";
 import { ModuleFactory } from "../core/modulefactory";
-import { createDirective } from "../core/nodom";
+import { Nodom, NodomMessage} from "../core/nodom";
 import { Renderer } from "../core/renderer";
-import { Router } from "../core/router";
 import { IRenderedDom } from "../core/types";
 import { Util } from "../core/util";
 
@@ -23,7 +23,7 @@ export default (function () {
      * 用于指定该元素为模块容器，表示子模块
      * 用法 x-module='模块类名'
      */
-    createDirective(
+    Nodom.createDirective(
         'module',
         function (module: Module, dom: IRenderedDom) {
             let m: Module;
@@ -41,7 +41,7 @@ export default (function () {
                 mid = m.id;
                 //保留modelId
                 module.objectManager.setDomParam(dom.key, 'moduleId', mid);
-                Renderer.currentModule.addChild(m);
+                Renderer.getCurrentModule().addChild(m);
             }
             //保存到dom上，提升渲染性能
             dom.moduleId = mid;
@@ -74,7 +74,7 @@ export default (function () {
     /**
      *  model指令
      */
-    createDirective(
+    Nodom.createDirective(
         'model',
         function (module: Module, dom: IRenderedDom) {
             let model: Model = module.get(dom.model,this.value);
@@ -90,7 +90,7 @@ export default (function () {
      * 指令名 repeat
      * 描述：重复指令
      */
-    createDirective(
+    Nodom.createDirective(
         'repeat',
         function (module: Module, dom: IRenderedDom) {
             let rows = this.value;
@@ -139,7 +139,7 @@ export default (function () {
      * </recur>
      * ```
      */
-    createDirective(
+    Nodom.createDirective(
         'recur',
         function (module: Module, dom: IRenderedDom) {
             const src = dom.vdom;
@@ -189,7 +189,7 @@ export default (function () {
      * 指令名 if
      * 描述：条件指令
      */
-    createDirective('if',
+    Nodom.createDirective('if',
         function (module: Module, dom: IRenderedDom) {
             if(!dom.parent){
                 return;
@@ -204,7 +204,7 @@ export default (function () {
      * 指令名 else
      * 描述：else指令
      */
-    createDirective(
+    Nodom.createDirective(
         'else',
         function (module: Module, dom: IRenderedDom) {
             if(!dom.parent){
@@ -218,7 +218,7 @@ export default (function () {
     /**
      * elseif 指令
      */
-    createDirective('elseif',
+    Nodom.createDirective('elseif',
         function (module: Module, dom: IRenderedDom) {
             if(!dom.parent){
                 return;
@@ -241,7 +241,7 @@ export default (function () {
     /**
      * elseif 指令
      */
-    createDirective(
+    Nodom.createDirective(
         'endif',
         function (module: Module, dom: IRenderedDom) {
             if(!dom.parent){
@@ -258,7 +258,7 @@ export default (function () {
      * 指令名 show
      * 描述：显示指令
      */
-    createDirective(
+    Nodom.createDirective(
         'show',
         function (module: Module, dom: IRenderedDom) {
             //show指令参数 {origin:通过style设置的初始display属性,rendered:是否渲染过}
@@ -327,7 +327,7 @@ export default (function () {
      * 指令名 field
      * 描述：字段指令
      */
-    createDirective('field',
+    Nodom.createDirective('field',
         function (module: Module, dom: IRenderedDom) {
             dom.assets ||= {};
             //修正staticnum
@@ -392,7 +392,6 @@ export default (function () {
                                 v = undefined;
                             }
                         }
-
                         //修改字段值,需要处理.运算符
                         let arr = field.split('.')
                         if (arr.length === 1) {
@@ -421,10 +420,13 @@ export default (function () {
     /**
      * route指令
      */
-    createDirective('route',
+    Nodom.createDirective('route',
         function (module: Module, dom: IRenderedDom) {
+            if(!Nodom['$Router']){
+                throw new NError('uninit',NodomMessage.TipWords.route);
+            }
             //a标签需要设置href
-            if (dom.tagName.toLowerCase() === 'a') {
+            if (dom.tagName === 'a') {
                 dom.props['href'] = 'javascript:void(0)';
             }
             dom.props['path'] = this.value;
@@ -433,9 +435,12 @@ export default (function () {
                 let acName = dom.props['active'];
                 delete dom.props['active'];
                 //active 转expression
-                Router.addActiveField(module, this.value, dom.model, acName);
-                if ((Router.currentPath&&this.value.startsWith(Router.currentPath)||!Router.currentPath) && dom.model[acName]) {
-                    Router.go(this.value);
+                const router = Nodom['$Router'];
+                //添加激活model
+                router.addActiveModel(module.id,this.value, dom.model, acName);
+                //路由状态为激活，尝试激活路径
+                if (dom.model[acName]) {
+                    router.activePath(this.value);
                 }
             }
             //添加click事件,避免重复创建事件对象，创建后缓存
@@ -447,7 +452,7 @@ export default (function () {
                         if (Util.isEmpty(path)) {
                             return;
                         }
-                        Router.go(path);
+                        Nodom['$Router'].go(path);
                     }
                 );
                 GlobalCache.set('$routeClickEvent', event);
@@ -462,9 +467,14 @@ export default (function () {
     /**
      * 增加router指令
      */
-    createDirective('router',
+    Nodom.createDirective('router',
         function (module: Module, dom: IRenderedDom) {
-            Router.routerKeyMap.set(module.id, dom.key);
+            if(!Nodom['$Router']){
+                throw new NError('uninit',NodomMessage.TipWords.route)
+            }
+            //建立新子节点            
+            dom.children = [{key:dom.key+'_r',model:dom.model}];
+            Nodom['$Router'].registRouter(module.id, Renderer.getCurrentModule(),dom);
             return true;
         },
         10
@@ -474,35 +484,72 @@ export default (function () {
      * 插头指令
      * 用于模块中，可实现同名替换
      */
-    createDirective('slot',
+    Nodom.createDirective('slot',
         function (module: Module, dom: IRenderedDom) {
             this.value = this.value || 'default';
             let mid = dom.parent.moduleId;
             const src = dom.vdom;
+            const slotName = '$slots.' + this.value;
             //父dom有module指令，表示为替代节点，替换子模块中的对应的slot节点；否则为子模块定义slot节点
             if (mid) {
                 let m = ModuleFactory.get(mid);
                 if (m) {
-                    //缓存当前替换节点
-                    m.objectManager.set('$slots.' + this.value, {
-                        dom:src, 
-                        model:dom.model,
-                        module:ModuleFactory.get(this.templateModuleId)
-                    });
+                    let cfg = m.objectManager.get(slotName);
+                    if(!cfg){
+                        cfg = {};
+                        m.objectManager.set(slotName,cfg);
+                    }
+                    cfg.dom = src;
+                    cfg.model = dom.model;
+                    cfg.module = module;
                 }
             } else { //源slot节点
-                const cfg = module.objectManager.get('$slots.' + this.value);
-                const children = cfg?cfg.dom.children:src.children;
-                if(children && children.length>0){
-                    //渲染时添加s作为后缀，避免与模块内dom key冲突（相同model情况下）
-                    if (src.hasProp('innerrender')) { //inner render模式
-                        for (let d of children) {
-                            Renderer.renderDom(module, d, dom.model, dom.parent, dom.model['__key']+'s');
+                let cfg = module.objectManager.get(slotName);
+                //内部有slot，但是使用时并未设置slot
+                if(!cfg){
+                    cfg = {type:1};
+                }else if(!cfg.type){
+                    //1 innerrender(通过当前模块渲染），2outerrender(通过模板所属模块渲染)
+                    cfg.type = src.hasProp('innerrender')?1:2;
+                    //首次渲染，需要检测是否绑定父dom model
+                    for (let d of cfg.dom.children) {
+                        if(check(d)){
+                            //设定bind标志
+                            cfg.needBind = true;
+                            break;
                         }
                     }
-                    else if (cfg) { // 默认模式
+                    /**
+                     * 检测是否存在节点的statickNum=-1
+                     * @param d     带检测节点
+                     * @returns     true/false
+                     */
+                    function check(d){
+                        if(d.staticNum === -1){
+                            return true;
+                        }
+                        //深度检测
+                        if(d.children){
+                            for(let d1 of d.children){
+                                if(check(d1)){
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                //渲染时添加s作为后缀，避免与模块内dom key冲突（相同model情况下）
+                if(cfg.dom && cfg.dom.children && cfg.dom.children.length>0){
+                    //渲染时添加s作为后缀，避免与模块内dom key冲突（相同model情况下）
+                    if (cfg.type === 1) { //inner render模式
+                        for (let d of cfg.dom.children) {
+                            Renderer.renderDom(module, d, dom.model, dom.parent, dom.model['__key']+'s');
+                        }
+                    }else { // 外部渲染模式
                         //绑定数据
-                        cfg.module.modelManager.bindModel(cfg.model, module);
+                        if(cfg.needBind){
+                            cfg.module.modelManager.bindModel(cfg.model, module);
+                        }
                         for (let d of cfg.dom.children) {
                             Renderer.renderDom(cfg.module, d, cfg.model, dom.parent, cfg.model['__key']+'s');
                         }

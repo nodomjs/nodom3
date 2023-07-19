@@ -14,10 +14,7 @@
 			nodom,
 			Module,
 			GlobalCache,
-			ModuleFactory,
-			DefineElement,
-			DefineElementManager,
-		} from '../dist/nodom.esm.js'
+		} from '/dist/nodom.esm.js'
 
 		class ModuleA extends Module {
 			template(props) {
@@ -146,7 +143,7 @@
 						<div>name is:{{name1}}</div>
 						<input x-field='name1' />
 							<!-- class={{genCls()}} $dd={{dd}} $rows1={{rows1}} style={{style}}-->
-						<modulea $rows1={{rows1}}>
+						<modulea $rows1={{rows1}} class='mda'>
 							<for tag='uibutton' e-click='clickBtn' title={{name}} cond={{rows}}/>
 							<moduleb style='font-size:18px;' x-repeat={{rows}} index='idx'>
 								<div>id is:{{idx}},name is:<span style='color:red;font-weight:bold;padding-left:10px'>{{name}}</span></div>
@@ -202,7 +199,7 @@
 				GlobalCache.set('userName', 'yang')
 			}
 			clickBtn(model, dom) {
-				console.log(this, model)
+				console.log(this, model,dom)
 			}
 
 			hideOrShow(model) {

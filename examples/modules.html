@@ -11,7 +11,7 @@
         <div></div>
 	</body>
 	<script type='module'>
-		import{nodom,Module} from '../dist/nodom.esm.js'
+		import{nodom,Module} from '/dist/nodom.esm.js'
 
         class M1 extends Module{
             template(){
@@ -53,7 +53,7 @@
                 return `
                     <div style='background-color:yellow;;;'>
                         This is m3 <br>
-                        <slot innerRender/>
+                        <slot/>
                     </div>
                 `
             }
@@ -82,9 +82,10 @@
                 return `
 				    <div>
                         <h3>单个module</h3>
+                        <button e-click='changeText'>修改text</button>
                         <m1 p1={{getP1(a,b)}} e-click='clickM1'>
                             m1 slot
-                        </m1>    
+                        </m1>
 						<h3>嵌套slot</h3>
                         <m1 p1={{getP1(a,b)}} class='cls1  ' role='mtest'>
                             m1 text is:{{getText(a,b)}}
@@ -111,6 +112,7 @@
 			data(){
 				return{
 					name:'nodom3',
+                    text:'origin text',
 					hobbies:[
 						{title:'健身'},
 						{title:'美食'},
@@ -132,7 +134,7 @@
             }
 
             getText(){
-                return 'text from module main';
+                return this.model.text +' from module main';
             }
 
             clickM1(){
@@ -145,6 +147,10 @@
 
             clickM3(){
                 console.log('m3click method belongs to Main');
+            }
+
+            changeText(){
+                this.model.text = 'changed value';
             }
        	}
     	nodom(MMain,'div');

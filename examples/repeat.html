@@ -20,10 +20,9 @@
 </head>
 
 <body>
-    <div></div>
 </body>
 <script type='module'>
-    import{nodom,Module} from '../dist/nodom.esm.js'
+    import{nodom,Module} from '/dist/nodom.esm.js'
     export class MRepeat extends Module{
         template(){
             return `
@@ -179,6 +178,6 @@
             return index%2?'red':'blue'
         }
     }
-    nodom(MRepeat,'div');
+    nodom(MRepeat);
 </script>
 </html>

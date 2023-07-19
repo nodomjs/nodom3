@@ -9,6 +9,7 @@ export const NodomMessage_en = {
         application:"Application",
         system:"System",
         module:"Module",
+        clazz:"类",
         moduleClass:'ModuleClass',
         model:"Model",
         directive:"Directive",
@@ -32,6 +33,7 @@ export const NodomMessage_en = {
      */
     ErrorMsgs:{
         unknown:"unknown error",
+        uninit:"{0}未初始化",
         paramException:"{0} '{1}' parameter error，see api",
         invoke:"method {0} parameter {1} must be {2}",
         invoke1:"method {0} parameter {1} must be {2} or {3}",
