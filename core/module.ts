@@ -88,17 +88,17 @@ export class Module {
      * 模板对应模块id，作为子模块时有效
      */
     public templateModuleId:number;
-    
-    /**
-     * 子模块类集合，模板中引用的模块类需要声明
-     * 如果类已经通过registModule注册过，这里不再需要定义，只需import即可
-     */
-    private modules: any;
 
     /**
      * 父模块通过dom节点传递的属性
      */
-    private props:any;
+    public props:any;
+
+    /**
+     * 子模块类集合，模板中引用的模块类需要声明
+     * 如果类已经通过registModule注册过，这里不再需要定义，只需import即可
+     */
+    public modules: any;
 
     /**
      * 不渲染的属性（这些属性用于生产模板，不作为属性渲染到模块根节点）
