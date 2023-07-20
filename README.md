@@ -44,7 +44,7 @@ nodom是一款基于数据驱动的web mvvm框架。用于搭建单页应用(SPA
 
 ```html
 <script type="module">
-    import{nodom,Module} from '../dist/nodom.esm.js'
+    import{nodom,Module} from '/dist/nodom.esm.js'
 	class Module1 extends Module{
 		template(){
 			return `
@@ -74,7 +74,7 @@ Nodom是一款基于数据驱动，用于构建用户界面的前端`MVVM`模式
 一个简单的Hello World例子如下：
 ```js
 <script type='module'>
-	import{nodom,Module} from '../dist/nodom.esm.js'
+	import{nodom,Module} from '/dist/nodom.esm.js'
 	class HelloWorld extends Module {
 		template() {
 			return `

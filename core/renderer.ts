@@ -163,7 +163,13 @@ export class Renderer {
                 module.eventFactory.removeAllEvents(dst);
                 for(let evt of src.events){
                     //当事件串为表达式时，需要处理
-                    this.currentModule.eventFactory.addEvent(dst,evt.handleExpr(module,model));
+                    evt = evt.handleExpr(module,model);
+                    //如果不是跟节点，设置module为渲染module
+                    if(src.key !== 1){
+                        evt.module = module;
+                    }
+                    //添加到eventfactory
+                    this.currentModule.eventFactory.addEvent(dst,evt);
                 }
             }
             //子节点渲染

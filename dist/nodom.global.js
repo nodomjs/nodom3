@@ -818,7 +818,13 @@ var nodom = (function (exports) {
                     module.eventFactory.removeAllEvents(dst);
                     for (let evt of src.events) {
                         //当事件串为表达式时，需要处理
-                        this.currentModule.eventFactory.addEvent(dst, evt.handleExpr(module, model));
+                        evt = evt.handleExpr(module, model);
+                        //如果不是跟节点，设置module为渲染module
+                        if (src.key !== 1) {
+                            evt.module = module;
+                        }
+                        //添加到eventfactory
+                        this.currentModule.eventFactory.addEvent(dst, evt);
                     }
                 }
                 //子节点渲染
@@ -3425,7 +3431,7 @@ var nodom = (function (exports) {
                         ev.module.invokeMethod(ev.handler, model, dom, ev, e);
                     }
                     else if (typeof ev.handler === 'function') {
-                        ev.handler.apply(module, [model, dom, ev, e]);
+                        ev.handler.apply(ev.module, [model, dom, ev, e]);
                     }
                     if (ev.once) { //移除事件
                         events.splice(i--, 1);

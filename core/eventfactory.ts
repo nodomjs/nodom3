@@ -317,7 +317,7 @@ export class EventFactory{
                 if(typeof ev.handler === 'string'){
                     ev.module.invokeMethod(ev.handler,model,dom,ev,e);
                 }else if(typeof ev.handler === 'function'){
-                    ev.handler.apply(module,[model,dom,ev,e]);
+                    ev.handler.apply(ev.module,[model,dom,ev,e]);
                 }
                 if(ev.once){  //移除事件
                     events.splice(i--,1);
