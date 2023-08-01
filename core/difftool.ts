@@ -160,7 +160,7 @@ export class DiffTool{
          * @returns     true/false
          */
         function isChanged(src:IRenderedDom,dst:IRenderedDom):boolean{
-            for(let p of ['props','assets']){
+            for(let p of ['props','assets','events']){
                 //属性比较
                 if(!src[p] && dst[p] || src[p] && !dst[p]){
                     return true;

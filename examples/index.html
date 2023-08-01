@@ -5,100 +5,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>nodom examples-index</title>
-    <link rel="stylesheet" type='text/css' href='css/index.css' />
-    
 </head>
-
 <body>
-    <div class="code">
-        <h1>nodom</h1>
-        <div class="introduction">
-            nodom是一个前端mvvm框架，基于模块进行渲染，由model进行驱动，基本用法参考start.html。
-        </div>
-        <h3>核心组成</h3>
-        <table>
-            <thead>
-                <tr>
-                    <td width='200'>名称</td>
-                    <td>说明</td>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>模块(Module)</td>
-                    <td>
-                        NoDom基于模块进行应用搭建，一个应用由单个或多个模块组成。
-                        渲染以模块为单位进行（增量渲染），所以为了保证渲染效率，模块不要过大，大模块可以拆分为多个小模块。
-                    </td>
-                </tr>
-                <tr>
-                    <td>模型(Model)</td>
-                    <td>
-                        模型为数据模型，每个数据对象都对应一个model，由模块的data()方法提供，
-                        模块基于model进行渲染，model的变化会导致模块的增量渲染，通常是多个model变化，进行一次渲染）。
-                    </td>
-                </tr>
-                <tr>
-                    <td>模版(Template)</td>
-                    <td>模版作为虚拟dom的生成来源，通常是一个html文件或html串，由模块的template()方法提供。</td>
-                </tr>
-                <tr>
-                    <td>指令(Directive)</td>
-                    <td>为增强dom节点的使用，增加了指令功能，指令以“x-”开头，目前支持11个指令:module,model,repeat,recur,if,else,show,field,route,router,animation。</td>
-                </tr>
-                <tr>
-                    <td>表达式(Expression)</td>
-                    <td>达式主要用于数据计算，表达式可用于元素属性(attribute)或textContent，用{{ }}进行包裹，
-                        作为元素属性时，{{}}两端不能用引号。</td>
-                </tr>
-                <tr>
-                    <td>事件(Event)</td>
-                    <td>事件和元素的事件相对应，以"e-"开头，如 e-click='eventName'，事件不能带参数，自动传递约定的参数。</td>
-                </tr>
-                <tr>
-                    <td>路由(Router)</td>
-                    <td>单页应用(SPA)基于模块切换达到传统的页面切换效果，模块的切换通常用路由来实现。路由主要用于操作模块切换、维护location history。</td>
-                </tr>
-            </tbody>
-        </table>
-        <p class='annotion'>注：更多详情参考readme。</p>
-        <h3>例子</h3>
-        <div class="examples">
-            <p><a href="start.html">起步</a></p>
-            
-            <p><a href="filter.html">过滤器用法</a></p>
-            <p><a href="model.html">model用法</a></p>
-            <p><a href="repeat.html">repeat用法</a></p>
-            <p><a href="if_else.html">if/else用法</a></p>
-            <p><a href="class.html">class用法</a></p>
-            <p><a href="show.html">show指令用法</a></p>
-            <p><a href="field.html">field指令用法</a></p>
-            <p><a href="route.html">route指令用法</a></p>
-        </div>
+    <h3>例子</h3>
+    <div class="examples">
+        <p><a href="start.html" target="_blank">起步</a></p>
+        <p><a href="expression.html" target="_blank">表达式</a></p>
+        <p><a href="model.html" target="_blank">model指令</a></p>
+        <p><a href="repeat.html" target="_blank">repeat指令</a></p>
+        <p><a href="if.html" target="_blank">if/else指令</a></p>
+        <p><a href="show.html" target="_blank">show指令</a></p>
+        <p><a href="field.html" target="_blank">field指令</a></p>
+        <p><a href="recur.html" target="_blank">recur指令</a></p>
+        <p><a href="slot.html" target="_blank">slot指令</a></p>
+        <p><a href="request.html" target="_blank">ajax请求</a></p>
+        <p><a href="css.html" target="_blank">css使用</a></p>
+        <p><a href="event.html" target="_blank">事件</a></p>
+        <p><a href="svg.html" target="_blank">svg使用</a></p>
+        <p><a href="route.html" target="_blank">route指令</a></p>
+        
     </div>
 </body>
 <script>
-    nodom.app({
-        module:{
-            el: '.code',
-            data: {
-                commodities: [{
-                    name: 'T恤',
-                    price: 150,
-                    discount: 0.9
-                }, {
-                    name: '短裤',
-                    price: '80',
-                    discount: 0.75
-                }, {
-                    name: '外套',
-                    price: 200,
-                    discount: 0.6
-                }]
-            }
-        }
-    });
-
 </script>
 
 </html>

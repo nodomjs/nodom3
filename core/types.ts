@@ -1,3 +1,4 @@
+import { NEvent } from "./event";
 import { Model } from "./model";
 import { Route } from "./route";
 import { VirtualDom } from "./virtualdom";
@@ -87,6 +88,11 @@ export interface IRenderedDom{
      * {prop1:value1,...}
      */
     props?: Object;
+
+    /**
+     * 事件集合
+     */
+    events?:NEvent[];
  
     /**
      * element为textnode时有效

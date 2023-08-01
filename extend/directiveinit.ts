@@ -9,13 +9,13 @@ import { Renderer } from "../core/renderer";
 import { IRenderedDom } from "../core/types";
 import { Util } from "../core/util";
 
-export default (function () {
+(function () {
     /**
      * 指令类型初始化
      * 每个指令类型都有一个名字、处理函数和优先级，处理函数不能用箭头函数
-     * 处理函数在渲染时执行，包含两个参数 module(模块)、dom(目标虚拟dom)、src(源虚拟dom)
+     * 处理函数在渲染时执行，包含两个参数 module(模块)、dom(目标虚拟dom)
      * 处理函数的this指向指令
-     * 处理函数的返回值 true 表示继续，false 表示后续指令不再执行 
+     * 处理函数的返回值 true 表示继续，false 表示后续指令不再执行，同时该节点不加入渲染树 
      */
 
     /**
@@ -109,7 +109,7 @@ export default (function () {
                 if(!rows[i]){
                     continue;
                 }
-                if (idxName) {
+                if (idxName && typeof rows[i] === 'object') {
                     rows[i][idxName] = i;
                 }
                 let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].__key);
@@ -169,6 +169,8 @@ export default (function () {
                 }else{  //数组内recur，依赖repeat得到model，repeat会取一次数组元素，所以需要dom model
                     Renderer.renderDom(module,node1,model,dom,(<any>m).__key);
                 }
+                //删除ref属性
+                delete dom.props['ref'];
             } else { //递归节点
                 let data = dom.model[this.value];
                 if (!data) {
@@ -176,6 +178,9 @@ export default (function () {
                 }
                 //递归名，默认default
                 const name = '$recurs.' + (dom.props['name'] || 'default');
+                //删除name属性
+                delete dom.props['name'];
+                //保存递归定义的节点
                 if (!module.objectManager.get(name)) {
                     module.objectManager.set(name, src);
                 }
@@ -322,7 +327,7 @@ export default (function () {
         },
         5
     );
-
+    
     /**
      * 指令名 field
      * 描述：字段指令
@@ -335,37 +340,49 @@ export default (function () {
                 dom.staticNum = 1;
             }
             let dataValue = module.get(dom.model,this.value);
-            switch(dom.props['type']){
-                case 'radio':
-                    let value = dom.props['value'];
-                    dom.props['name'] = this.value;
-                    if (dataValue == value) {
-                        dom.props['checked'] = 'checked';
-                        dom.assets['checked'] = true;
-                    } else {
-                        delete dom.props['checked'];
-                        dom.assets['checked'] = false;
+            if(dom.tagName === 'select'){
+                dom.props['value'] = dataValue;
+                //延迟设置value，避免option尚未渲染
+                setTimeout(()=>{
+                    const el = <HTMLSelectElement>module.domManager.getElement(dom.key);
+                    if(el){
+                        el.value = dataValue;
                     }
-                    break;
-                case 'checkbox':
-                    //设置状态和value
-                    let yv = dom.props['yes-value'];
-                    //当前值为yes-value
-                    if (dataValue == yv) {
-                        dom.props['value'] = yv;
-                        dom.assets['checked'] = true;
-                    } else { //当前值为no-value
-                        dom.props['value'] = dom.props['no-value'];
-                        dom.assets['checked'] = false;
-                    }
-                    break;
-                case 'select':
-                    dom.props['value'] = dataValue;
-                    dom.assets['value'] = dataValue;
-                default:
-                    let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
-                    dom.props['value'] = v;
-                    dom.assets['value'] = v;
+                },0)
+            }else if(dom.tagName === 'input'){
+                switch(dom.props['type']){
+                    case 'radio':
+                        let value = dom.props['value'];
+                        dom.props['name'] = this.value;
+                        if (dataValue == value) {
+                            dom.props['checked'] = 'checked';
+                            dom.assets['checked'] = true;
+                        } else {
+                            delete dom.props['checked'];
+                            dom.assets['checked'] = false;
+                        }
+                        break;
+                    case 'checkbox':
+                        //设置状态和value
+                        let yv = dom.props['yes-value'];
+                        //当前值为yes-value
+                        if (dataValue == yv) {
+                            dom.props['value'] = yv;
+                            dom.assets['checked'] = true;
+                        } else { //当前值为no-value
+                            dom.props['value'] = dom.props['no-value'];
+                            dom.assets['checked'] = false;
+                        }
+                        break;
+                    default:
+                        let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
+                        dom.props['value'] = v;
+                        dom.assets['value'] = v;
+                }
+            }else{
+                let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
+                dom.props['value'] = v;
+                dom.assets['value'] = v;
             }
             
             let event: NEvent = GlobalCache.get('$fieldChangeEvent');
@@ -411,7 +428,7 @@ export default (function () {
                 //存储字段change事件钩子
                 GlobalCache.set('$fieldChangeEvent', event);
             }
-            dom.vdom.addEvent(event);
+            dom.vdom.addEvent(event,0);
             return true;
         },
         10
@@ -554,6 +571,8 @@ export default (function () {
                             Renderer.renderDom(cfg.module, d, cfg.model, dom.parent, cfg.model['__key']+'s');
                         }
                     }
+                }else{  //未在父模块配置slot，则直接渲染
+                    return true;
                 }
             }
             return false;

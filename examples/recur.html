@@ -3,17 +3,8 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-		<title>递归</title>
-
+		<title>nodom examples-recur指令</title>
 		<style>
-			.code {
-				margin: 20px;
-			}
-
-			.tip {
-				color: darkorange;
-			}
-
 			.cls1 {
 				background-color: red;
 			}
@@ -44,10 +35,6 @@
 	</head>
 
 	<body>
-		<h2>递归指令</h2>
-		<div class="view">
-			
-		</div>
 	</body>
 	<script type='module'>
 		import{nodom,Module} from '/dist/nodom.esm.js'
@@ -55,6 +42,7 @@
 			template(){
 				return `
 					<div>
+						<h2>Recur 递归指令</h2>
 						<button e-click='change'>change</button>
 						<h3>简单使用</h3>
 						<recur cond='ritem' class='first'>
@@ -131,10 +119,10 @@
 									]},{
 									title:'bbb2',
 									id:20,
-									/*items:[
+									items:[
 										{title:'bbb21',id:201},
 										{title:'bbb22',id:202}
-									]*/}
+									]}
 								]
 							}
 						]

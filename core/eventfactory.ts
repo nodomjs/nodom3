@@ -1,5 +1,6 @@
 import { NEvent } from "./event";
 import { Module } from "./module";
+import { Renderer } from "./renderer";
 import { IRenderedDom } from "./types";
 
 /**
@@ -18,19 +19,21 @@ export class EventFactory{
      *          eventName1:
      *            {
      *              own:[event对象,...],
-     *              delg:[{key:被代理key,event:event对象},...],
+     *              delg:[{key:被代理key,event:event对象,...],
      *              toDelg:[event对象],
      *              capture:useCapture
      *           },
      *           eventName2:...
-     *           bindMap:{},
+     *           bindMap:{}
+     *           
      *        }
      *    eventName:事件名，如click等
-     *    配置项:
-     *        own:自己的事件数组,
-     *        delg:代理事件数组（代理子对象）,
-     *        bindMap:已绑定事件map，其中键为事件名，值为capture，解绑时需要
-     *        capture:在own和delg都存在时，如果capture为true，则先执行own，再执行delg，为false时则相反。
+     *    配置项说明:
+     *      own:自己的事件数组
+     *      delg:代理事件数组（代理子对象）
+     *        
+     *      bindMap:已绑定事件map，其中键为事件名，值为capture，解绑时需要
+     *      capture:在own和delg都存在时，如果capture为true，则先执行own，再执行delg，为false时则相反。
      *                如果只有own，则和html event的cature事件处理机制相同
      */
     private eventMap:Map<number,any>;
@@ -57,11 +60,11 @@ export class EventFactory{
      * @param key       dom key 
      * @param event     事件对象
      */
-    public addEvent(dom:IRenderedDom,event: NEvent){
+    public addEvent(dom:IRenderedDom,event: NEvent):boolean{
         const key = dom.key;
         //判断是否已添加，避免重复添加
         if(this.addedEvents.has(key) && this.addedEvents.get(key).includes(event)){
-            return;
+            return false;
         }
         //代理事件，如果无父节点，则直接处理为自有事件
         if(event.delg){
@@ -81,6 +84,7 @@ export class EventFactory{
         }else{
             this.addedEvents.get(key).push(event);
         }
+        return true;
     }
 
     /**
@@ -152,7 +156,6 @@ export class EventFactory{
         //从dom event数组移除
         const arr = this.addedEvents.get(dom.key);
         arr.splice(arr.indexOf(event),1);
-
         //处理delg和own数组
         if(event.delg){ //代理事件
             //找到父对象
@@ -190,7 +193,6 @@ export class EventFactory{
             return;
         }
         const el = this.module.getElement(key);
-        
         const cfg = this.eventMap.get(key);
         for(let key of Object.keys(cfg)){
             // bindMap 不是事件名
@@ -307,10 +309,13 @@ export class EventFactory{
             if(!events){
                 return;
             }
-            //如果为子模块，则model为子模块对应节点的model
+            // 禁止冒泡为false，如果绑定的多个事件中存在1个nopopo，则全部nopopo
             let nopopo = false;
             for(let i=0;i<events.length;i++){
                 const ev = events[i];
+                if(!ev.handler){
+                    continue;
+                }
                 //外部事件且为根dom，表示为父模块外部传递事件，则model为模块srcDom对应model，否则使用dom对应model
                 const model = ev.module!==module&&dom.key===1?module.srcDom.model:dom.model;
                 //判断为方法名还是函数
@@ -319,10 +324,13 @@ export class EventFactory{
                 }else if(typeof ev.handler === 'function'){
                     ev.handler.apply(ev.module,[model,dom,ev,e]);
                 }
-                if(ev.once){  //移除事件
-                    events.splice(i--,1);
+                // 只执行1次，则handler置空
+                if(ev.once){
+                    ev.handler = undefined;
                 }
-                nopopo = ev.nopopo;
+                if(!nopopo){
+                    nopopo = ev.nopopo;
+                }
             }
             if(nopopo){
                 e.stopPropagation();
@@ -359,12 +367,10 @@ export class EventFactory{
                         }
                         // 保留nopopo
                         nopopo = ev.nopopo;
-                        if(ev.once){  //移除代理事件，需要从被代理元素删除
+                        // 只执行1次,移除代理事件
+                        if(ev.once){  
                             //从当前dom删除
                             events.splice(i--,1);
-                            //从被代理dom删除
-                            const ind = module.eventFactory.get(k).indexOf(ev);
-                            module.eventFactory.get(k).splice(ind,1);
                         }
                         break;
                     }

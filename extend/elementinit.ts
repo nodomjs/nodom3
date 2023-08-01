@@ -66,12 +66,16 @@ class IF extends DefineElement{
     }
 }
 
+/**
+ * ELSE 元素
+ */
 class ELSE extends DefineElement{
     constructor(node: VirtualDom,module:Module){
         super(node);
         node.addDirective(new Directive('else',null,module.id));
     }
 }
+
 /**
  * ELSEIF 元素
  */
@@ -87,6 +91,7 @@ class ELSEIF extends DefineElement{
         node.addDirective(new Directive('elseif',cond,module.id));
     }
 }
+
 /**
  * ENDIF 元素
  */
@@ -98,7 +103,23 @@ class ENDIF extends DefineElement{
 }
 
 /**
- * 替代器
+ * SHOW 元素
+ */
+class SHOW extends DefineElement{
+    constructor(node: VirtualDom,module:Module){
+        super(node);
+        //条件
+        let cond = node.getProp('cond');
+        if (!cond) {
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'SHOW', 'cond');
+        }
+        node.delProp('cond');
+        node.addDirective(new Directive('show',cond,module.id));
+    }
+}
+
+/**
+ * 插槽
  */
 class SLOT extends DefineElement{
     constructor(node: VirtualDom,module:Module){
@@ -110,4 +131,35 @@ class SLOT extends DefineElement{
     }
 }
 
-DefineElementManager.add([MODULE,FOR,IF,RECUR,ELSE,ELSEIF,ENDIF,SLOT]);
+/**
+ * 路由
+ */
+class ROUTE extends DefineElement{
+    constructor(node: VirtualDom,module:Module){
+        //默认标签为a
+        if(!node.hasProp('tag')){
+            node.setProp('tag','a');
+        }
+        
+        super(node);
+        //条件
+        let cond = node.getProp('path');
+        if (!cond) {
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ROUTE', 'path');
+        }
+        node.addDirective(new Directive('route',cond,module.id));
+    }
+}
+
+/**
+ * 路由容器
+ */
+class ROUTER extends DefineElement{
+    constructor(node: VirtualDom,module:Module){
+        super(node);
+        node.addDirective(new Directive('router',null,module.id));
+    }
+}
+
+//添加到自定义元素管理器
+DefineElementManager.add([MODULE,FOR,RECUR,IF,ELSE,ELSEIF,ENDIF,SHOW,SLOT,ROUTE,ROUTER]);

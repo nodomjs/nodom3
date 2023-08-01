@@ -1,7 +1,6 @@
 import { Module } from "./module";
 import { ModuleFactory } from "./modulefactory";
 import { Route } from "./route";
-import { EModuleState } from "./types";
 import { Util } from "./util";
 
 /**
@@ -84,7 +83,7 @@ export class Router {
                 return;
             }
             this.startType = 1;
-            this.go(state);
+            this.go(state.url);
         });
     }
 
@@ -94,8 +93,8 @@ export class Router {
      * @param type  启动路由类型，参考startType，默认0
      */
     public go(path: string) {
-        //相同路径不加入
-        if (path === this.currentPath) {
+        // 当前路径的父路径不处理
+        if (this.currentPath && this.currentPath.startsWith(path)) {
             return;
         }
         //添加路径到等待列表，已存在，不加入
@@ -129,6 +128,10 @@ export class Router {
      * @param path 	路径
      */
     private async start(path: string) {
+        // 当前路径的父路径不处理
+        if (this.currentPath && this.currentPath.startsWith(path)) {
+            return;
+        }
         let diff = this.compare(this.currentPath, path);
         // 不存在上一级模块,则为主模块，否则为上一级模块
         let parentModule: Module = diff[0] === null?ModuleFactory.getMain():await this.getModule(diff[0]);
@@ -182,14 +185,14 @@ export class Router {
                 parentModule = module;
             }
         }
-        //如果是history popstate，则不加入history
-        if (this.startType === 0) {
+        //如果是history popstate或新路径是当前路径的子路径，则不加入history
+        if (this.startType !== 1) {
             let path1:string = (this.basePath||'') + path;
-            //子路由，替换state
+            //子路由或父路由，替换state
             if (path.startsWith(this.currentPath)) {
-                history.replaceState(path1, '', path1);
+                history.replaceState({url:path1}, '', path1);
             } else { //路径push进history
-                history.pushState(path1, '', path1);
+                history.pushState({url:path1}, '', path1);
             }
         }
         //修改currentPath

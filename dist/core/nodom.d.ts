@@ -128,6 +128,11 @@ export declare class Nodom {
      *                  rand|bool|无|否|无|请求随机数，设置则浏览器缓存失效
      */
     static request(config: any): Promise<any>;
+    /**
+     * 设置相同请求拒绝时间间隔
+     * @param time  时间间隔（ms）
+     */
+    static setRejectTime(time: number): void;
 }
 /**
  * Nodom.app的简写方式

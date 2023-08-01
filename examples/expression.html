@@ -18,41 +18,48 @@
 			template(){
 				return `
 					<div>
+						<h3>算术运算</h3>
 						{{20*((price+2)*discount)}}
-						<div>{{year + '年' + month + '月'}}</div>
+						<h3>字符串拼接</h3>
+						<div>日期：{{year + '年' + month + '月'}}</div>
+						<div>路径：{{'/'+'path'+'/'+url}}</div>
+						<h3>多级数据</h3>
 						<div>多级数据：{{ac.age.as}}</div>
-						<h2>数据计算</h2>
-						<div>价格：{{Math.round(price * discount) + 'hello'}}</div>
+						<h3>方法属性混合</h3>
 						<div>折扣：{{cacDis(price*discount)}}</div>
 						<div>描述：{{30 + addStr('hello' + desc) + 20}}</div>
 						<div>随机折扣:{{(Math.random()*price).toFixed(1)}}</div>
 						<div>当前日期是:{{genDate(date1)}}</div>
 						<div>当前日期时间是:{{genDate(date1,1)}}</div>
 						<div>当前时间是:{{genDate(date1,2)}}</div>
-						<div x-if={{Object.keys(goods).length>0}}>商品列表存在则显示</div>
-						<div>路径：{{'/'+'path'+'/'+url}}</div>
-						
-						<div>{{!true}}</div>
-						<div>转换为小写字母:{{name.toLowerCase()}}</div>
-						<div>转换为大写字母:{{name.toUpperCase()}}</div>
 						<div>数组求和:{{sum(...arr)}}</div>
-						<div>判断数组中有没有‘num’: <span x-if={{new Set(arr).has(num)}}>true</span></div>
-						<div>价格求和: {{sum(1,2)+price}}</div>
 						<div>
 							{{genDate(new Date().getTime())}} 是否为工作日：<span x-if={{new Date().getDay()<6}}>true</span>
 						</div>
 						<div>货币：¥{{(price*discount).toFixed(1)}}</div>
-						<div x-if={{price>30 && discount !== undefined}}>是低价商品并且还有折扣</div>
+						
+						<h3>Math原生方法</h3>
+						<div>价格：{{Math.round(price * discount) + 'hello'}}</div>
 						<div>计算：{{cac(1,2)+ (Math.round((price * discount))).toFixed(1) + 1}}</div>
+						
+						<h3>Object原生方法</h3>
+						<div x-if={{Object.keys(goods).length>0}}>商品列表存在则显示</div>
+						<h3>字符串方法</h3>
+						<div>转换为小写字母:{{name.toLowerCase()}}</div>
+						<div>转换为大写字母:{{name.toUpperCase()}}</div>
+						
+						<h3>其它</h3>
+						<div>{{!true}}</div>
+						<div>判断数组中有没有‘num’: <span x-if={{new Set(arr).has(num)}}>true</span></div>
+						<div x-if={{price>30 && discount !== undefined}}>是低价商品并且还有折扣</div>
 						<div>instanceof用法:{{arr instanceof Array}}</div>
 						<div>{{num+1}}</div>
-						<hr />
 						<div>三目运算：{{num>0?1:0}}</div>
 						<div>对象判断：{{{x:1,yyy:2}.constructor.name === 'Object'}}</div>
 						<div>数组方法：{{arr.join(',')}}</div>
 						<div>使用this：{{desc + ' ' + this.state}}</div>
 						<div>扩展运算-数组求和：{{sum(...arr)}}</div> 
-						<div>typeof：{{typeof arr}}</div> -->
+						<div>typeof：{{typeof arr}}</div> 
 					</div>
 				`
 			}

@@ -196,6 +196,7 @@ export declare class VirtualDom {
     /**
      * 保存事件
      * @param event     事件对象
+     * @param index 	位置
      */
-    addEvent(event: NEvent): void;
+    addEvent(event: NEvent, index?: number): void;
 }

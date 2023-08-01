@@ -10,6 +10,11 @@ export declare class RequestManager {
      */
     private static requestMap;
     /**
+     * 设置相同请求拒绝时间间隔
+     * @param time  时间间隔（ms）
+     */
+    static setRejectTime(time: number): void;
+    /**
      * ajax 请求
      * @param config    object 或 string
      *                  如果为string，则直接以get方式获取资源

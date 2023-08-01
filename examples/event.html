@@ -22,6 +22,8 @@
 			template() {
 				return `
 				<div>
+					<h2>事件使用</h2>
+					<p>打开控制台，查看事件对应输出
 					<h3>说明</h3>
 					<p>	
 						事件配置方法：e-事件名='eventName[:nopopo:delg:capture:once]'
@@ -32,8 +34,6 @@
 							<li>once:触发一次</li>
 						</ul>
 					</p>
-					
-					<button e-click='add'>添加一条数据</button>
 					
 					<h3>useCapture</h3>
 					<ul e-click='clickP:capture'>
@@ -89,9 +89,7 @@
 			clickP(model, dom, evo, e) {
 				console.log("parent", model);
 			}
-			swipedown(model, dom, evo, e) {
-				console.log(e.v0);
-			}
+			
 			clickItem(model, dom, evo, e) {
 				console.log("child", model);
 				model.checked = true;
@@ -99,14 +97,6 @@
 
 			dblClick(model,dom,evo,e){
 				console.log("dblclick child",model);
-			}
-
-			add(model, dom, evo, e) {
-				model.edus.push({
-					eduId: 5,
-					eduName: "博士后",
-				});
-				console.log(model);
 			}
 
 			click0(){

@@ -6,13 +6,22 @@ export class RequestManager{
     /**
      * 拒绝相同请求（url，参数）时间间隔
      */
-    public static rejectReqTick:number = 500;
+    public static rejectReqTick:number = 0;
+
     /**
      * 请求map，用于缓存之前的请求url和参数
      * key:     url
      * value:   请求参数
      */
     private static requestMap:Map<string,any> = new Map();
+
+    /**
+     * 设置相同请求拒绝时间间隔
+     * @param time  时间间隔（ms）
+     */
+    public static setRejectTime(time:number){
+        this.rejectReqTick = time;
+    }
     /**
      * ajax 请求
      * @param config    object 或 string
@@ -34,20 +43,23 @@ export class RequestManager{
      */
     public static async request(config): Promise<any> {
         const time = Date.now();
-        //重复请求判断
-        if(this.requestMap.has(config.url)){
-            const obj = this.requestMap.get(config.url);
-            if(time - obj.time < this.rejectReqTick && Util.compare(obj.params,config.params)){
-                return new Promise((resolve,reject)=>{
-                    resolve(null)
-                });
+        //如果设置了rejectReqTick，则需要进行判断
+        if(this.rejectReqTick>0){
+            if(this.requestMap.has(config.url)){
+                const obj = this.requestMap.get(config.url);
+                if(time - obj.time < this.rejectReqTick && Util.compare(obj.params,config.params)){
+                    return new Promise((resolve,reject)=>{
+                        resolve(null)
+                    });
+                }
             }
+            //加入请求集合
+            this.requestMap.set(config.url,{
+                time:time,
+                params:config.params
+            });
         }
-        //加入请求集合
-        this.requestMap.set(config.url,{
-            time:time,
-            params:config.params
-        });
+        
         return new Promise((resolve, reject) => {
             if (typeof config === 'string') {
                 config = {
@@ -156,13 +168,14 @@ export class RequestManager{
      */
     public static clearCache(){
         const time = Date.now();
-        if(this.requestMap){
-            for(let kv of this.requestMap){
-                if(time - kv[1].time > this.rejectReqTick){
-                    this.requestMap.delete(kv[0]);
+        if(this.rejectReqTick>0){
+            if(this.requestMap){
+                for(let kv of this.requestMap){
+                    if(time - kv[1].time > this.rejectReqTick){
+                        this.requestMap.delete(kv[0]);
+                    }
                 }
             }
         }
-        
     }
 }

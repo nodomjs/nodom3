@@ -9,12 +9,16 @@
 </body>
 <script type='module'>
     import{Nodom,nodom,Module} from '/dist/nodom.esm.js'
+    //设置重复请求拒绝事件间隔为500ms
+    Nodom.setRejectTime(500);
     class Mdl extends Module{
         template(){
             return `
                 <div>
+                    <h2>Ajax请求</h2>
                     <p>nodom通过Nodom.request提供ajax请求，如果选用第三方ajax插件，需要重载Nodom.request方法</p>
-                    <p>示例中，请求1次和连续请求2次都只执行一次请求，重复请求将返回null，输出结果查看console</p>
+                    <p>示例中，因为设置了重复请求的拒绝时间间隔，请求1次和连续请求2次都只执行一次请求，重复请求将返回null，输出结果查看console</p>
+                    <p>尝试屏蔽Nodom.setRejectTime代码看看结果有什么不同</p>
                     <button e-click='req1'>请求1次</button>
                     <button e-click='req2'>请求2次</button>
                 </div>

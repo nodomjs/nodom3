@@ -144,6 +144,14 @@ export class Nodom{
     public static async request(config): Promise<any> {
         return await RequestManager.request(config);
     }
+
+    /**
+     * 设置相同请求拒绝时间间隔
+     * @param time  时间间隔（ms）
+     */
+    public static setRejectTime(time:number){
+        RequestManager.setRejectTime(time);
+    }
 }
 
 /**

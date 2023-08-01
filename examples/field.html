@@ -6,15 +6,16 @@
 		<title>field</title>
 	</head>
 	<body>
-		<div></div>
 	</body>
 	<script type="module">
-		import { nodom, Module, Util, ModuleFactory} from "/dist/nodom.esm.js";
+		import { nodom, Module} from "/dist/nodom.esm.js";
 
 		class Module1 extends Module {
 			template() {
 				return `
 				<div>
+					<h2>field指令</h2>
+					<p>field指令用于实现输入类型元素，如input、select、textarea等输入元素与数据项之间的双向绑定。</p>
 					<button e-click='change'>change</button>
 					<button e-click='change1'>change1</button>
 					<div>
@@ -26,7 +27,7 @@
 						<div>简介:{{intro}}</div>
 					</div>
 					<div>
-						<div>姓名：<input x-field='name' /></div>
+						<div>姓名：<input x-field='name' e-change='changeName'/></div>
 						<div>
 							出生日期：<input type='date' x-field='birth' value={{birth}} />
 						</div>
@@ -48,15 +49,13 @@
 				</div>
 				`;
 			}
-			click(model, dom, NEvent, e) {
-				console.log(model.married);
-			}
+			
 			data() {
 				return {
 					name: "nodom",
 					sexy: "F",
 					married: 1,
-					edu: 2,
+					edu: '2',
 					birth: "2017-05-11",
 					edus: [
 						{ eduId: 1, eduName: "高中" },
@@ -67,9 +66,6 @@
 				};
 			}
 
-			watchSexy(oldValue, value) {
-				console.log(this, oldValue, value);
-			}
 			change(model, dom) {
 				model.married = 0;
 				model.sexy = "F";
@@ -80,29 +76,12 @@
 			change1(model, dom) {
 				model.name = "nodom123";
 			}
-			onFirstRender() {
-				console.log("dddd");
-				// console.log($.FilterManager.exec(this,'date','1616472327001',':yyyy-MM-dd HH:mm:ss'));
-			}
 
-			onInit(model){
-				this.watch('edu',(model,ov,nv)=>{
-					console.log(ov,nv);
-				});
-			}
-			onRender() {
-				console.log("d1");
-			}
-
-			formatDate(d) {
-				return Util.formatDate(d, "yyyy-MM-dd");
-			}
-
-			formatTime(d) {
-				return Util.formatDate(d, "yyyy-MM-dd HH:mm:ss.S");
+			onMount(){
+				console.log(document.querySelector('select').value);
 			}
 		}
 
-		nodom(Module1, "div");
+		nodom(Module1);
 	</script>
 </html>

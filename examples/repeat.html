@@ -27,6 +27,8 @@
         template(){
             return `
             <div class="view">
+                <h2> repeat指令</h2>
+                <p>repeat指令用于对数组型数据进行渲染。</p>
                 <button e-click='pop'>pop</button>
                 <button e-click='push'>push</button>
                 <button e-click='addFood'>addFood</button>
@@ -34,12 +36,11 @@
                 <button e-click='asc'>价格升序</button>
                 <button e-click='clear'>清空</button>
                 <h3>基本使用</H3>
-                <!--
-                    <div class="code">
+                <div class="code">
                     <for cond={{foods}} class='item'>
                         <span>菜名：{{name}}，价格：{{price}}</span>
                     </for>
-                </div>-->
+                </div>
                 <h3>索引号的使用(编号从0开始)</h3> 
                 <p>如果使用索引号，需要在带有repeat的指令中配置index属性，该属性指定索引名。</p>
                 <div class='code'>
@@ -48,7 +49,6 @@
                         编号：{{idx}}，菜名：{{name}}，价格：{{price}}
                     </div>
                 </div>
-            <!--
                 <h3>自定义过滤数组</h3>
                 <div class="code">
                     菜单：
@@ -76,7 +76,7 @@
                     .blue{
                         color:blue;
                     }
-                </style> -->
+                </style>
             </div>
             `
         }

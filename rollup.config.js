@@ -22,28 +22,9 @@ export default {
 			file: resolve('nodom.esm.js'),
 			format: "esm",
 			...commonOpt
-		},
-		{
+		},{
 			file: resolve("nodom.esm.min.js"),
 			format: "esm",
-			...pluginOpt
-		},
-		{
-			file: resolve("nodom.cjs.js"),
-			format: "cjs",
-			...commonOpt
-		},
-		{
-			file: resolve("nodom.cjs.min.js"),
-			format: "cjs",
-			...pluginOpt
-		}, {
-			file: resolve("nodom.global.js"),
-			format: "iife",
-			...commonOpt
-		}, {
-			file: resolve("nodom.global.min.js"),
-			format: "iife",
 			...pluginOpt
 		}
 	],

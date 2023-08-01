@@ -406,12 +406,17 @@ export class VirtualDom {
 	/**
 	 * 保存事件
 	 * @param event     事件对象
+	 * @param index 	位置
 	 */
-	public addEvent(event: NEvent) {
+	public addEvent(event: NEvent,index?:number) {
 		if (!this.events) {
 			this.events = [event]
 		}else if(!this.events.includes(event)){
-			this.events.push(event)
+			if(index >= 0){
+				this.events.splice(index,0,event)
+			}else{
+				this.events.push(event)
+			}
 		}
 	}
 }

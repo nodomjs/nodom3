@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -12,9 +11,8 @@
     </div>
 </body>
 <script type='module'>
-    import{nodom,Module,Nodom} from '/dist/nodom.esm.js'
+    import{nodom,Module,Nodom} from '/dist/nodom.esm.min.js'
     class Module1 extends Module{
-        modules = [Module2];
         template(){
             return `
             <div>
@@ -49,11 +47,9 @@
                     金额：
                     <div>共消费：{{(food1.price+food2.price+food3.price+food4.price)|currency}}</div>
                 </div>
-
                 <p>set测试</p>
                 <button e-click='setValue'>设置值</button>
                 <div>设置的值是:{{x.xx.xxx}}</div>
-                <module2 $out={{x.xx}}/>
                 <div>{{wrongfield.xxx}}</div>
             </div>
             `
@@ -142,47 +138,20 @@
             /**
              * 非深度监听，执行change1时，第二条不会触发监听事件
              */ 
-            this.cancer = this.watch(['user','name','datas'],(m,key,oldValue,newValue)=>{
-                console.log(this,m,key,oldValue,newValue)
-            },true)
+            this.cancer = this.watch(['user','name','datas'],(model,key,oldValue,newValue)=>{
+                console.log(this,model,key,oldValue,newValue)
+            })
 
             /**
              * 深度监听，执行change1时，第二条会触发监听事件
              */ 
-            //this.cancer = this.watch(model,['user','name','datas'],(m,key,oldValue,newValue)=>{
-            //    console.log(this,m,key,oldValue,newValue)
-            //},null,true);
-
-            //this.cancer = watch(model,'name',(m,key,oldValue,newValue)=>{
-            //    console.log('name watch',m,key,oldValue,newValue);
-            //    m.name = newValue;
-            //},null,true);
+            this.cancer = this.watch(model,['user','name','datas'],(model,key,oldValue,newValue)=>{
+                console.log(this,model,key,oldValue,newValue)
+            },true);
         }
 
         setValue(){
             this.set('x.xx.xxx','nodom');
-        }
-
-    }
-
-    class Module2 extends Module{
-        template(props){
-            return `
-                <div role='module2' style='padding:10px;background:#9cf'>
-                    <button e-click='changex'>changex</button>
-                    <p>传入数据为:{{out.xxx}}</p>
-                </div>
-            `
-        }
-
-        changex(){
-            this.model.out.xxx = 'nodom3';
-        }
-
-        onInit(){
-            this.watch('out.xxx',(model,key,ov,nv)=>{
-                console.log(this,model,key,ov,nv);
-            })
         }
     }
 

@@ -761,10 +761,6 @@ class Renderer {
     static renderDom(module, src, model, parent, key) {
         //构建key，如果带key，则需要重新构建唯一key
         const key1 = key ? src.key + '_' + key : src.key;
-        //静态节点只渲染1次
-        if (src.staticNum > 0) {
-            src.staticNum--;
-        }
         //初始化渲染节点
         let dst = {
             key: key1,
@@ -772,6 +768,10 @@ class Renderer {
             vdom: src,
             staticNum: src.staticNum
         };
+        //静态节点只渲染1次
+        if (src.staticNum > 0) {
+            src.staticNum--;
+        }
         if (src.tagName) { //标签
             dst.tagName = src.tagName;
             //添加key属性
@@ -812,16 +812,20 @@ class Renderer {
             }
             //非module dom，添加dst事件到事件工厂
             if (src.events && !src.hasDirective('module')) {
+                dst.events = [];
+                // 可能存在事件变化，需要先移除
                 module.eventFactory.removeAllEvents(dst);
-                for (let evt of src.events) {
+                for (let ev of src.events) {
                     //当事件串为表达式时，需要处理
-                    evt = evt.handleExpr(module, model);
-                    //如果不是跟节点，设置module为渲染module
+                    ev.handleExpr(module, model);
+                    //如果不是根节点，设置事件module为渲染module
                     if (src.key !== 1) {
-                        evt.module = module;
+                        ev.module = module;
                     }
-                    //添加到eventfactory
-                    this.currentModule.eventFactory.addEvent(dst, evt);
+                    // 保存event以便比较
+                    dst.events.push(ev);
+                    //添加到当前模块eventfactory
+                    this.currentModule.eventFactory.addEvent(dst, ev);
                 }
             }
             //子节点渲染
@@ -902,14 +906,14 @@ class Renderer {
      * @param src       渲染节点
      * @returns         渲染后的节点
      */
-    static updateToHtml(module, src) {
-        let el = module.getElement(src.key);
+    static updateToHtml(module, dom) {
+        let el = module.getElement(dom.key);
         if (!el) {
-            return this.renderToHtml(module, src, null);
+            return this.renderToHtml(module, dom, null);
         }
-        else if (src.tagName) { //html dom节点已存在
+        else if (dom.tagName) { //html dom节点已存在
             //设置element key属性
-            el.key = src.key;
+            el.key = dom.key;
             let attrs = el.attributes;
             let arr = [];
             if (attrs) {
@@ -918,8 +922,8 @@ class Renderer {
                 }
             }
             //设置属性
-            for (let p of Object.keys(src.props)) {
-                el.setAttribute(p, src.props[p] === undefined ? '' : src.props[p]);
+            for (let p of Object.keys(dom.props)) {
+                el.setAttribute(p, dom.props[p] === undefined ? '' : dom.props[p]);
                 let ind;
                 if ((ind = arr.indexOf(p)) !== -1) {
                     arr.splice(ind, 1);
@@ -932,14 +936,18 @@ class Renderer {
                 }
             }
             //处理asset
-            if (src.assets) {
-                for (let k of Object.keys(src.assets)) {
-                    el[k] = src.assets[k];
+            if (dom.assets) {
+                for (let k of Object.keys(dom.assets)) {
+                    el[k] = dom.assets[k];
                 }
             }
+            //解绑之前绑定事件
+            module.eventFactory.unbindAll(dom.key);
+            //绑定事件
+            module.eventFactory.bind(dom.key);
         }
         else { //文本节点
-            el.textContent = src.textContent;
+            el.textContent = dom.textContent;
         }
         return el;
     }
@@ -1002,8 +1010,6 @@ class Renderer {
                     el[p] = dom.assets[p];
                 }
             }
-            //解绑之前绑定事件
-            module.eventFactory.unbindAll(dom.key);
             //绑定事件
             module.eventFactory.bind(dom.key);
             return el;
@@ -1157,6 +1163,13 @@ Renderer.waitList = [];
 
 class RequestManager {
     /**
+     * 设置相同请求拒绝时间间隔
+     * @param time  时间间隔（ms）
+     */
+    static setRejectTime(time) {
+        this.rejectReqTick = time;
+    }
+    /**
      * ajax 请求
      * @param config    object 或 string
      *                  如果为string，则直接以get方式获取资源
@@ -1178,20 +1191,22 @@ class RequestManager {
     static request(config) {
         return __awaiter(this, void 0, void 0, function* () {
             const time = Date.now();
-            //重复请求判断
-            if (this.requestMap.has(config.url)) {
-                const obj = this.requestMap.get(config.url);
-                if (time - obj.time < this.rejectReqTick && Util.compare(obj.params, config.params)) {
-                    return new Promise((resolve, reject) => {
-                        resolve(null);
-                    });
+            //如果设置了rejectReqTick，则需要进行判断
+            if (this.rejectReqTick > 0) {
+                if (this.requestMap.has(config.url)) {
+                    const obj = this.requestMap.get(config.url);
+                    if (time - obj.time < this.rejectReqTick && Util.compare(obj.params, config.params)) {
+                        return new Promise((resolve, reject) => {
+                            resolve(null);
+                        });
+                    }
                 }
+                //加入请求集合
+                this.requestMap.set(config.url, {
+                    time: time,
+                    params: config.params
+                });
             }
-            //加入请求集合
-            this.requestMap.set(config.url, {
-                time: time,
-                params: config.params
-            });
             return new Promise((resolve, reject) => {
                 if (typeof config === 'string') {
                     config = {
@@ -1303,10 +1318,12 @@ class RequestManager {
      */
     static clearCache() {
         const time = Date.now();
-        if (this.requestMap) {
-            for (let kv of this.requestMap) {
-                if (time - kv[1].time > this.rejectReqTick) {
-                    this.requestMap.delete(kv[0]);
+        if (this.rejectReqTick > 0) {
+            if (this.requestMap) {
+                for (let kv of this.requestMap) {
+                    if (time - kv[1].time > this.rejectReqTick) {
+                        this.requestMap.delete(kv[0]);
+                    }
                 }
             }
         }
@@ -1315,7 +1332,7 @@ class RequestManager {
 /**
  * 拒绝相同请求（url，参数）时间间隔
  */
-RequestManager.rejectReqTick = 500;
+RequestManager.rejectReqTick = 0;
 /**
  * 请求map，用于缓存之前的请求url和参数
  * key:     url
@@ -1624,6 +1641,13 @@ class Nodom {
         return __awaiter(this, void 0, void 0, function* () {
             return yield RequestManager.request(config);
         });
+    }
+    /**
+     * 设置相同请求拒绝时间间隔
+     * @param time  时间间隔（ms）
+     */
+    static setRejectTime(time) {
+        RequestManager.setRejectTime(time);
     }
 }
 /**
@@ -2056,6 +2080,14 @@ class NEvent {
         this.id = Util.genId();
         this.module = module;
         this.name = eventName;
+        this.init(eventStr, handler);
+    }
+    /**
+     * 事件串初始化
+     * @param eventStr  事件串
+     * @param handler   事件钩子函数
+     */
+    init(eventStr, handler) {
         //如果事件串不为空，则不需要处理
         if (eventStr) {
             let tp = typeof eventStr;
@@ -2081,14 +2113,11 @@ class NEvent {
      * @param model     对应model
      */
     handleExpr(module, model) {
-        if (!this.expr) {
-            return this;
+        if (this.expr) {
+            const evtStr = this.expr.val(module, model);
+            this.init(evtStr);
         }
-        const evtStr = this.expr.val(module, model);
-        if (evtStr) {
-            //新建事件对象
-            return new NEvent(module, this.name, evtStr);
-        }
+        return this;
     }
     /**
      * 解析事件字符串
@@ -2491,13 +2520,19 @@ class VirtualDom {
     /**
      * 保存事件
      * @param event     事件对象
+     * @param index 	位置
      */
-    addEvent(event) {
+    addEvent(event, index) {
         if (!this.events) {
             this.events = [event];
         }
         else if (!this.events.includes(event)) {
-            this.events.push(event);
+            if (index >= 0) {
+                this.events.splice(index, 0, event);
+            }
+            else {
+                this.events.push(event);
+            }
         }
     }
 }
@@ -3037,7 +3072,7 @@ class DiffTool {
          * @returns     true/false
          */
         function isChanged(src, dst) {
-            for (let p of ['props', 'assets']) {
+            for (let p of ['props', 'assets', 'events']) {
                 //属性比较
                 if (!src[p] && dst[p] || src[p] && !dst[p]) {
                     return true;
@@ -3177,7 +3212,7 @@ class EventFactory {
         const key = dom.key;
         //判断是否已添加，避免重复添加
         if (this.addedEvents.has(key) && this.addedEvents.get(key).includes(event)) {
-            return;
+            return false;
         }
         //代理事件，如果无父节点，则直接处理为自有事件
         if (event.delg) {
@@ -3199,6 +3234,7 @@ class EventFactory {
         else {
             this.addedEvents.get(key).push(event);
         }
+        return true;
     }
     /**
      * 添加到dom的own或delg事件队列
@@ -3417,10 +3453,13 @@ class EventFactory {
             if (!events) {
                 return;
             }
-            //如果为子模块，则model为子模块对应节点的model
+            // 禁止冒泡为false，如果绑定的多个事件中存在1个nopopo，则全部nopopo
             let nopopo = false;
             for (let i = 0; i < events.length; i++) {
                 const ev = events[i];
+                if (!ev.handler) {
+                    continue;
+                }
                 //外部事件且为根dom，表示为父模块外部传递事件，则model为模块srcDom对应model，否则使用dom对应model
                 const model = ev.module !== module && dom.key === 1 ? module.srcDom.model : dom.model;
                 //判断为方法名还是函数
@@ -3430,10 +3469,13 @@ class EventFactory {
                 else if (typeof ev.handler === 'function') {
                     ev.handler.apply(ev.module, [model, dom, ev, e]);
                 }
-                if (ev.once) { //移除事件
-                    events.splice(i--, 1);
+                // 只执行1次，则handler置空
+                if (ev.once) {
+                    ev.handler = undefined;
                 }
-                nopopo = ev.nopopo;
+                if (!nopopo) {
+                    nopopo = ev.nopopo;
+                }
             }
             if (nopopo) {
                 e.stopPropagation();
@@ -3470,12 +3512,10 @@ class EventFactory {
                         }
                         // 保留nopopo
                         nopopo = ev.nopopo;
-                        if (ev.once) { //移除代理事件，需要从被代理元素删除
+                        // 只执行1次,移除代理事件
+                        if (ev.once) {
                             //从当前dom删除
                             events.splice(i--, 1);
-                            //从被代理dom删除
-                            const ind = module.eventFactory.get(k).indexOf(ev);
-                            module.eventFactory.get(k).splice(ind, 1);
                         }
                         break;
                     }
@@ -4982,7 +5022,7 @@ class Router {
                 return;
             }
             this.startType = 1;
-            this.go(state);
+            this.go(state.url);
         });
     }
     /**
@@ -4991,8 +5031,8 @@ class Router {
      * @param type  启动路由类型，参考startType，默认0
      */
     go(path) {
-        //相同路径不加入
-        if (path === this.currentPath) {
+        // 当前路径的父路径不处理
+        if (this.currentPath && this.currentPath.startsWith(path)) {
             return;
         }
         //添加路径到等待列表，已存在，不加入
@@ -5025,6 +5065,10 @@ class Router {
      */
     start(path) {
         return __awaiter(this, void 0, void 0, function* () {
+            // 当前路径的父路径不处理
+            if (this.currentPath && this.currentPath.startsWith(path)) {
+                return;
+            }
             let diff = this.compare(this.currentPath, path);
             // 不存在上一级模块,则为主模块，否则为上一级模块
             let parentModule = diff[0] === null ? ModuleFactory.getMain() : yield this.getModule(diff[0]);
@@ -5079,15 +5123,15 @@ class Router {
                     parentModule = module;
                 }
             }
-            //如果是history popstate，则不加入history
-            if (this.startType === 0) {
+            //如果是history popstate或新路径是当前路径的子路径，则不加入history
+            if (this.startType !== 1) {
                 let path1 = (this.basePath || '') + path;
-                //子路由，替换state
+                //子路由或父路由，替换state
                 if (path.startsWith(this.currentPath)) {
-                    history.replaceState(path1, '', path1);
+                    history.replaceState({ url: path1 }, '', path1);
                 }
                 else { //路径push进history
-                    history.pushState(path1, '', path1);
+                    history.pushState({ url: path1 }, '', path1);
                 }
             }
             //修改currentPath
@@ -5450,6 +5494,9 @@ class IF extends DefineElement {
         node.addDirective(new Directive('if', cond, module.id));
     }
 }
+/**
+ * ELSE 元素
+ */
 class ELSE extends DefineElement {
     constructor(node, module) {
         super(node);
@@ -5481,7 +5528,22 @@ class ENDIF extends DefineElement {
     }
 }
 /**
- * 替代器
+ * SHOW 元素
+ */
+class SHOW extends DefineElement {
+    constructor(node, module) {
+        super(node);
+        //条件
+        let cond = node.getProp('cond');
+        if (!cond) {
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'SHOW', 'cond');
+        }
+        node.delProp('cond');
+        node.addDirective(new Directive('show', cond, module.id));
+    }
+}
+/**
+ * 插槽
  */
 class SLOT extends DefineElement {
     constructor(node, module) {
@@ -5492,15 +5554,43 @@ class SLOT extends DefineElement {
         node.addDirective(new Directive('slot', cond, module.id));
     }
 }
-DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
+/**
+ * 路由
+ */
+class ROUTE extends DefineElement {
+    constructor(node, module) {
+        //默认标签为a
+        if (!node.hasProp('tag')) {
+            node.setProp('tag', 'a');
+        }
+        super(node);
+        //条件
+        let cond = node.getProp('path');
+        if (!cond) {
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ROUTE', 'path');
+        }
+        node.addDirective(new Directive('route', cond, module.id));
+    }
+}
+/**
+ * 路由容器
+ */
+class ROUTER extends DefineElement {
+    constructor(node, module) {
+        super(node);
+        node.addDirective(new Directive('router', null, module.id));
+    }
+}
+//添加到自定义元素管理器
+DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLOT, ROUTE, ROUTER]);
 
-((function () {
+(function () {
     /**
      * 指令类型初始化
      * 每个指令类型都有一个名字、处理函数和优先级，处理函数不能用箭头函数
-     * 处理函数在渲染时执行，包含两个参数 module(模块)、dom(目标虚拟dom)、src(源虚拟dom)
+     * 处理函数在渲染时执行，包含两个参数 module(模块)、dom(目标虚拟dom)
      * 处理函数的this指向指令
-     * 处理函数的返回值 true 表示继续，false 表示后续指令不再执行
+     * 处理函数的返回值 true 表示继续，false 表示后续指令不再执行，同时该节点不加入渲染树
      */
     /**
      * module 指令
@@ -5583,7 +5673,7 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             if (!rows[i]) {
                 continue;
             }
-            if (idxName) {
+            if (idxName && typeof rows[i] === 'object') {
                 rows[i][idxName] = i;
             }
             let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].__key);
@@ -5639,6 +5729,8 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             else { //数组内recur，依赖repeat得到model，repeat会取一次数组元素，所以需要dom model
                 Renderer.renderDom(module, node1, model, dom, m.__key);
             }
+            //删除ref属性
+            delete dom.props['ref'];
         }
         else { //递归节点
             let data = dom.model[this.value];
@@ -5647,6 +5739,9 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             }
             //递归名，默认default
             const name = '$recurs.' + (dom.props['name'] || 'default');
+            //删除name属性
+            delete dom.props['name'];
+            //保存递归定义的节点
             if (!module.objectManager.get(name)) {
                 module.objectManager.set(name, src);
             }
@@ -5784,39 +5879,53 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             dom.staticNum = 1;
         }
         let dataValue = module.get(dom.model, this.value);
-        switch (dom.props['type']) {
-            case 'radio':
-                let value = dom.props['value'];
-                dom.props['name'] = this.value;
-                if (dataValue == value) {
-                    dom.props['checked'] = 'checked';
-                    dom.assets['checked'] = true;
+        if (dom.tagName === 'select') {
+            dom.props['value'] = dataValue;
+            //延迟设置value，避免option尚未渲染
+            setTimeout(() => {
+                const el = module.domManager.getElement(dom.key);
+                if (el) {
+                    el.value = dataValue;
                 }
-                else {
-                    delete dom.props['checked'];
-                    dom.assets['checked'] = false;
-                }
-                break;
-            case 'checkbox':
-                //设置状态和value
-                let yv = dom.props['yes-value'];
-                //当前值为yes-value
-                if (dataValue == yv) {
-                    dom.props['value'] = yv;
-                    dom.assets['checked'] = true;
-                }
-                else { //当前值为no-value
-                    dom.props['value'] = dom.props['no-value'];
-                    dom.assets['checked'] = false;
-                }
-                break;
-            case 'select':
-                dom.props['value'] = dataValue;
-                dom.assets['value'] = dataValue;
-            default:
-                let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
-                dom.props['value'] = v;
-                dom.assets['value'] = v;
+            }, 0);
+        }
+        else if (dom.tagName === 'input') {
+            switch (dom.props['type']) {
+                case 'radio':
+                    let value = dom.props['value'];
+                    dom.props['name'] = this.value;
+                    if (dataValue == value) {
+                        dom.props['checked'] = 'checked';
+                        dom.assets['checked'] = true;
+                    }
+                    else {
+                        delete dom.props['checked'];
+                        dom.assets['checked'] = false;
+                    }
+                    break;
+                case 'checkbox':
+                    //设置状态和value
+                    let yv = dom.props['yes-value'];
+                    //当前值为yes-value
+                    if (dataValue == yv) {
+                        dom.props['value'] = yv;
+                        dom.assets['checked'] = true;
+                    }
+                    else { //当前值为no-value
+                        dom.props['value'] = dom.props['no-value'];
+                        dom.assets['checked'] = false;
+                    }
+                    break;
+                default:
+                    let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
+                    dom.props['value'] = v;
+                    dom.assets['value'] = v;
+            }
+        }
+        else {
+            let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
+            dom.props['value'] = v;
+            dom.assets['value'] = v;
         }
         let event = GlobalCache.get('$fieldChangeEvent');
         if (!event) {
@@ -5862,7 +5971,7 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
             //存储字段change事件钩子
             GlobalCache.set('$fieldChangeEvent', event);
         }
-        dom.vdom.addEvent(event);
+        dom.vdom.addEvent(event, 0);
         return true;
     }, 10);
     /**
@@ -5995,10 +6104,13 @@ DefineElementManager.add([MODULE, FOR, IF, RECUR, ELSE, ELSEIF, ENDIF, SLOT]);
                     }
                 }
             }
+            else { //未在父模块配置slot，则直接渲染
+                return true;
+            }
         }
         return false;
     }, 5);
-})());
+}());
 
 /**
  * tap事件

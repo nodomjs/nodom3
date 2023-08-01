@@ -72,6 +72,15 @@ export class NEvent {
         this.id = Util.genId();
         this.module = module;
         this.name = eventName;
+        this.init(eventStr,handler);
+    }
+
+    /**
+     * 事件串初始化
+     * @param eventStr  事件串 
+     * @param handler   事件钩子函数
+     */
+    private init(eventStr?: string | Function | Expression, handler?: Function){
         //如果事件串不为空，则不需要处理
         if (eventStr) {
             let tp = typeof eventStr;
@@ -96,14 +105,11 @@ export class NEvent {
      * @param model     对应model
      */
     public handleExpr(module,model){
-        if(!this.expr){
-            return this;
+        if(this.expr){
+            const evtStr = this.expr.val(module,model);
+            this.init(evtStr);
         }
-        const evtStr = this.expr.val(module,model);
-        if(evtStr){
-            //新建事件对象
-            return new NEvent(module,this.name,evtStr);
-        }
+        return this;
     }
 
     /**

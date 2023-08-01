@@ -23,7 +23,7 @@ export class Renderer {
     /**
      * 当前module
      */
-    private static currentModule:Module;
+    public static currentModule:Module;
 
     /**
      * 当前模块根dom
@@ -107,17 +107,17 @@ export class Renderer {
         //构建key，如果带key，则需要重新构建唯一key
         const key1 = key?src.key + '_' + key:src.key;
         
-        //静态节点只渲染1次
-        if(src.staticNum>0){
-            src.staticNum--;
-        }
-
         //初始化渲染节点
         let dst:IRenderedDom = {
             key:key1,
             model:model,
             vdom:src,
             staticNum:src.staticNum
+        }
+
+        //静态节点只渲染1次
+        if(src.staticNum>0){
+            src.staticNum--;
         }
 
         if(src.tagName){ //标签
@@ -160,16 +160,20 @@ export class Renderer {
             }
             //非module dom，添加dst事件到事件工厂
             if(src.events && !src.hasDirective('module')){
+                dst.events = [];
+                // 可能存在事件变化，需要先移除
                 module.eventFactory.removeAllEvents(dst);
-                for(let evt of src.events){
+                for(let ev of src.events){
                     //当事件串为表达式时，需要处理
-                    evt = evt.handleExpr(module,model);
-                    //如果不是跟节点，设置module为渲染module
+                    ev.handleExpr(module,model);
+                    //如果不是根节点，设置事件module为渲染module
                     if(src.key !== 1){
-                        evt.module = module;
+                        ev.module = module;
                     }
-                    //添加到eventfactory
-                    this.currentModule.eventFactory.addEvent(dst,evt);
+                    // 保存event以便比较
+                    dst.events.push(ev);
+                    //添加到当前模块eventfactory
+                    this.currentModule.eventFactory.addEvent(dst,ev);
                 }
             }
             //子节点渲染
@@ -249,13 +253,13 @@ export class Renderer {
      * @param src       渲染节点
      * @returns         渲染后的节点    
      */
-    public static updateToHtml(module: Module,src:IRenderedDom):Node {
-        let el = module.getElement(src.key);
+    public static updateToHtml(module: Module,dom:IRenderedDom):Node {
+        let el = module.getElement(dom.key);
         if(!el){
-            return this.renderToHtml(module,src,null);
-        }else if(src.tagName){   //html dom节点已存在
+            return this.renderToHtml(module,dom,null);
+        }else if(dom.tagName){   //html dom节点已存在
             //设置element key属性
-            (<any>el).key = src.key;
+            (<any>el).key = dom.key;
             let attrs = (<HTMLElement>el).attributes;
             let arr = [];
             if(attrs){
@@ -264,8 +268,8 @@ export class Renderer {
                 }
             }
             //设置属性
-            for(let p of Object.keys(src.props)){
-                (<HTMLElement>el).setAttribute(p,src.props[p]===undefined?'':src.props[p]);
+            for(let p of Object.keys(dom.props)){
+                (<HTMLElement>el).setAttribute(p,dom.props[p]===undefined?'':dom.props[p]);
                 let ind;
                 if((ind=arr.indexOf(p)) !== -1){
                     arr.splice(ind,1);
@@ -278,13 +282,17 @@ export class Renderer {
                 }
             }
             //处理asset
-            if (src.assets) {
-                for (let k of Object.keys(src.assets)) {
-                    el[k] = src.assets[k];
+            if (dom.assets) {
+                for (let k of Object.keys(dom.assets)) {
+                    el[k] = dom.assets[k];
                 }    
             }
+            //解绑之前绑定事件
+            module.eventFactory.unbindAll(dom.key);
+            //绑定事件
+            module.eventFactory.bind(dom.key);
         }else{  //文本节点
-            (<any>el).textContent = src.textContent;
+            (<any>el).textContent = dom.textContent;
         }
         return el;
     }
@@ -347,8 +355,6 @@ export class Renderer {
                     el[p] = dom.assets[p];
                 }
             }
-            //解绑之前绑定事件
-            module.eventFactory.unbindAll(dom.key);
             //绑定事件
             module.eventFactory.bind(dom.key);
             return el;

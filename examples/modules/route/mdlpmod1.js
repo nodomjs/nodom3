@@ -4,13 +4,13 @@ export class MdlPMod1 extends Module {
         return `
         <div class='result code1'>
             <div style='border-bottom: 1px solid #999'>
-                <a x-route='/router/route1/home'  class={{home?'colorimp':''}} active='home'>首页</a>
-                <a x-route='/router/route1/list'  class={{list?'colorimp':''}} active='list'>列表</a>
-                <a x-route='/router/route1/data'  class={{data?'colorimp':''}} active='data'>数据</a>
+                <route path='/router/route1/home'  class={{home?'colorimp':''}} active='home'>首页</route>
+                <route path='/router/route1/list'  class={{list?'colorimp':''}} active='list'>列表</route>
+                <route path='/router/route1/data'  class={{data?'colorimp':''}} active='data'>数据</route>
             </div>
             <a x-route={{route2}}>to router2</a>
             <button e-click='redirect'>to router3</button>
-            <div x-router test='1'></div>
+            <router/>
         </div>	
         `;
     } 
@@ -24,6 +24,6 @@ export class MdlPMod1 extends Module {
     }
     
     redirect(){
-        Nodom['$Router'].redirect("/router/route3/r1/r2");
+        Nodom['$Router'].go("/router/route3/r1/r2");
     }
 }

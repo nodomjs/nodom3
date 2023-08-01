@@ -57,11 +57,17 @@ export declare class NEvent {
      */
     constructor(module: Module, eventName: string, eventStr?: string | Function | Expression, handler?: Function);
     /**
+     * 事件串初始化
+     * @param eventStr  事件串
+     * @param handler   事件钩子函数
+     */
+    private init;
+    /**
      * 表达式处理，当handler为expression时有效
      * @param module    模块
      * @param model     对应model
      */
-    handleExpr(module: any, model: any): NEvent;
+    handleExpr(module: any, model: any): this;
     /**
      * 解析事件字符串
      * @param eventStr  待解析的字符串

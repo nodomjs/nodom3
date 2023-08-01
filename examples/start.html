@@ -6,85 +6,31 @@
 		<title>nodom-example start</title>
 		<link rel="stylesheet" type='text/css' href='css/index.css' />
 		</head>
-
 	<body>
-		<p>
-			采用js module方式进行包引入，示例如下：
-			<pre>
-	// script采用‘module’方式
-	&lt;script type='module'&gt;
-		//引入nodom
-		import{nodom,Module} from '/dist/nodom.esm.js'
-		class TestModule extends Module{
-			/**
-			 * 模版函数，用于产生需要的模版串
-			 * props 父模块传入的属性对象
-			 */
-			template(props){...}
-			/**
-			 * 数据函数，用于产生模块需要的数据
-			 */
-			data(){...}
-			//其他代码
-			...
-		}
-	&lt;/script&gt;
-			</pre>
-		</p>
-		<h3>例子1-起步</h3> 
-		<p></p>
-		<div class='module1'>
-		</div>
-		<h3></h3>
-
 	</body>
 	<script type='module'>
 		import{nodom,Module} from '/dist/nodom.esm.js'
-		/**
-		 * 模块定义
-		 */
+		//定义模块
 		class Module1 extends Module{
-			/**
-			 * 模版函数
-			 */
 			template(){
 				return `
 				    <div>
-						<button e-click='changeName' innerxxx>修改数据</button>
+						<button e-click='changeName'>修改数据</button>
 						<p>
 							你好, {{name}}
 						</p>
-						<p> 你的爱好是:</p>
-						<ui>
-							<for cond={{hobbies}} tag='li'>{{title}}</for>
-						</ui>
-                    </div>
+	                </div>
 				`
 			}
-
-			/**
-			 * 数据函数
-			 */
 			data(){
 				return{
-					name:'nodom3',
-					hobbies:[
-						{title:'健身'},
-						{title:'美食'},
-						{title:'旅游'}
-					]
+					name:'nodom'
 				}
 			}	
-
-			/**
-			 * @param model	 指向button对应的model，如果没有特别说明，则从父dom继承 
-			 */
-			changeName(model){
-				//model可以换成this.model，this指向模块实例
-				model.name = 'noomi';
-				model.hobbies.push({title:'游戏'});
+			changeName(){
+				this.model.name = 'noomi';
 			}
        	}
-    	nodom(Module1,'.module1');
+    	nodom(Module1);
 	</script>
 </html>

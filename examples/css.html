@@ -17,46 +17,13 @@
 					    <p class='cls1' nid={{id}}>hello <span class='name'>hello:{{name}} hahaha</span></p>
                         <p class='cls2'><span>age is:</span>&nbsp;&nbsp;&nbsp;<span class='age'>{{age}}</span></p>
 						<p class='cls3'>salary is:<span class='age'>{{Math.round(salary)}}</span></p>
-						
-						<style scope='this'>
-                            <!--
-                            .cls1{
-                                font-size:16px;
-                                color:{{imp && this.age?'red':'blue'}};
-                            }
+						<button e-click='change1'>changeCls1</button>
+                        <button e-click='change2'>changeCls2</button>
 
-                            @page {
-                                margin: 1cm;
-                            }
-
-                            .cls2{
-                                color:{{imp?'red':'blue'}};
-                            }
-
-                            .cls2:hover{
-                                color:yellow;
-                            }
-
-                            .cls3{
-                                color:{{imp?'red':'blue'}};
-                            }
-
-                            @keyframes slidein {
-                                from {
-                                    transform: translateX(0%);
-                                }
-
-                                to {
-                                    transform: translateX(100%);
-                                }
-                            }
-                            -->
-							{{genCls(imp,this.model.age)}}
+                        <style scope='this'>
+                            {{genCls(imp,this.model.age)}}
                             @import url(./css/a.css)
 						</style>
-						
-                        <button e-click='change1'>changeCls1</button>
-                        <button e-click='change2'>changeCls2</button>
                     </div>
 				`;
                 return s;

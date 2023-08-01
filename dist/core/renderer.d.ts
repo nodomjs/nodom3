@@ -17,7 +17,7 @@ export declare class Renderer {
     /**
      * 当前module
      */
-    private static currentModule;
+    static currentModule: Module;
     /**
      * 当前模块根dom
      */
@@ -82,7 +82,7 @@ export declare class Renderer {
      * @param src       渲染节点
      * @returns         渲染后的节点
      */
-    static updateToHtml(module: Module, src: IRenderedDom): Node;
+    static updateToHtml(module: Module, dom: IRenderedDom): Node;
     /**
      * 渲染到html树
      * @param module 	        模块

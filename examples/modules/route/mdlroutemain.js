@@ -1,6 +1,6 @@
 import {Module, Nodom,Router, Util} from '/dist/nodom.esm.js'
 //启用路由
-Nodom.use(Router,['/router',function(mdl,path){
+Nodom.use(Router,[null,function(mdl,path){
     console.log('enter',mdl,path)
 },function(mdl,path){
     console.log('leave',mdl,path)

@@ -17,19 +17,21 @@ export declare class EventFactory {
      *          eventName1:
      *            {
      *              own:[event对象,...],
-     *              delg:[{key:被代理key,event:event对象},...],
+     *              delg:[{key:被代理key,event:event对象,...],
      *              toDelg:[event对象],
      *              capture:useCapture
      *           },
      *           eventName2:...
-     *           bindMap:{},
+     *           bindMap:{}
+     *
      *        }
      *    eventName:事件名，如click等
-     *    配置项:
-     *        own:自己的事件数组,
-     *        delg:代理事件数组（代理子对象）,
-     *        bindMap:已绑定事件map，其中键为事件名，值为capture，解绑时需要
-     *        capture:在own和delg都存在时，如果capture为true，则先执行own，再执行delg，为false时则相反。
+     *    配置项说明:
+     *      own:自己的事件数组
+     *      delg:代理事件数组（代理子对象）
+     *
+     *      bindMap:已绑定事件map，其中键为事件名，值为capture，解绑时需要
+     *      capture:在own和delg都存在时，如果capture为true，则先执行own，再执行delg，为false时则相反。
      *                如果只有own，则和html event的cature事件处理机制相同
      */
     private eventMap;
@@ -49,7 +51,7 @@ export declare class EventFactory {
      * @param key       dom key
      * @param event     事件对象
      */
-    addEvent(dom: IRenderedDom, event: NEvent): void;
+    addEvent(dom: IRenderedDom, event: NEvent): boolean;
     /**
      * 添加到dom的own或delg事件队列
      * @param key       dom key

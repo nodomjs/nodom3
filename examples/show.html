@@ -15,7 +15,6 @@
 	</head>
 
 	<body>
-		<div></div>
 	</body>
 	<script type="module">
 		import { nodom, Module } from '/dist/nodom.esm.js'
@@ -24,32 +23,26 @@
 				return `
 					<div>
                         <button e-click='change'>change</button>
-						<p>带style</p>
-						<div x-show={{show}} style='display:block;color:red'>价格：{{price}}</div>
-						<p>不带style</p>
-                        <div x-show={{show}} >价格：{{price}}</div>
-						<p>带class</p>
-						<div x-show={{!show}} class='cls1'>价格：{{price}}</div>
-						<input type="number" value={{pageNo}} x-field='pageNo' min='1' max={{this.__pageCount}} />
-	                </div>
+						<div x-show={{show}} style='display:block;color:red'>show为true时显示价格：{{price}}</div>
+						<!-- show标签 -->
+						<show cond={{show}} >show为true时显示</div>
+						<show cond={{!show}} class='cls1'>show为false时显示</div>
+					</div>
                 `
 			}
 
 			data() {
 				return {
 					show: true,
-					price: 2000,
-					a: [{ num: 1 }, { num: 2 }, { num: 3 }, { num: 4 }, { num: 5 }],
+					price: 2000
 				}
 			}
 
 			change(model) {
 				model.show = !model.show
-				let temp = model.a.shift()
-				model.a.push(temp)
 			}
 		}
 
-		nodom(Module1, 'div')
+		nodom(Module1)
 	</script>
 </html>
