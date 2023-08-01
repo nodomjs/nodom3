@@ -2255,8 +2255,8 @@ Nodom.use(Router,['/webroute',onEnter,onLeave]);
 ### NodomUI 
 nodomui npm库，快速搭建应用，http://www.npmjs.com/package/nodomui。
 
-#### Kayaks
+### Kayaks
 数据管理库，用于开发大型项目。
 
-#### Nodom VsCode插件
+### Nodom VsCode插件
 提供模板代码高亮功能，以及其他多种辅助功能。
