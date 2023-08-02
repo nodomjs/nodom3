@@ -92,7 +92,7 @@ export declare class Nodom {
      * @param params -    参数
      * @returns         实例化后的插件对象
      */
-    static use(clazz: () => void, params?: unknown[]): unknown;
+    static use(clazz: unknown, params?: unknown[]): unknown;
     /**
      * 暴露的创建路由方法
      * @param config -  数组或单个配置
@@ -111,7 +111,7 @@ export declare class Nodom {
      * @param clazz -     模块类
      * @param name -      注册名，如果没有，则为类名
      */
-    static registModule(clazz: UnknownClass, name?: string): void;
+    static registModule(clazz: unknown, name?: string): void;
     /**
      * ajax 请求，如果需要用第三方ajax插件替代，重载该方法
      * @param config -    object 或 string

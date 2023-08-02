@@ -1,6 +1,6 @@
 {
   "name": "nodom3",
-  "version": "0.2.1-beta21",
+  "version": "0.2.1-beta22",
   "private": false,
   "main": "index.ts",
   "scripts": {

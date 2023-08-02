@@ -47,7 +47,7 @@ export declare class ModuleFactory {
      * @param clazz -     模块类
      * @param alias -     注册别名
      */
-    static addClass(clazz: UnknownClass, alias?: string): void;
+    static addClass(clazz: unknown, alias?: string): void;
     /**
      * 获取模块类
      * @param name -  类名或别名

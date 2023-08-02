@@ -88,13 +88,13 @@ export class ModuleFactory {
      * @param clazz -     模块类
      * @param alias -     注册别名
      */
-    public static addClass(clazz: UnknownClass, alias?: string) {
+    public static addClass(clazz: unknown, alias?: string) {
         //转换成小写
-        const name = clazz.name.toLowerCase();
+        const name = (<UnknownClass>clazz).name.toLowerCase();
         if (this.classes.has(name)) {
             return;
         }
-        this.classes.set(name, clazz);
+        this.classes.set(name, <UnknownClass>clazz);
         //添加别名
         if (alias) {
             this.aliasMap.set(alias.toLowerCase(),name);

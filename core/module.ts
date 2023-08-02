@@ -6,7 +6,7 @@ import { ObjectManager } from "./objectmanager";
 import { Renderer } from "./renderer";
 import { Util } from "./util";
 import { DiffTool } from "./difftool";
-import { EModuleState, RenderedDom, UnknownClass, UnknownMethod } from "./types";
+import { EModuleState, RenderedDom, UnknownMethod } from "./types";
 import { EventFactory } from "./eventfactory";
 import { DomManager } from "./dommanager";
 import { ModelManager } from "./modelmanager";
@@ -98,7 +98,7 @@ export class Module {
      * 子模块类集合，模板中引用的模块类需要声明
      * 如果类已经通过registModule注册过，这里不再需要定义，只需import即可
      */
-    public modules: UnknownClass[];
+    public modules: unknown[];
 
     /**
      * 不渲染的属性（这些属性用于生产模板，不作为属性渲染到模块根节点）

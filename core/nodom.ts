@@ -70,12 +70,12 @@ export class Nodom{
      * @param params -    参数
      * @returns         实例化后的插件对象
      */
-    public static use(clazz:()=>void,params?:unknown[]):unknown{
+    public static use(clazz:unknown,params?:unknown[]):unknown{
         if(!clazz['name']){
             new NError('notexist',[NodomMessage.TipWords.plugin]);
         }
         if(!this['$'+clazz['name']]){
-            this['$'+clazz['name']] = Reflect.construct(clazz,params||[]); 
+            this['$'+clazz['name']] = Reflect.construct(<UnknownClass>clazz,params||[]); 
         }
         return this['$'+clazz['name']];
     }
@@ -117,8 +117,8 @@ export class Nodom{
      * @param clazz -     模块类
      * @param name -      注册名，如果没有，则为类名
      */
-    public static registModule(clazz:UnknownClass,name?:string){
-        ModuleFactory.addClass(clazz,name);
+    public static registModule(clazz:unknown,name?:string){
+        ModuleFactory.addClass(<UnknownClass>clazz,name);
     }
 
     /**
