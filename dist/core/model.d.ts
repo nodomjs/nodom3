@@ -11,11 +11,11 @@ import { Module } from "./module";
  */
 export declare class Model {
     /**
-     * @param data 		数据
-     * @param module 	模块对象
-     * @param parent    父模型
-     * @param name      模型在父对象中的prop name
+     * @param data - 		数据
+     * @param module - 	模块对象
+     * @param parent -    父模型
+     * @param name -      模型在父对象中的prop name
      * @returns         模型代理对象
      */
-    constructor(data: any, module: Module, parent?: any, name?: any);
+    constructor(data: object, module: Module, parent?: Model, name?: string);
 }

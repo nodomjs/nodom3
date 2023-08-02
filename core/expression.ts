@@ -2,6 +2,7 @@ import { NError } from "./error";
 import { Model } from "./model";
 import { Module } from "./module";
 import { Nodom } from "./nodom";
+import { ExpressionMethod } from "./types";
 import { Util } from "./util";
 
 /**
@@ -19,7 +20,7 @@ export class Expression {
     /**
      * 执行函数
      */
-    execFunc: Function;
+    execFunc:ExpressionMethod;
 
     /**
      * 源表达式串
@@ -29,10 +30,10 @@ export class Expression {
     /**
      * 值
      */
-    value:any;
+    value:unknown;
 
     /**
-     * @param exprStr	表达式串
+     * @param exprStr -	表达式串
      */
     constructor(exprStr: string) {
         this.id = Util.genId();
@@ -43,12 +44,12 @@ export class Expression {
             this.exprStr = exprStr;
         }
         const funStr = this.compile(exprStr);
-        this.execFunc = new Function('$model','return ' + funStr);
+        this.execFunc = <ExpressionMethod> new Function('$model','return ' + funStr);
     }
 
     /**
      * 编译表达式串，替换字段和方法
-     * @param exprStr   表达式串
+     * @param exprStr -   表达式串
      * @returns         编译后的表达式串
      */
     private compile(exprStr:string){
@@ -66,7 +67,7 @@ export class Expression {
             if(s[0] === "'" || s[0] === '"' || s[0] === '`'){ //字符串
                 retS += s;
             }else{
-                let lch = s[s.length-1];
+                const lch = s[s.length-1];
                 if(lch === ':'){  //object key
                     retS += s;
                 }else if(lch === '(' || lch === ')'){ //函数，非内部函数
@@ -97,7 +98,7 @@ export class Expression {
 
         /**
          * 处理函数串
-         * @param str   源串
+         * @param str -   源串
          * @returns     处理后的串
          */
         function handleFunc(str):string{
@@ -122,8 +123,8 @@ export class Expression {
 
     /**
      * 表达式计算
-     * @param module    模块
-     * @param model 	模型
+     * @param module -    模块
+     * @param model - 	模型
      * @returns 		计算结果
      */
     public val(module:Module,model: Model) {
@@ -135,7 +136,7 @@ export class Expression {
             v = this.execFunc.call(module,model);
         } catch (e) {
             if(Nodom.isDebug){
-                console.error(new NError("wrongExpression",this.exprStr).message);
+                console.error(new NError("wrongExpression",[this.exprStr]).message);
                 console.error(e);
             }
         }

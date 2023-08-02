@@ -1,17 +1,17 @@
 import { NEvent } from "../core/event";
 import { Module } from "../core/module";
 import { EventManager } from "../core/eventmanager";
-import { IRenderedDom } from "../core/types";
+import { RenderedDom } from "../core/types";
 
 /**
  * tap事件
  */
 EventManager.regist('tap',{
-    touchstart(dom:IRenderedDom,module:Module,evtObj:NEvent,e: TouchEvent) {
+    touchstart(dom:RenderedDom,module:Module,evtObj:NEvent,e: TouchEvent) {
         let tch = e.touches[0];
         evtObj.dependEvent.setParam(module,dom,'pos', { sx: tch.pageX, sy: tch.pageY, t: Date.now() });
     },
-    touchmove(dom:IRenderedDom,module:Module,evtObj:NEvent,e: TouchEvent) {
+    touchmove(dom:RenderedDom,module:Module,evtObj:NEvent,e: TouchEvent) {
         let pos = evtObj.dependEvent.getParam(module,dom,'pos');
         if(!pos){
             return;
@@ -24,7 +24,7 @@ EventManager.regist('tap',{
             pos.move = true;
         }
     },
-    touchend(dom:IRenderedDom,module:Module,evtObj:NEvent,e: TouchEvent) {
+    touchend(dom:RenderedDom,module:Module,evtObj:NEvent,e: TouchEvent) {
         let pos = evtObj.dependEvent.getParam(module,dom,'pos');
         if(!pos){
             return;
@@ -47,7 +47,7 @@ EventManager.regist('tap',{
  * swipe事件
  */
  EventManager.regist('swipe',{
-    touchstart(dom:IRenderedDom,module:Module,evtObj:NEvent,e: TouchEvent){
+    touchstart(dom:RenderedDom,module:Module,evtObj:NEvent,e: TouchEvent){
         let tch = e.touches[0];
         let t = Date.now();
         evtObj.dependEvent.setParam(module,dom,'swipe', {
@@ -56,7 +56,7 @@ EventManager.regist('tap',{
             oldLoc: { x: tch.pageX, y: tch.pageY }
         });
     },
-    touchmove(dom:IRenderedDom,module:Module,evtObj:NEvent,e: TouchEvent){
+    touchmove(dom:RenderedDom,module:Module,evtObj:NEvent,e: TouchEvent){
         let nt = Date.now();
         let tch = e.touches[0];
         let mv = evtObj.dependEvent.getParam(module,dom,'swipe');
@@ -69,7 +69,7 @@ EventManager.regist('tap',{
         }
         mv.oldLoc = { x: tch.pageX, y: tch.pageY };
     },
-    touchend(dom:IRenderedDom,module:Module,evtObj:NEvent,e: any){
+    touchend(dom:RenderedDom,module:Module,evtObj:NEvent,e: any){
         let mv = evtObj.dependEvent.getParam(module,dom,'swipe');
         let nt = Date.now();
         //取值序号 0 或 1，默认1，如果释放时间与上次事件太短，则取0
@@ -125,7 +125,7 @@ EventManager.regist('swipedown',EventManager.get('swipe'));
  * double click
  */
 EventManager.regist('dblclick',{
-    click(dom:IRenderedDom,module:Module,evtObj:NEvent,e: MouseEvent) {
+    click(dom:RenderedDom,module:Module,evtObj:NEvent,e: MouseEvent) {
         let firstClick = evtObj.dependEvent.getParam(module,dom,'firstClick');
         if(firstClick){
             let t = Date.now();

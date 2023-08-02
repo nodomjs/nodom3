@@ -1,4 +1,5 @@
-import { IRouteCfg } from "./types";
+import { Module } from "./module";
+import { RouteCfg, UnknownClass } from "./types";
 /**
  * 路由类
  */
@@ -14,7 +15,7 @@ export declare class Route {
     /**
      * 路由参数数据
      */
-    data: any;
+    data: object;
     /**
      * 子路由
      */
@@ -22,11 +23,11 @@ export declare class Route {
     /**
      * 进入路由事件方法
      */
-    onEnter: Function;
+    onEnter: (module: Module, path: string) => void;
     /**
      * 离开路由方法
      */
-    onLeave: Function;
+    onLeave: (module: Module, path: string) => void;
     /**
      * 路由路径
      */
@@ -38,7 +39,7 @@ export declare class Route {
     /**
      * 路由对应模块对象或类或模块类名
      */
-    module: any;
+    module: string | UnknownClass | Module;
     /**
      * 模块路径，当module为类名时需要，默认执行延迟加载
      */
@@ -49,12 +50,12 @@ export declare class Route {
     parent: Route;
     /**
      *
-     * @param config 路由配置项
+     * @param config - 路由配置项
      */
-    constructor(config?: IRouteCfg, parent?: Route);
+    constructor(config?: RouteCfg, parent?: Route);
     /**
      * 添加子路由
-     * @param child
+     * @param child -
      */
     addChild(child: Route): void;
     /**

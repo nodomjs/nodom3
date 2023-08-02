@@ -4,22 +4,21 @@
 class DefineElementManager {
     /**
      * 添加自定义元素类
-     * @param clazz     自定义元素类或类数组
-     * @param alias     别名
+     * @param clazz -   自定义元素类或类数组
      */
-    static add(clazz, alias) {
+    static add(clazz) {
         if (Array.isArray(clazz)) {
-            for (let c of clazz) {
+            for (const c of clazz) {
                 this.elements.set(c.name.toUpperCase(), c);
             }
         }
         else {
-            this.elements.set((alias || clazz.name).toUpperCase(), clazz);
+            this.elements.set(clazz.name.toUpperCase(), clazz);
         }
     }
     /**
      * 获取自定义元素类
-     * @param tagName   元素名
+     * @param tagName - 元素名
      * @returns         自定义元素类
      */
     static get(tagName) {
@@ -27,7 +26,7 @@ class DefineElementManager {
     }
     /**
      * 是否存在自定义元素
-     * @param tagName   元素名
+     * @param tagName - 元素名
      * @returns         存在或不存在
      */
     static has(tagName) {
@@ -45,14 +44,14 @@ DefineElementManager.elements = new Map();
 class DirectiveType {
     /**
      * 构造方法
-     * @param name      指令类型名
-     * @param handle    渲染时执行方法
-     * @param prio      类型优先级
+     * @param name -      指令类型名
+     * @param handle -    渲染时执行方法
+     * @param prio -      类型优先级
      */
-    constructor(name, handle, prio) {
+    constructor(name, handler, prio) {
         this.name = name;
         this.prio = prio >= 0 ? prio : 10;
-        this.handle = handle;
+        this.handler = handler;
     }
 }
 
@@ -62,32 +61,32 @@ class DirectiveType {
 class DirectiveManager {
     /**
      * 增加指令映射
-     * @param name      指令类型名
-     * @param handle    渲染处理函数
-     * @param prio      类型优先级
+     * @param name -      指令类型名
+     * @param handle -    渲染处理函数
+     * @param prio -      类型优先级
      */
-    static addType(name, handle, prio) {
-        this.directiveTypes.set(name, new DirectiveType(name, handle, prio));
+    static addType(name, handler, prio) {
+        this.directiveTypes.set(name, new DirectiveType(name, handler, prio));
     }
     /**
      * 移除指令映射
-     * @param name  指令类型名
+     * @param name -      指令类型名
      */
     static removeType(name) {
         this.directiveTypes.delete(name);
     }
     /**
      * 获取指令
-     * @param name  指令类型名
-     * @returns     指令类型或undefined
+     * @param name -      指令类型名
+     * @returns         指令类型或undefined
      */
     static getType(name) {
         return this.directiveTypes.get(name);
     }
     /**
      * 是否含有某个指令
-     * @param name  指令类型名
-     * @returns     true/false
+     * @param name -      指令类型名
+     * @returns         true/false
      */
     static hasType(name) {
         return this.directiveTypes.has(name);
@@ -259,7 +258,7 @@ const NodomMessage_zh = {
 class ModuleFactory {
     /**
      * 添加模块到工厂
-     * @param item  模块对象
+     * @param item -  模块对象
      */
     static add(item) {
         // 第一个为主模块
@@ -272,10 +271,10 @@ class ModuleFactory {
     }
     /**
      * 获得模块
-     * @param name  类或实例id
+     * @param name -  类或实例id
      */
     static get(name) {
-        let tp = typeof name;
+        const tp = typeof name;
         let mdl;
         if (tp === 'number') { //数字，模块id
             return this.modules.get(name);
@@ -301,7 +300,7 @@ class ModuleFactory {
     }
     /**
      * 是否存在模块类
-     * @param clazzName     模块类名
+     * @param clazzName -     模块类名
      * @returns     true/false
      */
     static hasClass(clazzName) {
@@ -310,12 +309,12 @@ class ModuleFactory {
     }
     /**
      * 添加模块类
-     * @param clazz     模块类
-     * @param alias     注册别名
+     * @param clazz -     模块类
+     * @param alias -     注册别名
      */
     static addClass(clazz, alias) {
         //转换成小写
-        let name = clazz.name.toLowerCase();
+        const name = clazz.name.toLowerCase();
         if (this.classes.has(name)) {
             return;
         }
@@ -327,7 +326,7 @@ class ModuleFactory {
     }
     /**
      * 获取模块类
-     * @param name  类名或别名
+     * @param name -  类名或别名
      * @returns     模块类
      */
     static getClass(name) {
@@ -336,15 +335,15 @@ class ModuleFactory {
     }
     /**
      * 装载module
-     * @param modulePath    模块类路径
-     * @return              模块类
+     * @param modulePath -   模块类路径
+     * @returns              模块类
      */
     static load(modulePath) {
         return __awaiter(this, void 0, void 0, function* () {
-            let m = yield import(modulePath);
+            const m = yield import(modulePath);
             if (m) {
                 //通过import的模块，查找模块类
-                for (let k of Object.keys(m)) {
+                for (const k of Object.keys(m)) {
                     if (m[k].name) {
                         this.addClass(m[k]);
                         return m[k];
@@ -355,14 +354,14 @@ class ModuleFactory {
     }
     /**
      * 从工厂移除模块
-     * @param id    模块id
+     * @param id -    模块id
      */
     static remove(id) {
         this.modules.delete(id);
     }
     /**
      * 设置主模块
-     * @param m 	模块
+     * @param m - 	模块
      */
     static setMain(m) {
         this.mainModule = m;
@@ -376,11 +375,15 @@ class ModuleFactory {
     }
 }
 /**
- * 模块对象集合 {moduleId:模块对象}}
+ * 模块对象集合
+ * key: 模块id
+ * value: 模块对象
  */
 ModuleFactory.modules = new Map();
 /**
- * 模块类集合 {className:模块类}
+ * 模块类集合
+ *  key:    模块类名或别名
+ *  value:  模块类
  */
 ModuleFactory.classes = new Map();
 /**
@@ -398,7 +401,7 @@ ModuleFactory.aliasMap = new Map();
  */
 class Expression {
     /**
-     * @param exprStr	表达式串
+     * @param exprStr -	表达式串
      */
     constructor(exprStr) {
         this.id = Util.genId();
@@ -413,7 +416,7 @@ class Expression {
     }
     /**
      * 编译表达式串，替换字段和方法
-     * @param exprStr   表达式串
+     * @param exprStr -   表达式串
      * @returns         编译后的表达式串
      */
     compile(exprStr) {
@@ -431,7 +434,7 @@ class Expression {
                 retS += s;
             }
             else {
-                let lch = s[s.length - 1];
+                const lch = s[s.length - 1];
                 if (lch === ':') { //object key
                     retS += s;
                 }
@@ -463,7 +466,7 @@ class Expression {
         return retS;
         /**
          * 处理函数串
-         * @param str   源串
+         * @param str -   源串
          * @returns     处理后的串
          */
         function handleFunc(str) {
@@ -487,8 +490,8 @@ class Expression {
     }
     /**
      * 表达式计算
-     * @param module    模块
-     * @param model 	模型
+     * @param module -    模块
+     * @param model - 	模型
      * @returns 		计算结果
      */
     val(module, model) {
@@ -501,7 +504,7 @@ class Expression {
         }
         catch (e) {
             if (Nodom.isDebug) {
-                console.error(new NError("wrongExpression", this.exprStr).message);
+                console.error(new NError("wrongExpression", [this.exprStr]).message);
                 console.error(e);
             }
         }
@@ -519,15 +522,15 @@ class Expression {
 class CssManager {
     /**
      * 处理style 元素
-     * @param module    模块
-     * @param dom       虚拟dom
-     * @param root      模块root dom
-     * @param add       是否添加根模块类名
+     * @param module -    模块
+     * @param dom -       虚拟dom
+     * @param root -      模块root dom
+     * @param add -       是否添加根模块类名
      * @returns         如果是styledom，则返回true，否则返回false
      */
     static handleStyleDom(module, dom, root) {
         if (dom.props['scope'] === 'this') {
-            let cls = this.cssPreName + module.id;
+            const cls = this.cssPreName + module.id;
             if (root.props['class']) {
                 root.props['class'] = dom.props['class'] + ' ' + cls;
             }
@@ -538,8 +541,8 @@ class CssManager {
     }
     /**
      * 处理 style 下的文本元素
-     * @param module    模块
-     * @param dom       style text element
+     * @param module -    模块
+     * @param dom -       style text element
      * @returns         如果是styleTextdom返回true，否则返回false
      */
     static handleStyleTextDom(module, dom) {
@@ -552,15 +555,15 @@ class CssManager {
     }
     /**
      * 添加多个css rule
-     * @param cssText           rule集合
-     * @param module            模块
-     * @param scopeName         作用域名(前置选择器)
+     * @param cssText -           rule集合
+     * @param module -            模块
+     * @param scopeName -         作用域名(前置选择器)
      */
     static addRules(module, cssText, scopeName) {
         //sheet 初始化
         if (!this.sheet) {
             //safari不支持 cssstylesheet constructor，用 style代替
-            let sheet = document.createElement('style');
+            const sheet = document.createElement('style');
             document.head.appendChild(sheet);
             this.sheet = document.styleSheets[0];
         }
@@ -584,7 +587,7 @@ class CssManager {
             }
             else if (re[0] === '}') { //回收括号，单个样式结束判断
                 if (startIndex >= 0 && --beginNum <= 0) { //style @ end
-                    let txt = cssText.substring(startIndex, re.index + 1);
+                    const txt = cssText.substring(startIndex, re.index + 1);
                     if (txt[0] === '@') { //@开头
                         this.sheet.insertRule(txt, CssManager.sheet.cssRules ? CssManager.sheet.cssRules.length : 0);
                     }
@@ -607,14 +610,13 @@ class CssManager {
         }
         /**
          * 处理style rule
-         * @param module         模块
-         * @param cssText        css 文本
-         * @param scopeName      作用域名(前置选择器)
-         * @returns              如果css文本最后一个"{"前没有字符串，则返回void
+         * @param module -         模块
+         * @param cssText -        css 文本
+         * @param scopeName -      作用域名(前置选择器)
          */
         function handleStyle(module, cssText, scopeName) {
             const reg = /.+(?=\{)/; //匹配字符"{"前出现的所有字符
-            let r = reg.exec(cssText);
+            const r = reg.exec(cssText);
             if (!r) {
                 return;
             }
@@ -634,16 +636,16 @@ class CssManager {
         }
         /**
          * 处理import rule
-         * @param cssText   css文本
+         * @param cssText -   css文本
          * @returns         如果cssText中"()"内有字符串且importMap中存在键值为"()"内字符串的第一个字符，则返回void
          */
         function handleImport(cssText) {
-            let ind = cssText.indexOf('(');
-            let ind1 = cssText.lastIndexOf(')');
+            const ind = cssText.indexOf('(');
+            const ind1 = cssText.lastIndexOf(')');
             if (ind === -1 || ind1 === -1 || ind >= ind1) {
                 return;
             }
-            let css = cssText.substring(ind, ind1);
+            const css = cssText.substring(ind, ind1);
             if (CssManager.importMap.has(css)) {
                 return;
             }
@@ -654,17 +656,17 @@ class CssManager {
     }
     /**
      * 清除模块css rules
-     * @param module  模块
+     * @param module -  模块
      * @returns       如果模块不存在css rules，则返回void
      */
     static clearModuleRules(module) {
-        let rules = module.objectManager.get('$cssRules');
+        const rules = module.objectManager.get('$cssRules');
         if (!rules || rules.length === 0) {
             return;
         }
         //从sheet清除
         for (let i = 0; i < this.sheet.cssRules.length; i++) {
-            let r = this.sheet.cssRules[i];
+            const r = this.sheet.cssRules[i];
             if (r.selectorText && rules.indexOf(r.selectorText) !== -1) {
                 this.sheet.deleteRule(i--);
             }
@@ -692,7 +694,7 @@ CssManager.cssPreName = '___nodommodule___';
 class Renderer {
     /**
      * 设置根
-     * @param rootEl
+     * @param rootEl -
      */
     static setRootEl(rootEl) {
         this.rootEl = rootEl;
@@ -713,7 +715,7 @@ class Renderer {
     }
     /**
      * 添加到渲染列表
-     * @param module 模块
+     * @param module - 模块
      */
     static add(module) {
         //如果已经在列表中，不再添加
@@ -724,7 +726,7 @@ class Renderer {
     }
     /**
      * 从渲染队列移除
-     * @param moduleId
+     * @param moduleId -
      */
     static remove(moduleId) {
         let index;
@@ -738,7 +740,7 @@ class Renderer {
      */
     static render() {
         for (; this.waitList.length > 0;) {
-            let id = this.waitList[0];
+            const id = this.waitList[0];
             if (id) { //存在id为null情况，remove方法造成
                 const m = ModuleFactory.get(id);
                 this.currentModule = m;
@@ -751,18 +753,18 @@ class Renderer {
     }
     /**
      * 渲染dom
-     * @param module            模块
-     * @param src               源dom
-     * @param model             模型，如果src已经带有model，则此参数无效，一般为指令产生的model（如slot）
-     * @param parent            父dom
-     * @param key               key 附加key，放在domkey的后面
+     * @param module -            模块
+     * @param src -               源dom
+     * @param model -             模型，如果src已经带有model，则此参数无效，一般为指令产生的model（如slot）
+     * @param parent -            父dom
+     * @param key -               key 附加key，放在domkey的后面
      * @returns
      */
     static renderDom(module, src, model, parent, key) {
         //构建key，如果带key，则需要重新构建唯一key
         const key1 = key ? src.key + '_' + key : src.key;
         //初始化渲染节点
-        let dst = {
+        const dst = {
             key: key1,
             model: model,
             vdom: src,
@@ -802,7 +804,7 @@ class Renderer {
             }
             else if (src.assets && src.assets.size > 0) {
                 dst.assets || (dst.assets = {});
-                for (let p of src.assets) {
+                for (const p of src.assets) {
                     dst.assets[p[0]] = p[1];
                 }
             }
@@ -815,7 +817,7 @@ class Renderer {
                 dst.events = [];
                 // 可能存在事件变化，需要先移除
                 module.eventFactory.removeAllEvents(dst);
-                for (let ev of src.events) {
+                for (const ev of src.events) {
                     //当事件串为表达式时，需要处理
                     ev.handleExpr(module, model);
                     //如果不是根节点，设置事件module为渲染module
@@ -831,7 +833,7 @@ class Renderer {
             //子节点渲染
             if (src.children && src.children.length > 0) {
                 dst.children = [];
-                for (let c of src.children) {
+                for (const c of src.children) {
                     this.renderDom(module, c, dst.model, dst, key ? key : null);
                 }
             }
@@ -839,9 +841,9 @@ class Renderer {
         else { //文本节点
             if (src.expressions) { //文本节点
                 let value = '';
-                for (let expr of src.expressions) {
+                for (const expr of src.expressions) {
                     if (expr instanceof Expression) { //处理表达式
-                        let v1 = expr.val(module, dst.model);
+                        const v1 = expr.val(module, dst.model);
                         value += v1 !== undefined ? v1 : '';
                     }
                     else {
@@ -862,16 +864,16 @@ class Renderer {
     }
     /**
      * 处理指令
-     * @param module    模块
-     * @param src       编译节点
-     * @param dst       渲染节点
+     * @param module -    模块
+     * @param src -       编译节点
+     * @param dst -       渲染节点
      * @returns         true继续执行，false不执行后续渲染代码，也不加入渲染树
     */
     static handleDirectives(module, src, dst) {
         if (!src.directives || src.directives.length === 0) {
             return true;
         }
-        for (let d of src.directives) {
+        for (const d of src.directives) {
             //model指令不执行
             if (d.type.name === 'model') {
                 continue;
@@ -884,9 +886,9 @@ class Renderer {
     }
     /**
      * 处理属性
-     * @param module    模块
-     * @param src       编译节点
-     * @param dst       渲染节点
+     * @param module -    模块
+     * @param src -       编译节点
+     * @param dst -       渲染节点
      */
     static handleProps(module, src, dst) {
         if (dst === this.currentRootDom) {
@@ -896,33 +898,33 @@ class Renderer {
         if (!src.props || src.props.size === 0) {
             return;
         }
-        for (let k of src.props) {
+        for (const k of src.props) {
             dst.props[k[0]] = k[1] instanceof Expression ? k[1].val(module, dst.model) : k[1];
         }
     }
     /**
      * 更新到html树
-     * @param module    模块
-     * @param src       渲染节点
+     * @param module -    模块
+     * @param src -       渲染节点
      * @returns         渲染后的节点
      */
     static updateToHtml(module, dom) {
-        let el = module.getElement(dom.key);
+        const el = module.getElement(dom.key);
         if (!el) {
             return this.renderToHtml(module, dom, null);
         }
         else if (dom.tagName) { //html dom节点已存在
             //设置element key属性
-            el.key = dom.key;
-            let attrs = el.attributes;
-            let arr = [];
+            el['key'] = dom.key;
+            const attrs = el.attributes;
+            const arr = [];
             if (attrs) {
                 for (let i = 0; i < attrs.length; i++) {
                     arr.push(attrs[i].name);
                 }
             }
             //设置属性
-            for (let p of Object.keys(dom.props)) {
+            for (const p of Object.keys(dom.props)) {
                 el.setAttribute(p, dom.props[p] === undefined ? '' : dom.props[p]);
                 let ind;
                 if ((ind = arr.indexOf(p)) !== -1) {
@@ -931,13 +933,13 @@ class Renderer {
             }
             //清理多余attribute
             if (arr.length > 0) {
-                for (let a of arr) {
+                for (const a of arr) {
                     el.removeAttribute(a);
                 }
             }
             //处理asset
             if (dom.assets) {
-                for (let k of Object.keys(dom.assets)) {
+                for (const k of Object.keys(dom.assets)) {
                     el[k] = dom.assets[k];
                 }
             }
@@ -947,16 +949,16 @@ class Renderer {
             module.eventFactory.bind(dom.key);
         }
         else { //文本节点
-            el.textContent = dom.textContent;
+            el['textContent'] = dom.textContent;
         }
         return el;
     }
     /**
      * 渲染到html树
-     * @param module 	        模块
-     * @param src               渲染节点
-     * @param parentEl 	        父html
-     * @param isRenderChild     是否渲染子节点
+     * @param module - 	        模块
+     * @param src -               渲染节点
+     * @param parentEl - 	        父html
+     * @param isRenderChild -     是否渲染子节点
      */
     static renderToHtml(module, src, parentEl, isRenderChild) {
         let el;
@@ -976,7 +978,7 @@ class Renderer {
         return el;
         /**
          * 新建element节点
-         * @param dom 		虚拟dom
+         * @param dom - 		虚拟dom
          * @returns 		新的html element
          */
         function newEl(dom) {
@@ -997,16 +999,16 @@ class Renderer {
             //把el引用与key关系存放到cache中
             module.saveElement(dom.key, el);
             //设置element key属性
-            el.key = dom.key;
+            el['key'] = dom.key;
             //设置属性
-            for (let p of Object.keys(dom.props)) {
+            for (const p of Object.keys(dom.props)) {
                 if (dom.props[p] !== undefined && dom.props[p] !== null && dom.props[p] !== '') {
                     el.setAttribute(p, dom.props[p]);
                 }
             }
             //asset
             if (dom.assets) {
-                for (let p of Object.keys(dom.assets)) {
+                for (const p of Object.keys(dom.assets)) {
                     el[p] = dom.assets[p];
                 }
             }
@@ -1022,14 +1024,14 @@ class Renderer {
             if (CssManager.handleStyleTextDom(module, dom)) {
                 return;
             }
-            let node = document.createTextNode(dom.textContent || '');
+            const node = document.createTextNode(dom.textContent || '');
             module.saveElement(dom.key, node);
             return node;
         }
         /**
          * 生成子节点
-         * @param pEl 	父节点
-         * @param vdom  虚拟dom节点
+         * @param pEl - 	父节点
+         * @param vdom -  虚拟dom节点
          */
         function genSub(pEl, vdom) {
             if (vdom.children && vdom.children.length > 0) {
@@ -1051,13 +1053,14 @@ class Renderer {
     }
     /**
      * 处理更改的dom节点
-     * @param module        待处理模块
-     * @param changeDoms    更改的dom参数数组，数组元素说明如下：
+     * @param module -        待处理模块
+     * @param changeDoms -    更改的dom参数数组，数组元素说明如下：
      *                      0:type(操作类型) add 1, upd 2,del 3,move 4 ,rep 5
      *                      1:dom           待处理节点
      *                      2:dom1          被替换或修改节点，rep时有效
      *                      3:parent        父节点
      *                      4:loc           位置,add和move时有效
+     *                      5:index
      */
     static handleChangedDoms(module, changeDoms) {
         //替换数组
@@ -1067,7 +1070,7 @@ class Renderer {
         //移动数组
         const moveArr = [];
         //保留原有html节点
-        for (let item of changeDoms) {
+        for (const item of changeDoms) {
             switch (item[0]) {
                 case 1: //添加
                     addArr.push(item);
@@ -1092,7 +1095,7 @@ class Renderer {
         }
         //替换
         if (repArr.length > 0) {
-            for (let item of repArr) {
+            for (const item of repArr) {
                 const pEl = module.getElement(item[3].key);
                 let n2;
                 if (item[2].moduleId) { //子模块先free再获取，先还原为空文本，再实现新的子模块mount
@@ -1117,7 +1120,7 @@ class Renderer {
         //操作map，用于存放添加或移动过的位置
         const opMap = moveArr.length > 0 ? {} : undefined;
         //处理添加元素
-        for (let item of addArr) {
+        for (const item of addArr) {
             const pEl = module.getElement(item[3].key);
             const n1 = Renderer.renderToHtml(module, item[1], null, true);
             if (pEl.childNodes && pEl.childNodes.length > item[4]) {
@@ -1132,7 +1135,7 @@ class Renderer {
             }
         }
         //处理move元素
-        for (let item of moveArr) {
+        for (const item of moveArr) {
             const pEl = module.getElement(item[3].key);
             const n1 = module.getElement(item[1].key);
             if (!n1 || n1 === pEl.childNodes[item[4]]) {
@@ -1164,21 +1167,21 @@ Renderer.waitList = [];
 class RequestManager {
     /**
      * 设置相同请求拒绝时间间隔
-     * @param time  时间间隔（ms）
+     * @param time -  时间间隔（ms）
      */
     static setRejectTime(time) {
         this.rejectReqTick = time;
     }
     /**
      * ajax 请求
-     * @param config    object 或 string
+     * @param config -    object 或 string
      *                  如果为string，则直接以get方式获取资源
      *                  object 项如下:
      *                  参数名|类型|默认值|必填|可选值|描述
      *                  -|-|-|-|-|-
      *                  url|string|无|是|无|请求url
      *					method|string|GET|否|GET,POST,HEAD|请求类型
-     *					params|Object/FormData|{}|否|无|参数，json格式
+     *					params|Object/FormData|空object|否|无|参数，json格式
      *					async|bool|true|否|true,false|是否异步
      *  				timeout|number|0|否|无|请求超时时间
      *                  type|string|text|否|json,text|
@@ -1195,8 +1198,8 @@ class RequestManager {
             if (this.rejectReqTick > 0) {
                 if (this.requestMap.has(config.url)) {
                     const obj = this.requestMap.get(config.url);
-                    if (time - obj.time < this.rejectReqTick && Util.compare(obj.params, config.params)) {
-                        return new Promise((resolve, reject) => {
+                    if (time - obj['time'] < this.rejectReqTick && Util.compare(obj['params'], config.params)) {
+                        return new Promise((resolve) => {
                             resolve(null);
                         });
                     }
@@ -1255,8 +1258,8 @@ class RequestManager {
                         //参数
                         let pa;
                         if (Util.isObject(config.params)) {
-                            let ar = [];
-                            for (let k of Object.keys(config.params)) {
+                            const ar = [];
+                            for (const k of Object.keys(config.params)) {
                                 const v = config.params[k];
                                 if (v === undefined || v === null) {
                                     continue;
@@ -1279,8 +1282,8 @@ class RequestManager {
                             data = config.params;
                         }
                         else {
-                            let fd = new FormData();
-                            for (let k of Object.keys(config.params)) {
+                            const fd = new FormData();
+                            for (const k of Object.keys(config.params)) {
                                 const v = config.params[k];
                                 if (v === undefined || v === null) {
                                     continue;
@@ -1304,7 +1307,7 @@ class RequestManager {
             }).catch((re) => {
                 switch (re.type) {
                     case "error":
-                        throw new NError("notexist1", NodomMessage.TipWords['resource'], re.url);
+                        throw new NError("notexist1", [NodomMessage.TipWords['resource'], re.url]);
                     case "timeout":
                         throw new NError("timeout");
                     case "jsonparse":
@@ -1320,8 +1323,8 @@ class RequestManager {
         const time = Date.now();
         if (this.rejectReqTick > 0) {
             if (this.requestMap) {
-                for (let kv of this.requestMap) {
-                    if (time - kv[1].time > this.rejectReqTick) {
+                for (const kv of this.requestMap) {
+                    if (time - kv[1]['time'] > this.rejectReqTick) {
                         this.requestMap.delete(kv[0]);
                     }
                 }
@@ -1346,7 +1349,7 @@ RequestManager.requestMap = new Map();
 class Route {
     /**
      *
-     * @param config 路由配置项
+     * @param config - 路由配置项
      */
     constructor(config, parent) {
         /**
@@ -1366,7 +1369,7 @@ class Route {
         }
         this.id = Util.genId();
         //参数赋值
-        for (let o of Object.keys(config)) {
+        for (const o of Object.keys(config)) {
             this[o] = config[o];
         }
         this.parent = parent;
@@ -1386,7 +1389,7 @@ class Route {
     }
     /**
      * 添加子路由
-     * @param child
+     * @param child -
      */
     addChild(child) {
         this.children.push(child);
@@ -1396,13 +1399,13 @@ class Route {
      * 通过路径解析路由对象
      */
     parse() {
-        let pathArr = this.path.split('/');
+        const pathArr = this.path.split('/');
         let node = this.parent;
         let param = [];
         let paramIndex = -1; //最后一个参数开始
         let prePath = ''; //前置路径
         for (let i = 0; i < pathArr.length; i++) {
-            let v = pathArr[i].trim();
+            const v = pathArr[i].trim();
             if (v === '') {
                 pathArr.splice(i--, 1);
                 continue;
@@ -1419,7 +1422,7 @@ class Route {
                 this.path = v; //暂存path
                 let j = 0;
                 for (; j < node.children.length; j++) {
-                    let r = node.children[j];
+                    const r = node.children[j];
                     if (r.path === v) {
                         node = r;
                         break;
@@ -1443,7 +1446,7 @@ class Route {
      * @returns 克隆对象
      */
     clone() {
-        let r = new Route();
+        const r = new Route();
         Object.getOwnPropertyNames(this).forEach(item => {
             if (item === 'data') {
                 return;
@@ -1466,19 +1469,19 @@ class Scheduler {
      */
     static dispatch() {
         Scheduler.tasks.forEach((item) => {
-            if (Util.isFunction(item.func)) {
-                if (item.thiser) {
-                    item.func.call(item.thiser);
+            if (Util.isFunction(item['func'])) {
+                if (item['thiser']) {
+                    item['func'].call(item['thiser']);
                 }
                 else {
-                    item.func();
+                    item['func']();
                 }
             }
         });
     }
     /**
      * 启动调度器
-     * @param scheduleTick 	渲染间隔（ms），默认50ms
+     * @param scheduleTick - 	渲染间隔（ms），默认50ms
      */
     static start(scheduleTick) {
         Scheduler.dispatch();
@@ -1491,22 +1494,22 @@ class Scheduler {
     }
     /**
      * 添加任务
-     * @param foo 		任务和this指向
-     * @param thiser 	this指向
+     * @param foo - 		任务和this指向
+     * @param thiser - 		this指向
      */
     static addTask(foo, thiser) {
         if (!Util.isFunction(foo)) {
-            throw new NError("invoke", "Scheduler.addTask", "0", "function");
+            throw new NError("invoke", ["Scheduler.addTask", "0", "function"]);
         }
         Scheduler.tasks.push({ func: foo, thiser: thiser });
     }
     /**
      * 移除任务
-     * @param foo 	任务
+     * @param foo - 	任务
      */
     static removeTask(foo) {
         if (!Util.isFunction(foo)) {
-            throw new NError("invoke", "Scheduler.removeTask", "0", "function");
+            throw new NError("invoke", ["Scheduler.removeTask", "0", "function"]);
         }
         let ind = -1;
         if ((ind = Scheduler.tasks.indexOf(foo)) !== -1) {
@@ -1522,15 +1525,15 @@ Scheduler.tasks = [];
 /**
  * nodom提示消息
  */
-var NodomMessage = NodomMessage_zh;
+let NodomMessage = NodomMessage_zh;
 /**
  * nodom 类
  */
 class Nodom {
     /**
      * 新建一个App
-     * @param clazz     模块类
-     * @param selector  根容器标签选择器，如果不写，则使用document.body
+     * @param clazz -     模块类
+     * @param selector -  根容器标签选择器，如果不写，则使用document.body
      */
     static app(clazz, selector) {
         //设置渲染器的根 element
@@ -1541,8 +1544,7 @@ class Nodom {
         Scheduler.addTask(RequestManager.clearCache);
         //启动调度器
         Scheduler.start();
-        let mdl = ModuleFactory.get(clazz);
-        mdl.active();
+        ModuleFactory.get(clazz).active();
     }
     /**
      * 启用debug模式
@@ -1552,7 +1554,7 @@ class Nodom {
     }
     /**
      * 设置语言
-     * @param lang  语言（zh,en），默认zh
+     * @param lang -  语言（zh,en），默认zh
      */
     static setLang(lang) {
         //设置nodom语言
@@ -1567,31 +1569,31 @@ class Nodom {
     /**
      * use插件（实例化）
      * 插件实例化后以单例方式存在，第二次use同一个插件，将不进行任何操作，实例化后可通过Nodom['$类名']方式获取
-     * @param clazz     插件类
-     * @param params    参数
+     * @param clazz -     插件类
+     * @param params -    参数
      * @returns         实例化后的插件对象
      */
     static use(clazz, params) {
-        if (!clazz.name) {
-            new NError('notexist', NodomMessage.TipWords.plugin);
+        if (!clazz['name']) {
+            new NError('notexist', [NodomMessage.TipWords.plugin]);
         }
-        if (!this['$' + clazz.name]) {
-            this['$' + clazz.name] = Reflect.construct(clazz, params || []);
+        if (!this['$' + clazz['name']]) {
+            this['$' + clazz['name']] = Reflect.construct(clazz, params || []);
         }
-        return this['$' + clazz.name];
+        return this['$' + clazz['name']];
     }
     /**
      * 暴露的创建路由方法
-     * @param config  数组或单个配置
+     * @param config -  数组或单个配置
      */
     static createRoute(config, parent) {
         if (!Nodom['$Router']) {
-            throw new NError('uninit', NodomMessage.TipWords.route);
+            throw new NError('uninit', [NodomMessage.TipWords.route]);
         }
         let route;
         parent = parent || Nodom['$Router'].getRoot();
         if (Util.isArray(config)) {
-            for (let item of config) {
+            for (const item of config) {
                 route = new Route(item, parent);
             }
         }
@@ -1602,32 +1604,32 @@ class Nodom {
     }
     /**
      * 创建指令
-     * @param name      指令名
-     * @param priority  优先级（1最小，1-10为框架保留优先级）
-     * @param init      初始化方法
-     * @param handler   渲染时方法
+     * @param name -      指令名
+     * @param priority -  优先级（1最小，1-10为框架保留优先级）
+     * @param init -      初始化方法
+     * @param handler -   渲染时方法
      */
     static createDirective(name, handler, priority) {
         return DirectiveManager.addType(name, handler, priority);
     }
     /**
      * 注册模块
-     * @param clazz     模块类
-     * @param name      注册名，如果没有，则为类名
+     * @param clazz -     模块类
+     * @param name -      注册名，如果没有，则为类名
      */
     static registModule(clazz, name) {
         ModuleFactory.addClass(clazz, name);
     }
     /**
      * ajax 请求，如果需要用第三方ajax插件替代，重载该方法
-     * @param config    object 或 string
+     * @param config -    object 或 string
      *                  如果为string，则直接以get方式获取资源
      *                  object 项如下:
      *                  参数名|类型|默认值|必填|可选值|描述
      *                  -|-|-|-|-|-
      *                  url|string|无|是|无|请求url
      *					method|string|GET|否|GET,POST,HEAD|请求类型
-     *					params|Object/FormData|{}|否|无|参数，json格式
+     *					params|Object/FormData|空object|否|无|参数，json格式
      *					async|bool|true|否|true,false|是否异步
      *  				    timeout|number|0|否|无|请求超时时间
      *                  type|string|text|否|json,text|
@@ -1644,7 +1646,7 @@ class Nodom {
     }
     /**
      * 设置相同请求拒绝时间间隔
-     * @param time  时间间隔（ms）
+     * @param time -  时间间隔（ms）
      */
     static setRejectTime(time) {
         RequestManager.setRejectTime(time);
@@ -1652,8 +1654,8 @@ class Nodom {
 }
 /**
  * Nodom.app的简写方式
- * @param clazz     模块类
- * @param selector  根容器标签选择器，如果不写，则使用document.body
+ * @param clazz -     模块类
+ * @param selector -  根容器标签选择器，如果不写，则使用document.body
  */
 function nodom(clazz, selector) {
     return Nodom.app(clazz, selector);
@@ -1661,49 +1663,22 @@ function nodom(clazz, selector) {
 
 /**
  * 异常处理类
- * @since       1.0.0
  */
 class NError extends Error {
-    constructor(errorName, p1, p2, p3, p4) {
+    constructor(errorName, params) {
         super(errorName);
-        let msg = NodomMessage.ErrorMsgs[errorName];
+        const msg = NodomMessage.ErrorMsgs[errorName];
         if (msg === undefined) {
             this.message = "未知错误";
             return;
         }
-        //复制请求参数
-        let params = [msg];
-        for (let i = 1; i < arguments.length; i++) {
-            params.push(arguments[i]);
-        }
-        this.message = this.compile.apply(null, params);
-    }
-    /**
-     * 编译字符串，把{n}替换成带入值
-     * @param src   待编译的字符串
-     * @returns     转换后的消息
-     */
-    compile(src, p1, p2, p3, p4, p5) {
-        let reg;
-        let args = arguments;
-        let index = 0;
-        for (;;) {
-            if (src.indexOf('\{' + index + '\}') !== -1) {
-                reg = new RegExp('\\{' + index + '\\}', 'g');
-                src = src.replace(reg, args[index + 1]);
-                index++;
-            }
-            else {
-                break;
-            }
-        }
-        return src;
+        //编译提示信息
+        this.message = Util.compileStr(msg, params);
     }
 }
 
 /**
  * 基础服务库
- * @since       1.0.0
  */
 class Util {
     /**
@@ -1735,7 +1710,7 @@ class Util {
     }
     /**
      * 是否为 js 保留关键字
-     * @param name  名字
+     * @param name -  名字
      * @returns     如果为保留字，则返回true，否则返回false
      */
     static isKeyWord(name) {
@@ -1744,20 +1719,19 @@ class Util {
     /******对象相关******/
     /**
      * 对象复制
-     * @param srcObj    源对象
-     * @param expKey    不复制的键正则表达式或名
-     * @param extra     clone附加参数
+     * @param srcObj -    源对象
+     * @param expKey -    不复制的键正则表达式或名
+     * @param extra -     clone附加参数
      * @returns         复制的对象
      */
     static clone(srcObj, expKey, extra) {
-        let me = this;
-        let map = new WeakMap();
+        const map = new WeakMap();
         return clone(srcObj, expKey, extra);
         /**
          * clone对象
-         * @param src      待clone对象
-         * @param expKey   不克隆的键
-         * @param extra    clone附加参数
+         * @param src -      待clone对象
+         * @param expKey -   不克隆的键
+         * @param extra -    clone附加参数
          * @returns        克隆后的对象
          */
         function clone(src, expKey, extra) {
@@ -1770,7 +1744,7 @@ class Util {
             if (src.clone && Util.isFunction(src.clone)) {
                 return src.clone(extra);
             }
-            else if (me.isObject(src)) {
+            else if (Util.isObject(src)) {
                 dst = new Object();
                 //把对象加入map，如果后面有新克隆对象，则用新克隆对象进行覆盖
                 map.set(src, dst);
@@ -1786,7 +1760,7 @@ class Util {
                     dst[prop] = getCloneObj(src[prop], expKey, extra);
                 });
             }
-            else if (me.isMap(src)) {
+            else if (Util.isMap(src)) {
                 dst = new Map();
                 //把对象加入map，如果后面有新克隆对象，则用新克隆对象进行覆盖
                 src.forEach((value, key) => {
@@ -1800,8 +1774,8 @@ class Util {
                     dst.set(key, getCloneObj(value, expKey, extra));
                 });
             }
-            else if (me.isArray(src)) {
-                dst = new Array();
+            else if (Util.isArray(src)) {
+                dst = [];
                 //把对象加入map，如果后面有新克隆对象，则用新克隆对象进行覆盖
                 src.forEach(function (item, i) {
                     dst[i] = getCloneObj(item, expKey, extra);
@@ -1811,9 +1785,9 @@ class Util {
         }
         /**
          * 获取clone对象
-         * @param value     待clone值
-         * @param expKey    排除键
-         * @param extra     附加参数
+         * @param value -     待clone值
+         * @param expKey -    排除键
+         * @param extra -     附加参数
          */
         function getCloneObj(value, expKey, extra) {
             if (typeof value === 'object' && !Util.isFunction(value)) {
@@ -1831,8 +1805,8 @@ class Util {
     }
     /**
      * 比较两个对象值是否相同(只比较object和array)
-     * @param src   源对象
-     * @param dst   目标对象
+     * @param src -   源对象
+     * @param dst -   目标对象
      * @returns     值相同则返回true，否则返回false
      */
     static compare(src, dst) {
@@ -1841,15 +1815,14 @@ class Util {
             if (o1 === o2) {
                 return true;
             }
-            let keys1 = Object.keys(o1);
-            let keys2 = Object.keys(o2);
+            const keys1 = Object.keys(o1);
+            const keys2 = Object.keys(o2);
             if (keys1.length !== keys2.length) {
                 return false;
             }
-            for (let k of keys1) {
+            for (const k of keys1) {
                 if (typeof o1[k] === 'object' && typeof o2[k] === 'object') {
-                    let r = cmp(o1[k], o2[k]);
-                    if (!r) {
+                    if (!cmp(o1[k], o2[k])) {
                         return false;
                     }
                 }
@@ -1862,7 +1835,7 @@ class Util {
     }
     /**
      * 获取对象自有属性
-     * @param obj   需要获取属性的对象
+     * @param obj -   需要获取属性的对象
      * @returns     返回属性数组
      */
     static getOwnProps(obj) {
@@ -1874,7 +1847,7 @@ class Util {
     /**************对象判断相关************/
     /**
      * 判断是否为函数
-     * @param foo   检查的对象
+     * @param foo -   检查的对象
      * @returns     true/false
      */
     static isFunction(foo) {
@@ -1882,7 +1855,7 @@ class Util {
     }
     /**
      * 判断是否为数组
-     * @param obj   检查的对象
+     * @param obj -   检查的对象
      * @returns     true/false
      */
     static isArray(obj) {
@@ -1890,14 +1863,14 @@ class Util {
     }
     /**
      * 判断是否为map
-     * @param obj   检查的对象
+     * @param obj -   检查的对象
      */
     static isMap(obj) {
         return obj !== null && obj !== undefined && obj.constructor === Map;
     }
     /**
      * 判断是否为对象
-     * @param obj   检查的对象
+     * @param obj -   检查的对象
      * @returns     true/false
      */
     static isObject(obj) {
@@ -1905,17 +1878,15 @@ class Util {
     }
     /**
      * 判断对象/字符串是否为空
-     * @param obj   检查的对象
+     * @param obj -   检查的对象
      * @returns     true/false
      */
     static isEmpty(obj) {
         if (obj === null || obj === undefined)
             return true;
         if (this.isObject(obj)) {
-            let keys = Object.keys(obj);
-            if (keys !== undefined) {
-                return keys.length === 0;
-            }
+            const keys = Object.keys(obj);
+            return keys.length === 0;
         }
         else if (typeof obj === 'string') {
             return obj === '';
@@ -1925,28 +1896,27 @@ class Util {
     /******日期相关******/
     /**
      * 日期格式化
-     * @param timestamp  时间戳
-     * @param format     日期格式
+     * @param timestamp -  时间戳
+     * @param format -     日期格式
      * @returns          日期串
      */
     static formatDate(timeStamp, format) {
         if (typeof timeStamp === 'string') {
             //排除日期格式串,只处理时间戳
-            let reg = /^\d+$/;
-            if (reg.test(timeStamp)) {
+            if (/^\d+$/.test(timeStamp)) {
                 timeStamp = Number(timeStamp);
             }
             else {
-                throw new NError('invoke', 'Util.formatDate', '0', 'date string', 'date');
+                throw new NError('invoke', ['Util.formatDate', '0', 'date string', 'date']);
             }
         }
         //得到日期
-        let date = new Date(timeStamp);
+        const date = new Date(timeStamp);
         // invalid date
         if (isNaN(date.getDay())) {
-            throw new NError('invoke', 'Util.formatDate', '0', 'date string', 'date');
+            throw new NError('invoke', ['Util.formatDate', '0', 'date string', 'date']);
         }
-        let o = {
+        const o = {
             "M+": date.getMonth() + 1,
             "d+": date.getDate(),
             "h+": date.getHours(),
@@ -1972,22 +1942,22 @@ class Util {
     }
     /******字符串相关*****/
     /**
-     * 编译字符串，把{n}替换成带入值
-     * @param src   待编译的字符串
+     * 编译字符串，把 \{n\}替换成带入值
+     * @param src -     待编译的字符串
+     * @param params -  参数数组
      * @returns     转换后的消息
      */
-    static compileStr(src, p1, p2, p3, p4, p5) {
+    static compileStr(src, params) {
         let reg;
-        let args = arguments;
-        let index = 0;
-        for (;;) {
-            if (src.indexOf('\{' + index + '\}') !== -1) {
-                reg = new RegExp('\\{' + index + '\\}', 'g');
-                src = src.replace(reg, args[index + 1]);
-                index++;
-            }
-            else {
-                break;
+        if (params) {
+            for (let i = 0; i < params.length; i++) {
+                if (src.indexOf('\{' + i + '\}') !== -1) {
+                    reg = new RegExp('\\{' + i + '\\}', 'g');
+                    src = src.replace(reg, params[i]);
+                }
+                else {
+                    break;
+                }
             }
         }
         return src;
@@ -2010,16 +1980,16 @@ Util.initKeyMap();
 class Directive {
     /**
      * 构造方法
-     * @param type  	    类型名
-     * @param value 	    指令值
-     * @param templateMid   模板所属的module id，即指令用于哪个模板，则该参数指向模板对应的模块id
+     * @param type -  	    类型名
+     * @param value - 	    指令值
+     * @param templateMid -   模板所属的module id，即指令用于哪个模板，则该参数指向模板对应的模块id
      */
     constructor(type, value, templateMid) {
         this.id = Util.genId();
         if (type) {
             this.type = DirectiveManager.getType(type);
             if (!this.type) {
-                throw new NError('notexist1', NodomMessage.TipWords['directive'], type);
+                throw new NError('notexist1', [NodomMessage.TipWords['directive'], type]);
             }
         }
         if (typeof value === 'string') {
@@ -2035,8 +2005,8 @@ class Directive {
     }
     /**
      * 执行指令
-     * @param module    模块
-     * @param dom       渲染目标节点对象
+     * @param module -    模块
+     * @param dom -       渲染目标节点对象
      * @returns         true/false
      */
     exec(module, dom) {
@@ -2047,13 +2017,13 @@ class Directive {
         if (this.expression) {
             this.value = this.expression.val(module, dom.model);
         }
-        return this.type.handle.apply(this, [module, dom]);
+        return this.type.handler.apply(this, [module, dom]);
     }
     /**
      * 克隆
      */
     clone() {
-        let d = new Directive();
+        const d = new Directive();
         d.type = this.type;
         d.expression = this.expression;
         d.value = this.value;
@@ -2066,15 +2036,13 @@ class Directive {
  * 事件类
  * @remarks
  * 事件分为自有事件和代理事件，事件默认传递参数为 model(事件对应数据模型),dom(事件target对应的虚拟dom节点),evObj(NEvent对象),e(html event对象)
- * @author      yanglei
- * @since       1.0
  */
 class NEvent {
     /**
-     * @param eventName     事件名
-     * @param eventStr      事件串或事件处理函数,以“:”分割,中间不能有空格,结构为: 方法名[:delg(代理到父对象):nopopo(禁止冒泡):once(只执行一次):capture(useCapture)]
+     * @param eventName -     事件名
+     * @param eventStr -      事件串或事件处理函数,以“:”分割,中间不能有空格,结构为: 方法名[:delg(代理到父对象):nopopo(禁止冒泡):once(只执行一次):capture(useCapture)]
      *                      如果为函数，则替代第三个参数
-     * @param handler       事件执行函数，如果方法不在module methods中定义，则可以直接申明，eventStr第一个参数失效，即eventStr可以是":delg:nopopo..."
+     * @param handler -       事件执行函数，如果方法不在module methods中定义，则可以直接申明，eventStr第一个参数失效，即eventStr可以是":delg:nopopo..."
      */
     constructor(module, eventName, eventStr, handler) {
         this.id = Util.genId();
@@ -2084,13 +2052,13 @@ class NEvent {
     }
     /**
      * 事件串初始化
-     * @param eventStr  事件串
-     * @param handler   事件钩子函数
+     * @param eventStr -  事件串
+     * @param handler -   事件钩子函数
      */
     init(eventStr, handler) {
         //如果事件串不为空，则不需要处理
         if (eventStr) {
-            let tp = typeof eventStr;
+            const tp = typeof eventStr;
             if (tp === 'string') {
                 this.parseEvent(eventStr.trim());
             }
@@ -2109,8 +2077,8 @@ class NEvent {
     }
     /**
      * 表达式处理，当handler为expression时有效
-     * @param module    模块
-     * @param model     对应model
+     * @param module -    模块
+     * @param model -     对应model
      */
     handleExpr(module, model) {
         if (this.expr) {
@@ -2121,7 +2089,7 @@ class NEvent {
     }
     /**
      * 解析事件字符串
-     * @param eventStr  待解析的字符串
+     * @param eventStr -  待解析的字符串
      */
     parseEvent(eventStr) {
         eventStr.split(':').forEach((item, i) => {
@@ -2186,19 +2154,19 @@ class NEvent {
     }
     /**
      * 设置附加参数值
-     * @param module    模块
-     * @param dom       虚拟dom
-     * @param name      参数名
-     * @param value     参数值
+     * @param module -    模块
+     * @param dom -       虚拟dom
+     * @param name -      参数名
+     * @param value -     参数值
      */
     setParam(module, dom, name, value) {
         module.objectManager.setEventParam(this.id, dom.key, name, value);
     }
     /**
      * 获取附加参数值
-     * @param module    模块
-     * @param dom       虚拟dom
-     * @param name      参数名
+     * @param module -    模块
+     * @param dom -       虚拟dom
+     * @param name -      参数名
      * @returns         附加参数值
      */
     getParam(module, dom, name) {
@@ -2206,17 +2174,17 @@ class NEvent {
     }
     /**
      * 移除参数
-     * @param module    模块
-     * @param dom       虚拟dom
-     * @param name      参数名
+     * @param module -    模块
+     * @param dom -       虚拟dom
+     * @param name -      参数名
      */
     removeParam(module, dom, name) {
         return module.objectManager.removeEventParam(this.id, dom.key, name);
     }
     /**
      * 清参数cache
-     * @param module    模块
-     * @param dom       虚拟dom
+     * @param module -    模块
+     * @param dom -       虚拟dom
      */
     clearParam(module, dom) {
         module.objectManager.clearEventParams(this.id, dom.key);
@@ -2224,13 +2192,13 @@ class NEvent {
 }
 
 /**
- * 虚拟dom，编译后的dom节点，与渲染后的dom节点(IRenderedDom)不同
+ * 虚拟dom，编译后的dom节点，与渲染后的dom节点(RenderedDom)不同
  */
 class VirtualDom {
     /**
-     * @param tag       标签名
-     * @param key       key
-     * @param module 	模块
+     * @param tag -       标签名
+     * @param key -       key
+     * @param module - 	模块
      */
     constructor(tag, key, module) {
         this.key = key || (module ? module.getDomKeyId() : Util.genId());
@@ -2241,7 +2209,7 @@ class VirtualDom {
     }
     /**
      * 移除多个指令
-     * @param directives 	待删除的指令类型数组或指令类型
+     * @param directives - 	待删除的指令类型数组或指令类型
      * @returns             如果虚拟dom上的指令集为空，则返回void
      */
     removeDirectives(directives) {
@@ -2255,7 +2223,7 @@ class VirtualDom {
     }
     /**
      * 移除指令
-     * @param directive 	待删除的指令类型名
+     * @param directive - 	待删除的指令类型名
      * @returns             如果虚拟dom上的指令集为空，则返回void
      */
     removeDirective(directive) {
@@ -2272,8 +2240,8 @@ class VirtualDom {
     }
     /**
      * 添加指令
-     * @param directive     指令对象
-     * @param sort          是否排序
+     * @param directive -     指令对象
+     * @param sort -          是否排序
      * @returns             如果虚拟dom上的指令集不为空，且指令集中已经存在传入的指令对象，则返回void
      */
     addDirective(directive, sort) {
@@ -2309,7 +2277,7 @@ class VirtualDom {
     }
     /**
      * 是否有某个类型的指令
-     * @param typeName 	    指令类型名
+     * @param typeName - 	    指令类型名
      * @returns             如果指令集不为空，且含有传入的指令类型名则返回true，否则返回false
      */
     hasDirective(typeName) {
@@ -2317,8 +2285,8 @@ class VirtualDom {
     }
     /**
      * 获取某个类型的指令
-     * @param module            模块
-     * @param directiveType 	指令类型名
+     * @param module -            模块
+     * @param directiveType - 	指令类型名
      * @returns                 如果指令集为空，则返回void；否则返回指令类型名等于传入参数的指令对象
      */
     getDirective(directiveType) {
@@ -2329,8 +2297,8 @@ class VirtualDom {
     }
     /**
      * 添加子节点
-     * @param dom       子节点
-     * @param index     指定位置，如果不传此参数，则添加到最后
+     * @param dom -       子节点
+     * @param index -     指定位置，如果不传此参数，则添加到最后
      */
     add(dom, index) {
         if (!this.children) {
@@ -2346,18 +2314,18 @@ class VirtualDom {
     }
     /**
      * 移除子节点
-     * @param dom   子节点
+     * @param dom -   子节点
      */
     remove(dom) {
-        let index = this.children.indexOf(dom);
+        const index = this.children.indexOf(dom);
         if (index !== -1) {
             this.children.splice(index, 1);
         }
     }
     /**
      * 是否拥有属性
-     * @param propName  属性名
-     * @param isExpr    是否只检查表达式属性
+     * @param propName -  属性名
+     * @param isExpr -    是否只检查表达式属性
      * @returns         如果属性集含有传入的属性名返回true，否则返回false
      */
     hasProp(propName) {
@@ -2367,19 +2335,18 @@ class VirtualDom {
     }
     /**
      * 获取属性值
-     * @param propName  属性名
-     * @param isExpr    是否只获取表达式属性
+     * @param propName -  属性名
      * @returns         传入属性名的value
      */
-    getProp(propName, isExpr) {
+    getProp(propName) {
         if (this.props) {
             return this.props.get(propName);
         }
     }
     /**
      * 设置属性值
-     * @param propName  属性名
-     * @param v         属性值
+     * @param propName -  属性名
+     * @param v -         属性值
      */
     setProp(propName, v) {
         if (!this.props) {
@@ -2402,7 +2369,7 @@ class VirtualDom {
     }
     /**
      * 删除属性
-     * @param props     属性名或属性名数组
+     * @param props -     属性名或属性名数组
      * @returns         如果虚拟dom上的属性集为空，则返回void
      */
     delProp(props) {
@@ -2410,7 +2377,7 @@ class VirtualDom {
             return;
         }
         if (Util.isArray(props)) {
-            for (let p of props) {
+            for (const p of props) {
                 this.props.delete(p);
             }
         }
@@ -2422,8 +2389,8 @@ class VirtualDom {
     }
     /**
      * 设置asset
-     * @param assetName     asset name
-     * @param value         asset value
+     * @param assetName -     asset name
+     * @param value -         asset value
      */
     setAsset(assetName, value) {
         if (!this.assets) {
@@ -2434,7 +2401,7 @@ class VirtualDom {
     }
     /**
      * 删除asset
-     * @param assetName     asset name
+     * @param assetName -     asset name
      * @returns             如果虚拟dom上的直接属性集为空，则返回void
      */
     delAsset(assetName) {
@@ -2446,17 +2413,17 @@ class VirtualDom {
     }
     /**
      * 设置cache参数
-     * @param module    模块
-     * @param name      参数名
-     * @param value     参数值
+     * @param module -    模块
+     * @param name -      参数名
+     * @param value -     参数值
      */
     setParam(module, name, value) {
         module.objectManager.setDomParam(this.key, name, value);
     }
     /**
      * 获取参数值
-     * @param module    模块
-     * @param name      参数名
+     * @param module -    模块
+     * @param name -      参数名
      * @returns         参数值
      */
     getParam(module, name) {
@@ -2464,8 +2431,8 @@ class VirtualDom {
     }
     /**
      * 移除参数
-     * @param module    模块
-     * @param name      参数名
+     * @param module -    模块
+     * @param name -      参数名
      */
     removeParam(module, name) {
         module.objectManager.removeDomParam(this.key, name);
@@ -2482,22 +2449,22 @@ class VirtualDom {
      * 克隆
      */
     clone() {
-        let dst = new VirtualDom(this.tagName, this.key);
+        const dst = new VirtualDom(this.tagName, this.key);
         if (this.tagName) {
             //属性
             if (this.props && this.props.size > 0) {
-                for (let p of this.props) {
+                for (const p of this.props) {
                     dst.setProp(p[0], p[1]);
                 }
             }
             if (this.assets && this.assets.size > 0) {
-                for (let p of this.assets) {
+                for (const p of this.assets) {
                     dst.setAsset(p[0], p[1]);
                 }
             }
             if (this.directives && this.directives.length > 0) {
                 dst.directives = [];
-                for (let d of this.directives) {
+                for (const d of this.directives) {
                     dst.directives.push(d.clone());
                 }
             }
@@ -2505,7 +2472,7 @@ class VirtualDom {
             dst.events = this.events;
             //子节点clone
             if (this.children) {
-                for (let c of this.children) {
+                for (const c of this.children) {
                     dst.add(c.clone());
                 }
             }
@@ -2519,8 +2486,8 @@ class VirtualDom {
     }
     /**
      * 保存事件
-     * @param event     事件对象
-     * @param index 	位置
+     * @param event -     事件对象
+     * @param index - 	位置
      */
     addEvent(event, index) {
         if (!this.events) {
@@ -2547,7 +2514,7 @@ const voidTagMap = new Set('area,base,br,col,embed,hr,img,input,link,meta,param,
 class Compiler {
     /**
      * 构造器
-     * @param module
+     * @param module -
      */
     constructor(module) {
         /**
@@ -2570,7 +2537,7 @@ class Compiler {
     }
     /**
      * 编译
-     * @param elementStr     待编译html串
+     * @param elementStr -     待编译html串
      * @returns              虚拟dom
      */
     compile(elementStr) {
@@ -2597,7 +2564,7 @@ class Compiler {
     }
     /**
      * 编译模板
-     * @param srcStr 	源串
+     * @param srcStr - 	源串
      */
     compileTemplate(srcStr) {
         while (srcStr.length !== 0) {
@@ -2620,7 +2587,7 @@ class Compiler {
     }
     /**
      * 处理开始标签
-     * @param srcStr 待编译字符串
+     * @param srcStr - 待编译字符串
      * @returns 编译处理后的字符串
      */
     compileStartTag(srcStr) {
@@ -2667,7 +2634,7 @@ class Compiler {
     }
     /**
      * 处理标签属性
-     * @param srcStr 待编译字符串
+     * @param srcStr - 待编译字符串
      * @returns 编译后字符串
      */
     compileAttributes(srcStr) {
@@ -2683,7 +2650,7 @@ class Compiler {
                     break;
                 }
                 else { //属性
-                    let name = match[1][0] !== '$' ? match[1].toLowerCase() : match[1];
+                    const name = match[1][0] !== '$' ? match[1].toLowerCase() : match[1];
                     // 是普通属性
                     let value = !match[3]
                         ? undefined
@@ -2714,7 +2681,7 @@ class Compiler {
             }
             else {
                 if (this.current) {
-                    throw new NError('tagError', this.current.tagName);
+                    throw new NError('tagError', [this.current.tagName]);
                 }
                 throw new NError('wrongTemplate');
             }
@@ -2723,7 +2690,7 @@ class Compiler {
     }
     /**
      * 编译结束标签
-     * @param srcStr 	源串
+     * @param srcStr - 	源串
      * @returns 		剩余的串
      */
     compileEndTag(srcStr) {
@@ -2732,16 +2699,24 @@ class Compiler {
         if (match) {
             const name = match[1].toLowerCase().trim();
             //如果找不到匹配的标签头则丢弃
-            const index = this.domArr.findLastIndex((item) => item.tagName === name);
+            let index;
+            for (let i = this.domArr.length - 1; i >= 0; i--) {
+                if (this.domArr[i].tagName === name) {
+                    index = i;
+                    break;
+                }
+            }
             //关闭
-            this.forceClose(index);
+            if (index) {
+                this.forceClose(index);
+            }
             return srcStr.substring(match.index + match[0].length + 1);
         }
         return srcStr;
     }
     /**
      * 强制闭合
-     * @param index 在domArr中的索引号
+     * @param index - 在domArr中的索引号
      * @returns
      */
     forceClose(index) {
@@ -2754,7 +2729,7 @@ class Compiler {
     }
     /**
      * 编译text
-     * @param srcStr 	源串
+     * @param srcStr - 	源串
      * @returns
      */
     compileText(srcStr) {
@@ -2797,7 +2772,7 @@ class Compiler {
             }
         }
         // 最开始是< 或者字符消耗完毕 退出循环
-        let text = new VirtualDom(undefined, this.genKey());
+        const text = new VirtualDom(undefined, this.genKey());
         if (this.isExprText) {
             text.expressions = [...this.textArr];
             //动态文本节点，staticNum=-1
@@ -2817,13 +2792,13 @@ class Compiler {
     }
     /**
      * 预处理html保留字符 如 &nbsp;,&lt;等
-     * @param str   待处理的字符串
+     * @param str -   待处理的字符串
      * @returns     解析之后的串
      */
     preHandleText(str) {
-        let reg = /&[a-z]+;/;
+        const reg = /&[a-z]+;/;
         if (reg.test(str)) {
-            let div = document.createElement('div');
+            const div = document.createElement('div');
             div.innerHTML = str;
             return div.textContent;
         }
@@ -2831,10 +2806,10 @@ class Compiler {
     }
     /**
      * 处理当前节点是模块或者自定义节点
-     * @param dom 	虚拟dom节点
+     * @param dom - 	虚拟dom节点
      */
     postHandleNode(dom) {
-        let clazz = DefineElementManager.get(dom.tagName);
+        const clazz = DefineElementManager.get(dom.tagName);
         if (clazz) {
             Reflect.construct(clazz, [dom, this.module]);
         }
@@ -2846,7 +2821,7 @@ class Compiler {
     }
     /**
      * 处理插槽
-     * @param dom 	虚拟dom节点
+     * @param dom - 	虚拟dom节点
      */
     handleSlot(dom) {
         if (!dom.children ||
@@ -2856,7 +2831,7 @@ class Compiler {
         }
         let slotCt;
         for (let j = 0; j < dom.children.length; j++) {
-            let c = dom.children[j];
+            const c = dom.children[j];
             if (c.hasDirective('slot')) {
                 //带slot的不处理
                 continue;
@@ -2897,7 +2872,7 @@ class Compiler {
     }
     /**
      * 判断节点是否为空节点
-     * @param dom	带检测节点
+     * @param dom -	带检测节点
      * @returns
      */
     isVoidTab(dom) {
@@ -2911,9 +2886,9 @@ class Compiler {
 class DiffTool {
     /**
      * 比较节点
-     * @param src           待比较节点（新树节点）
-     * @param dst 	        被比较节点 (旧树节点)
-     * @param changeArr     增删改的节点数组
+     * @param src -           待比较节点（新树节点）
+     * @param dst - 	        被比较节点 (旧树节点)
+     * @param changeArr -     增删改的节点数组
      * @returns	            [[type(add 1, upd 2,move 3 ,rep 4,del 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),loc(位置)]]
      */
     static compare(src, dst) {
@@ -2922,10 +2897,10 @@ class DiffTool {
         return changeArr;
         /**
          * 比较节点
-         * @param src           待比较节点（新树节点）
-         * @param dst 	        被比较节点 (旧树节点)
+         * @param src -         待比较节点（新树节点）
+         * @param dst - 	    被比较节点 (旧树节点)
          * @returns	            [[type(add 1, upd 2,del 3,move 4 ,rep 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),
-         *                       loc(dom在父的children index)]]
+         *                      loc(dom在父的children index)]]
          */
         function compare(src, dst) {
             if (!src.tagName) { //文本节点
@@ -2958,8 +2933,8 @@ class DiffTool {
         }
         /**
          * 比较子节点
-         * @param src   新节点
-         * @param dst   旧节点
+         * @param src -   新节点
+         * @param dst -   旧节点
          */
         function compareChildren(src, dst) {
             //子节点处理
@@ -2976,7 +2951,7 @@ class DiffTool {
                 }
                 else { //都有子节点
                     //存储比较后需要add的key
-                    let addObj = {};
+                    const addObj = {};
                     //子节点对比策略
                     let [newStartIdx, newEndIdx, oldStartIdx, oldEndIdx] = [0, src.children.length - 1, 0, dst.children.length - 1];
                     let [newStartNode, newEndNode, oldStartNode, oldEndNode] = [
@@ -3037,10 +3012,10 @@ class DiffTool {
                     //有多余老节点，需要删除或变成移动
                     if (oldStartIdx <= oldEndIdx) {
                         for (let i = oldStartIdx, index = i; i <= oldEndIdx; i++, index++) {
-                            let ch = dst.children[i];
+                            const ch = dst.children[i];
                             //如果要删除的节点在addArr中，则表示move，否则表示删除
                             if (addObj.hasOwnProperty(ch.key)) {
-                                let o = addObj[ch.key];
+                                const o = addObj[ch.key];
                                 if (index !== o[4]) { //修改add为move
                                     o[0] = 4;
                                     //设置move前位置
@@ -3067,24 +3042,24 @@ class DiffTool {
         }
         /**
          * 判断节点是否修改
-         * @parma src   新树节点
-         * @param dst   旧树节点
+         * @param src - 新树节点
+         * @param dst - 旧树节点
          * @returns     true/false
          */
         function isChanged(src, dst) {
-            for (let p of ['props', 'assets', 'events']) {
+            for (const p of ['props', 'assets', 'events']) {
                 //属性比较
                 if (!src[p] && dst[p] || src[p] && !dst[p]) {
                     return true;
                 }
                 else if (src[p] && dst[p]) {
-                    let keys = Object.keys(src[p]);
-                    let keys1 = Object.keys(dst[p]);
+                    const keys = Object.keys(src[p]);
+                    const keys1 = Object.keys(dst[p]);
                     if (keys.length !== keys1.length) {
                         return true;
                     }
                     else {
-                        for (let k of keys) {
+                        for (const k of keys) {
                             if (src[p][k] !== dst[p][k]) {
                                 return true;
                             }
@@ -3096,12 +3071,12 @@ class DiffTool {
         }
         /**
          * 添加到修改数组
-         * @param type      类型 add 1, upd 2,del 3,move 4 ,rep 5
-         * @param dom       目标节点
-         * @param dom1      相对节点（被替换）
-         * @param parent    父节点
-         * @param loc       添加或移动的目标index
-         * @param loc1      被移动前位置
+         * @param type -      类型 add 1, upd 2,del 3,move 4 ,rep 5
+         * @param dom -       目标节点
+         * @param dom1 -      相对节点（被替换）
+         * @param parent -    父节点
+         * @param loc -       添加或移动的目标index
+         * @param loc1 -      被移动前位置
          * @returns         添加的change数组
         */
         function addChange(type, dom, dom1, parent, loc, loc1) {
@@ -3119,10 +3094,10 @@ class DiffTool {
 class DefineElement {
     /**
      * 构造器，在dom编译后执行
-     * @param node
-     * @param module
+     * @param node -    虚拟dom节点
+     * @param module -  所属模块
      */
-    constructor(node) {
+    constructor(node, module) {
         if (node.hasProp('tag')) {
             node.tagName = node.getProp('tag');
             node.delProp('tag');
@@ -3130,6 +3105,7 @@ class DefineElement {
         else {
             node.tagName = 'div';
         }
+        this.module = module;
     }
 }
 
@@ -3139,17 +3115,17 @@ class DefineElement {
 class EventManager {
     /**
      * 处理外部事件
-     * @param dom       dom节点
-     * @param event     事件对象
+     * @param dom -       dom节点
+     * @param event -     事件对象
      * @returns         如果有是外部事件，则返回true，否则返回false
      */
     static handleExtendEvent(module, dom, event) {
-        let evts = this.get(event.name);
+        const evts = this.get(event.name);
         if (!evts) {
             return false;
         }
-        for (let key of Object.keys(evts)) {
-            let ev = new NEvent(module, key, evts[key]);
+        for (const key of Object.keys(evts)) {
+            const ev = new NEvent(module, key, evts[key]);
             ev.capture = event.capture;
             ev.nopopo = event.nopopo;
             ev.delg = event.delg;
@@ -3162,22 +3138,22 @@ class EventManager {
     }
     /**
      * 注册扩展事件
-     * @param eventName    事件名
-     * @param handleObj    事件处理集
+     * @param eventName -    事件名
+     * @param handleObj -    事件处理集
      */
     static regist(eventName, handleObj) {
         this.extendEventMap.set(eventName, handleObj);
     }
     /**
      * 取消注册扩展事件
-     * @param eventName     事件名
+     * @param eventName -     事件名
      */
     static unregist(eventName) {
         return this.extendEventMap.delete(eventName);
     }
     /**
      * 获取扩展事件
-     * @param eventName     事件名
+     * @param eventName -     事件名
      * @returns             事件处理集
      */
     static get(eventName) {
@@ -3196,7 +3172,7 @@ EventManager.extendEventMap = new Map();
 class EventFactory {
     /**
      * 构造器
-     * @param module 模块
+     * @param module - 模块
      */
     constructor(module) {
         this.module = module;
@@ -3205,8 +3181,8 @@ class EventFactory {
     }
     /**
      * 保存事件
-     * @param key       dom key
-     * @param event     事件对象
+     * @param key -       dom key
+     * @param event -     事件对象
      */
     addEvent(dom, event) {
         const key = dom.key;
@@ -3238,9 +3214,9 @@ class EventFactory {
     }
     /**
      * 添加到dom的own或delg事件队列
-     * @param key       dom key
-     * @param event     事件对象
-     * @param key1      被代理dom key，仅对代理事件有效
+     * @param key -       dom key
+     * @param event -     事件对象
+     * @param key1 -      被代理dom key，仅对代理事件有效
      */
     addToArr(key, event, key1) {
         let cfg;
@@ -3274,7 +3250,7 @@ class EventFactory {
     }
     /**
      * 获取事件对象
-     * @param key   dom key
+     * @param key -   dom key
      * @returns     事件对象
      */
     getEvent(key) {
@@ -3282,21 +3258,21 @@ class EventFactory {
     }
     /**
      * 移除所有事件
-     * @param dom
+     * @param dom -
      */
     removeAllEvents(dom) {
         if (!this.addedEvents.has(dom.key)) {
             return;
         }
-        for (let ev of this.addedEvents.get(dom.key)) {
+        for (const ev of this.addedEvents.get(dom.key)) {
             this.removeEvent(dom, ev);
         }
         this.addedEvents.delete(dom.key);
     }
     /**
      * 删除事件
-     * @param event     事件对象
-     * @param key       对应dom keys
+     * @param event -     事件对象
+     * @param key -       对应dom keys
      */
     removeEvent(dom, event) {
         if (!this.addedEvents.has(dom.key) || !this.addedEvents.get(dom.key).includes(event)) {
@@ -3311,23 +3287,23 @@ class EventFactory {
             if (!dom.parent || !this.eventMap.has(dom.parent.key)) {
                 return;
             }
-            let cfg = this.eventMap.get(dom.parent.key);
+            const cfg = this.eventMap.get(dom.parent.key);
             if (!cfg[event.name]) {
                 return;
             }
-            let obj = cfg[event.name];
-            let index = obj.delg.findIndex(item => item.key === dom.key && item.event === event);
+            const obj = cfg[event.name];
+            const index = obj.delg.findIndex(item => item.key === dom.key && item.event === event);
             if (index !== -1) {
                 obj.delg.splice(index, 1);
             }
         }
         else { //own
-            let cfg = this.eventMap.get(dom.key);
+            const cfg = this.eventMap.get(dom.key);
             if (!cfg[event.name]) {
                 return;
             }
-            let obj = cfg[event.name];
-            let index = obj.own.findIndex(item => item === event);
+            const obj = cfg[event.name];
+            const index = obj.own.findIndex(item => item === event);
             if (index !== -1) {
                 obj.own.splice(index, 1);
             }
@@ -3335,7 +3311,7 @@ class EventFactory {
     }
     /**
      * 绑定dom事件
-     * @param key   dom key
+     * @param key -   dom key
      */
     bind(key) {
         if (!this.eventMap.has(key)) {
@@ -3343,13 +3319,13 @@ class EventFactory {
         }
         const el = this.module.getElement(key);
         const cfg = this.eventMap.get(key);
-        for (let key of Object.keys(cfg)) {
+        for (const key of Object.keys(cfg)) {
             // bindMap 不是事件名
             if (key === 'bindMap') {
                 continue;
             }
             el.addEventListener(key, handler, cfg[key].capture);
-            cfg.bindMap[key] = { handler: handler, capture: cfg[key].capture };
+            cfg['bindMap'][key] = { handler: handler, capture: cfg[key].capture };
         }
         const me = this;
         function handler(e) {
@@ -3358,49 +3334,49 @@ class EventFactory {
     }
     /**
      * 从eventfactory解绑所有事件
-     * @param key           dom key
-     * @param eventName     事件名
+     * @param key -           dom key
+     * @param eventName -     事件名
      */
     unbind(key, eventName) {
         if (!this.eventMap.has(key)) {
             return;
         }
         const eobj = this.eventMap.get(key);
-        if (!eobj.bindMap || !eobj[eventName]) {
+        if (!eobj['bindMap'] || !eobj[eventName]) {
             return;
         }
         const el = this.module.getElement(key);
-        const cfg = eobj.bindMap[eventName];
+        const cfg = eobj['bindMap'][eventName];
         //从html element解绑
         if (el && cfg) {
             el.removeEventListener(eventName, cfg.handler, cfg.capture);
         }
-        delete eobj.bindMap[eventName];
+        delete eobj['bindMap'][eventName];
     }
     /**
      * 解绑html element事件
-     * @param key   dom key
+     * @param key -   dom key
      */
     unbindAll(key) {
         if (!this.eventMap.has(key)) {
             return;
         }
         const eobj = this.eventMap.get(key);
-        if (!eobj.bindMap) {
+        if (!eobj['bindMap']) {
             return;
         }
         const el = this.module.getElement(key);
         if (el) {
-            for (let key of Object.keys(eobj.bindMap)) {
-                const v = eobj.bindMap[key];
+            for (const key of Object.keys(eobj['bindMap'])) {
+                const v = eobj['bindMap'][key];
                 el.removeEventListener(key, v.handler, v.capture);
             }
         }
-        eobj.bindMap = {};
+        eobj['bindMap'] = {};
     }
     /**
      * 是否拥有key对应的事件对象
-     * @param key   dom key
+     * @param key -   dom key
      * @returns     如果key对应事件存在，返回true，否则返回false
      */
     hasEvent(key) {
@@ -3411,7 +3387,7 @@ class EventFactory {
      */
     clear() {
         //解绑事件
-        for (let key of this.addedEvents.keys()) {
+        for (const key of this.addedEvents.keys()) {
             this.unbindAll(key);
         }
         this.addedEvents.clear();
@@ -3419,12 +3395,12 @@ class EventFactory {
     }
     /**
      * 事件handler
-     * @param module    模块
-     * @param e         HTML Event
+     * @param module - 模块
+     * @param e - HTML Event
      */
     handler(module, e) {
         //从事件element获取事件
-        let el = e.currentTarget;
+        const el = e.currentTarget;
         const key = el.key;
         const dom = module.domManager.getRenderedDom(key);
         if (!dom) {
@@ -3446,7 +3422,7 @@ class EventFactory {
         }
         /**
          * 处理自有事件
-         * @param events
+         * @param events -
          * @returns
          */
         function doOwn(events) {
@@ -3483,7 +3459,7 @@ class EventFactory {
         }
         /**
          * 处理代理事件
-         * @param events
+         * @param events -
          * @returns         是否禁止冒泡
          */
         function doDelg(events) {
@@ -3532,20 +3508,27 @@ class EventFactory {
 class NCache {
     constructor() {
         /**
-         * 订阅map，格式为 {key:[{module:订阅模块,handler:},...]}
+         * 订阅map，格式为
+         * ```js
+         * {
+         *  key:[{
+         *      module:订阅模块,
+         *      handler:回调钩子
+         * },...]}
+         * ```
          */
         this.subscribeMap = new Map();
         this.cacheData = {};
     }
     /**
      * 通过提供的键名从内存中拿到对应的值
-     * @param key   键，支持"."（多级数据分割）
-     * @reutrns     值或undefined
+     * @param key -   键，支持"."（多级数据分割）
+     * @returns     值或undefined
      */
     get(key) {
         let p = this.cacheData;
         if (key.indexOf('.') !== -1) {
-            let arr = key.split('.');
+            const arr = key.split('.');
             if (arr.length > 1) {
                 for (let i = 0; i < arr.length - 1 && p; i++) {
                     p = p[arr[i]];
@@ -3561,14 +3544,14 @@ class NCache {
     }
     /**
      * 通过提供的键名和值将其存储在内存中
-     * @param key       键
-     * @param value     值
+     * @param key -       键
+     * @param value -     值
      */
     set(key, value) {
         let p = this.cacheData;
-        let key1 = key;
+        const key1 = key;
         if (key.indexOf('.') !== -1) {
-            let arr = key.split('.');
+            const arr = key.split('.');
             if (arr.length > 1) {
                 for (let i = 0; i < arr.length - 1; i++) {
                     if (!p[arr[i]] || typeof p[arr[i]] !== 'object') {
@@ -3584,20 +3567,20 @@ class NCache {
         }
         //处理订阅
         if (this.subscribeMap.has(key1)) {
-            let arr = this.subscribeMap.get(key1);
-            for (let a of arr) {
+            const arr = this.subscribeMap.get(key1);
+            for (const a of arr) {
                 this.invokeSubscribe(a.module, a.handler, value);
             }
         }
     }
     /**
      * 通过提供的键名将其移除
-     * @param key   键
+     * @param key -   键
      */
     remove(key) {
         let p = this.cacheData;
         if (key.indexOf('.') !== -1) {
-            let arr = key.split('.');
+            const arr = key.split('.');
             if (arr.length > 1) {
                 for (let i = 0; i < arr.length - 1 && p; i++) {
                     p = p[arr[i]];
@@ -3613,31 +3596,33 @@ class NCache {
     }
     /**
      * 订阅
-     * @param module    订阅的模块
-     * @param key       字段key
-     * @param handler   回调函数 参数为key对应value
+     * @param module -    订阅的模块
+     * @param key -       字段key
+     * @param handler -   回调函数 参数为key对应value
      */
     subscribe(module, key, handler) {
         if (!this.subscribeMap.has(key)) {
             this.subscribeMap.set(key, [{ module: module, handler: handler }]);
         }
         else {
-            let arr = this.subscribeMap.get(key);
+            const arr = this.subscribeMap.get(key);
             if (!arr.find(item => item.module === module && item.handler === handler)) {
                 arr.push({ module: module, handler: handler });
             }
         }
         //如果存在值，则执行订阅回调
-        let v = this.get(key);
+        const v = this.get(key);
         if (v) {
             this.invokeSubscribe(module, handler, v);
         }
     }
     /**
      * 调用订阅方法
-     * @param module    模块
-     * @param foo       方法或方法名
-     * @param v         值
+     * @param module -    模块
+     * @param foo -       方法或方法名
+     * @param v -         值
+     *
+     * @internal
      */
     invokeSubscribe(module, foo, v) {
         if (typeof foo === 'string') {
@@ -3655,15 +3640,15 @@ class NCache {
 class GlobalCache {
     /**
      * 保存到cache
-     * @param key       键，支持"."（多级数据分割）
-     * @param value     值
+     * @param key -       键，支持"."（多级数据分割）
+     * @param value -     值
      */
     static set(key, value) {
         this.cache.set(key, value);
     }
     /**
      * 从cache读取
-     * @param key   键，支持"."（多级数据分割）
+     * @param key -   键，支持"."（多级数据分割）
      * @returns     缓存的值或undefined
      */
     static get(key) {
@@ -3671,16 +3656,16 @@ class GlobalCache {
     }
     /**
      * 订阅
-     * @param module    订阅的模块
-     * @param key       字段key
-     * @param handler   回调函数 参数为key对应value
+     * @param module -    订阅的模块
+     * @param key -       字段key
+     * @param handler -   回调函数 参数为key对应value
      */
     static subscribe(module, key, handler) {
         this.cache.subscribe(module, key, handler);
     }
     /**
      * 从cache移除
-     * @param key   键，支持"."（多级数据分割）
+     * @param key -   键，支持"."（多级数据分割）
      */
     static remove(key) {
         this.cache.remove(key);
@@ -3701,30 +3686,30 @@ GlobalCache.cache = new NCache();
  */
 class Model {
     /**
-     * @param data 		数据
-     * @param module 	模块对象
-     * @param parent    父模型
-     * @param name      模型在父对象中的prop name
+     * @param data - 		数据
+     * @param module - 	模块对象
+     * @param parent -    父模型
+     * @param name -      模型在父对象中的prop name
      * @returns         模型代理对象
      */
     constructor(data, module, parent, name) {
         //数据不存在或已经代理，无需再创建
-        if (!data || data.__source) {
+        if (!data || data['__source']) {
             return;
         }
         // 创建模型
-        let proxy = new Proxy(data, {
+        const proxy = new Proxy(data, {
             set(src, key, value, receiver) {
                 let value1 = value;
                 //proxy转换为源对象，否则比较会出错
-                if (value && value.__source) {
-                    const source = value.__source;
+                if (value && value['__source']) {
+                    const source = value['__source'];
                     // 已经被代理，但是可能没添加当前module
                     if (source) {
                         //可能父传子，需要添加引用
-                        if (value.__module !== module) {
+                        if (value['__module'] !== module) {
                             module.modelManager.add(source, value);
-                            value.__module.modelManager.bindModel(value, module);
+                            value['__module'].modelManager.bindModel(value, module);
                             //保存value在本模块中的属性名
                             module.modelManager.setModelName(value, key);
                         }
@@ -3735,8 +3720,8 @@ class Model {
                 if (src[key] === value1) {
                     return true;
                 }
-                let ov = src[key];
-                let r = Reflect.set(src, key, value1, receiver);
+                const ov = src[key];
+                const r = Reflect.set(src, key, value1, receiver);
                 module.modelManager.update(receiver, key, ov, value);
                 return r;
             },
@@ -3772,7 +3757,7 @@ class Model {
                 return res;
             },
             deleteProperty(src, key) {
-                let oldValue = src[key];
+                const oldValue = src[key];
                 delete src[key];
                 module.modelManager.update(proxy, key, oldValue, undefined);
                 return true;
@@ -3789,20 +3774,31 @@ class Model {
 class ModelManager {
     /**
      * 构造器
-     * @param module    模块
+     * @param module -    模块
      */
     constructor(module) {
         /**
-         * 绑定module map，slot引用外部数据时有效
-         * {model:[moduleid1,moduleid2,...]}
+         * model绑定module map，slot引用外部数据，模块传值时有效
+         *  key:    model
+         *  value:  model绑定的module id 数组
          */
         this.bindMap = new WeakMap();
         /**
          * 数据map
-         * {data:{model:model,key:key}
+         * ```js
+         * {
+         *      data1:{
+         *          model:model,
+         *          key:key
+         *      },
+         *      data2:,
+         *      datan
+         * }
+         * ```
          * 其中：
-         *      data:       初始数据对象
-         *      model:      model对象
+         *   datan: 初始数据对象
+         *   model: model对象
+         *   key:   model key
          */
         this.dataMap = new WeakMap();
         /**
@@ -3813,8 +3809,18 @@ class ModelManager {
         this.nameMap = new WeakMap();
         /**
          * model对应监听器map
-         *  key:model
-         *  value:{key1:{f:foo1,deep:true/false},key2:,...}
+         * key:model
+         * value:object
+         * ```js
+         * {
+         *      key1:{
+         *          f:foo1,
+         *          deep:true/false
+         *      },
+         *      key2:,
+         *      kn:
+         * }
+         * ```
          *        其中：prop为被监听属性，foo为监听器方法，deep为是否深度监听
          */
         this.watchMap = new WeakMap();
@@ -3826,7 +3832,7 @@ class ModelManager {
     }
     /**
      * 获取model，不存在则新建
-     * @param data      数据
+     * @param data -      数据
      * @returns         model
      */
     getModel(data) {
@@ -3834,7 +3840,7 @@ class ModelManager {
     }
     /**
      * 获取model key
-     * @param model     model对象
+     * @param model -     model对象
      * @returns         model对应key
      */
     getModelKey(data) {
@@ -3842,8 +3848,8 @@ class ModelManager {
     }
     /**
      * 设置模型名
-     * @param model 模型
-     * @param name  名
+     * @param model - 模型
+     * @param name -  名
      */
     setModelName(model, name) {
         if (!this.nameMap.has(model)) {
@@ -3852,7 +3858,7 @@ class ModelManager {
     }
     /**
      * 获取模型名
-     * @param model 模型
+     * @param model - 模型
      * @returns     模型名
      */
     getModelName(model) {
@@ -3860,8 +3866,8 @@ class ModelManager {
     }
     /**
      * 添加数据到map
-     * @param data      原始数据
-     * @param model     模型
+     * @param data -      原始数据
+     * @param model -     模型
      */
     add(data, model) {
         //避免重复添加
@@ -3872,8 +3878,8 @@ class ModelManager {
     }
     /**
      * 添加绑定
-     * @param model     模型
-     * @param moduleId  模块id
+     * @param model -     模型
+     * @param moduleId -  模块id
      */
     bindModel(model, module) {
         if (!model) {
@@ -3882,9 +3888,9 @@ class ModelManager {
         bind(this.bindMap, model, module);
         /**
          * 绑定
-         * @param bindMap
-         * @param model
-         * @param module
+         * @param bindMap -
+         * @param model -
+         * @param module -
          */
         function bind(bindMap, model, module) {
             if (model.__module === module) {
@@ -3902,7 +3908,7 @@ class ModelManager {
                 mids.push(module.id);
             }
             //级联绑定
-            for (let key of Object.keys(model)) {
+            for (const key of Object.keys(model)) {
                 if (model[key] && typeof model[key] === 'object') {
                     bind(bindMap, model[key], module);
                 }
@@ -3912,10 +3918,10 @@ class ModelManager {
     /**
      * 更新导致渲染
      * 如果不设置oldValue和newValue，则直接强制渲染
-     * @param model     model
-     * @param key       属性
-     * @param oldValue  旧值
-     * @param newValue  新值
+     * @param model -     model
+     * @param key -       属性
+     * @param oldValue -  旧值
+     * @param newValue -  新值
      */
     update(model, key, oldValue, newValue) {
         //处理watch
@@ -3924,7 +3930,7 @@ class ModelManager {
         Renderer.add(this.module);
         //对绑定模块添加渲染
         if (this.bindMap.has(model)) {
-            for (let id of this.bindMap.get(model)) {
+            for (const id of this.bindMap.get(model)) {
                 const m = ModuleFactory.get(id);
                 if (m) {
                     handleWatcher(m, model);
@@ -3934,12 +3940,12 @@ class ModelManager {
         }
         /**
          * 处理watcher
-         * @param mdl   模块
-         * @param model 模型
+         * @param mdl -   模块
+         * @param model - 模型
          */
         function handleWatcher(mdl, model) {
             const map = mdl.modelManager.watchMap;
-            let watcher = map.get(model);
+            const watcher = map.get(model);
             //当前model存在watcher
             if (watcher && watcher[key]) {
                 //查找对应key是否存在watch
@@ -3948,14 +3954,14 @@ class ModelManager {
             else if (mdl.modelManager.hasDeepWatch) { //进行deep查找
                 for (let m = model; m && m.__parent; m = m.__parent) {
                     //如果已经跨模块，则表示为父传子，父模块指向当前模块
-                    let pm = m.__parent.__module === mdl ? m.__parent : mdl.model;
+                    const pm = m.__parent.__module === mdl ? m.__parent : mdl.model;
                     if (!map.has(pm)) {
                         continue;
                     }
                     const watcher = map.get(pm);
                     const name = mdl.modelManager.getModelName(m) || m.__name;
                     if (watcher && watcher[name]) {
-                        let cfg = watcher[name];
+                        const cfg = watcher[name];
                         // 当前model或父model deep watch
                         if (cfg.deep) {
                             cfg.f.call(mdl, model, key, oldValue, newValue);
@@ -3970,11 +3976,11 @@ class ModelManager {
     /**
      * 监听某个数据项
      * 注意：执行此操作时，该数据项必须已经存在，否则监听失败
-     * @param model     带watch的model
-     * @param key       数据项名或数组
-     * @param operate   数据项变化时执行方法
-     * @param module    指定模块，如果指定，则表示该model绑定的所有module都会触发watch事件，在model父(模块)传子(模块)传递的是对象时会导致多个watch出发
-     * @param deep      是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
+     * @param model -     带watch的model
+     * @param key -       数据项名或数组
+     * @param operate -   数据项变化时执行方法
+     * @param module -    指定模块，如果指定，则表示该model绑定的所有module都会触发watch事件，在model父(模块)传子(模块)传递的是对象时会导致多个watch出发
+     * @param deep -      是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
      *
      * @returns         unwatch函数
      */
@@ -3988,7 +3994,7 @@ class ModelManager {
         //撤销watch数组，数据项为{m:model,k:监听属性,f:触发方法}
         let arr = [];
         if (Array.isArray(key)) {
-            for (let k of key) {
+            for (const k of key) {
                 watchOne(model, k, operate);
             }
         }
@@ -4001,8 +4007,8 @@ class ModelManager {
             if (!Array.isArray(arr)) {
                 return;
             }
-            for (let f of arr) {
-                let obj = me.watchMap.get(f.m);
+            for (const f of arr) {
+                const obj = me.watchMap.get(f.m);
                 if (!obj) {
                     continue;
                 }
@@ -4017,9 +4023,9 @@ class ModelManager {
         };
         /**
          * 监听一个
-         * @param model     当前model
-         * @param key       监听属性，可以支持多级属性，如果为多级属性，倒数第二级对应数据项必须为对象
-         * @param operate   操作方法
+         * @param model -     当前model
+         * @param key -       监听属性，可以支持多级属性，如果为多级属性，倒数第二级对应数据项必须为对象
+         * @param operate -   操作方法
          * @returns
          */
         function watchOne(model, key, operate) {
@@ -4046,14 +4052,14 @@ class ModelManager {
     }
     /**
      * 查询model子属性
-     * @param key       属性名，可以分级，如 name.firstName
-     * @param model     模型
+     * @param key -       属性名，可以分级，如 name.firstName
+     * @param model -     模型
      * @returns         属性对应model proxy
      */
     get(model, key) {
         if (key) {
             if (key.indexOf('.') !== -1) { //层级字段
-                let arr = key.split('.');
+                const arr = key.split('.');
                 for (let i = 0; i < arr.length - 1; i++) {
                     model = model[arr[i]];
                     if (!model) {
@@ -4071,13 +4077,13 @@ class ModelManager {
     }
     /**
      * 设置值
-     * @param model     模型
-     * @param key       子属性，可以分级，如 name.firstName
-     * @param value     属性值
+     * @param model -     模型
+     * @param key -       子属性，可以分级，如 name.firstName
+     * @param value -     属性值
      */
     set(model, key, value) {
         if (key.indexOf('.') !== -1) { //层级字段
-            let arr = key.split('.');
+            const arr = key.split('.');
             for (let i = 0; i < arr.length - 1; i++) {
                 //不存在，则创建新的model
                 if (!model[arr[i]]) {
@@ -4100,7 +4106,7 @@ class ModelManager {
 class ObjectManager {
     /**
      * module   模块
-     * @param module
+     * @param module -
      */
     constructor(module) {
         this.module = module;
@@ -4108,15 +4114,15 @@ class ObjectManager {
     }
     /**
      * 保存到cache
-     * @param key       键，支持"."（多级数据分割）
-     * @param value     值
+     * @param key -       键，支持"."（多级数据分割）
+     * @param value -     值
      */
     set(key, value) {
         this.cache.set(key + '', value);
     }
     /**
      * 从cache读取
-     * @param key   键，支持"."（多级数据分割）
+     * @param key -   键，支持"."（多级数据分割）
      * @returns     缓存的值或undefined
      */
     get(key) {
@@ -4124,26 +4130,26 @@ class ObjectManager {
     }
     /**
      * 从cache移除
-     * @param key   键，支持"."（多级数据分割）
+     * @param key -   键，支持"."（多级数据分割）
      */
     remove(key) {
         this.cache.remove(key);
     }
     /**
      * 设置事件参数
-     * @param id        事件id
-     * @param key       dom key
-     * @param name      参数名
-     * @param value     参数值
+     * @param id -        事件id
+     * @param key -       dom key
+     * @param name -      参数名
+     * @param value -     参数值
      */
     setEventParam(id, key, name, value) {
         this.cache.set('$events.' + id + '.$params.' + key + '.' + name, value);
     }
     /**
      * 获取事件参数值
-     * @param id        事件id
-     * @param key       dom key
-     * @param name      参数名
+     * @param id -        事件id
+     * @param key -       dom key
+     * @param name -      参数名
      * @returns         参数值
      */
     getEventParam(id, key, name) {
@@ -4151,17 +4157,17 @@ class ObjectManager {
     }
     /**
      * 移除事件参数
-     * @param id        事件id
-     * @param key       dom key
-     * @param name      参数名
+     * @param id -        事件id
+     * @param key -       dom key
+     * @param name -      参数名
      */
     removeEventParam(id, key, name) {
         this.remove('$events.' + id + '.$params.' + key + '.' + name);
     }
     /**
      * 清空事件参数
-     * @param id        事件id
-     * @param key       dom key
+     * @param id -        事件id
+     * @param key -       dom key
      */
     clearEventParams(id, key) {
         if (key) { //删除对应dom的事件参数
@@ -4173,17 +4179,17 @@ class ObjectManager {
     }
     /**
      * 设置dom参数值
-     * @param key       dom key
-     * @param name      参数名
-     * @param value     参数值
+     * @param key -       dom key
+     * @param name -      参数名
+     * @param value -     参数值
      */
     setDomParam(key, name, value) {
         this.set('$domparam.' + key + '.' + name, value);
     }
     /**
      * 获取dom参数值
-     * @param key       dom key
-     * @param name      参数名
+     * @param key -       dom key
+     * @param name -      参数名
      * @returns         参数值
      */
     getDomParam(key, name) {
@@ -4191,15 +4197,15 @@ class ObjectManager {
     }
     /**
      * 移除dom参数值
-     * @param key       dom key
-     * @param name      参数名
+     * @param key -       dom key
+     * @param name -      参数名
      */
     removeDomParam(key, name) {
         this.remove('$domparam.' + key + '.' + name);
     }
     /**
      * 清除element 参数集
-     * @param key   dom key
+     * @param key -   dom key
      */
     clearDomParams(key) {
         this.remove('$domparam.' + key);
@@ -4237,7 +4243,7 @@ var EModuleState;
 class DomManager {
     /**
      * 构造方法
-     * @param module    所属模块
+     * @param module -    所属模块
      */
     constructor(module) {
         /**
@@ -4248,7 +4254,7 @@ class DomManager {
     }
     /**
      * 从origin tree 获取虚拟dom节点
-     * @param key   dom key 或 props 键值对
+     * @param key -   dom key 或 props 键值对
      * @returns     编译后虚拟节点
      */
     getOriginDom(key) {
@@ -4267,8 +4273,8 @@ class DomManager {
                 return dom;
             }
             if (dom.children) {
-                for (let d of dom.children) {
-                    let d1 = find(d);
+                for (const d of dom.children) {
+                    const d1 = find(d);
                     if (d1) {
                         return d1;
                     }
@@ -4278,7 +4284,7 @@ class DomManager {
     }
     /**
      * 从渲染树中获取key对应的渲染节点
-     * @param key   dom key或props键值对
+     * @param key - dom key或props键值对
      * @returns     渲染后虚拟节点
      */
     getRenderedDom(key) {
@@ -4288,8 +4294,8 @@ class DomManager {
         return find(this.renderedTree, key);
         /**
          * 递归查找
-         * @param dom   渲染dom
-         * @param key   待查找key
+         * @param dom - 渲染dom
+         * @param key -   待查找key
          * @returns     key对应renderdom 或 undefined
          */
         function find(dom, key) {
@@ -4303,11 +4309,11 @@ class DomManager {
                 return dom;
             }
             if (dom.children) {
-                for (let d of dom.children) {
+                for (const d of dom.children) {
                     if (!d) {
                         continue;
                     }
-                    let d1 = find(d, key);
+                    const d1 = find(d, key);
                     if (d1) {
                         return d1;
                     }
@@ -4317,7 +4323,7 @@ class DomManager {
     }
     /**
      * 清除html element map 节点
-     * @param dom   dom节点，如果为空，则清空map
+     * @param dom -   dom节点，如果为空，则清空map
      */
     clearElementMap(dom) {
         if (dom) {
@@ -4333,7 +4339,7 @@ class DomManager {
     }
     /**
      * 获取html node
-     * @param key   dom key 或 props 键值对
+     * @param key -   dom key 或 props 键值对
      * @returns     html node
      */
     getElement(key) {
@@ -4344,8 +4350,8 @@ class DomManager {
     }
     /**
      * save html node
-     * @param key   dom key
-     * @param node  html node
+     * @param key -   dom key
+     * @param node -  html node
      */
     saveElement(key, node) {
         this.elementMap.set(key, node);
@@ -4353,11 +4359,11 @@ class DomManager {
     /**
      * 释放node
      * 包括从dom树解挂，释放对应结点资源
-     * @param dom       虚拟dom
+     * @param dom -       虚拟dom
      */
     freeNode(dom) {
         if (dom.moduleId) { //子模块
-            let m = ModuleFactory.get(dom.moduleId);
+            const m = ModuleFactory.get(dom.moduleId);
             if (m) {
                 m.unmount();
             }
@@ -4369,7 +4375,7 @@ class DomManager {
             this.module.eventFactory.unbindAll(dom.key);
             //子节点递归操作
             if (dom.children) {
-                for (let d of dom.children) {
+                for (const d of dom.children) {
                     this.freeNode(d);
                 }
             }
@@ -4432,7 +4438,7 @@ class Module {
     }
     /**
      * 模板串方法，使用时重载
-     * @param props     props对象，在模板容器dom中进行配置，从父模块传入
+     * @param props -   props对象，在模板容器dom中进行配置，从父模块传入
      * @returns         模板串
      */
     template(props) {
@@ -4506,7 +4512,7 @@ class Module {
     }
     /**
      * 添加子模块
-     * @param module    模块id或模块
+     * @param module -    模块id或模块
      */
     addChild(module) {
         if (typeof module === 'number') {
@@ -4521,10 +4527,10 @@ class Module {
     }
     /**
      * 移除子模块
-     * @param module    子模块
+     * @param module -    子模块
      */
     removeChild(module) {
-        let ind = this.children.indexOf(module.id);
+        const ind = this.children.indexOf(module.id);
         if (ind !== -1) {
             module.unmount();
             this.children.splice(ind, 1);
@@ -4547,7 +4553,7 @@ class Module {
         //执行挂载前事件
         this.doModuleEvent('onBeforeMount');
         //渲染到fragment
-        let rootEl = new DocumentFragment();
+        const rootEl = new DocumentFragment();
         const el = Renderer.renderToHtml(this, this.domManager.renderedTree, rootEl, true);
         //主模块，直接添加到根模块
         if (this === ModuleFactory.getMain()) {
@@ -4603,8 +4609,8 @@ class Module {
         this.state = EModuleState.UNMOUNTED;
         //子模块递归卸载
         if (this.children) {
-            for (let id of this.children) {
-                let m = ModuleFactory.get(id);
+            for (const id of this.children) {
+                const m = ModuleFactory.get(id);
                 if (m) {
                     m.unmount();
                 }
@@ -4624,19 +4630,19 @@ class Module {
     }
     /**
      * 执行模块事件
-     * @param eventName 	事件名
+     * @param eventName - 	事件名
      * @returns             执行结果，各事件返回值如下：
      *                          onBeforeRender：如果为true，表示不进行渲染
      */
     doModuleEvent(eventName) {
-        let foo = this[eventName];
+        const foo = this[eventName];
         if (foo && typeof foo === 'function') {
             return foo.apply(this, [this.model]);
         }
     }
     /**
      * 获取模块方法
-     * @param name  方法名
+     * @param name -  方法名
      * @returns     方法
      */
     getMethod(name) {
@@ -4644,15 +4650,15 @@ class Module {
     }
     /**
      * 设置props
-     * @param props     属性值
-     * @param dom       子模块对应渲染后节点
+     * @param props -     属性值
+     * @param dom -       子模块对应渲染后节点
      */
     setProps(props, dom) {
-        let dataObj = props.$data;
-        delete props.$data;
+        const dataObj = props['$data'];
+        delete props['$data'];
         //props数据复制到模块model
         if (dataObj) {
-            for (let d of Object.keys(dataObj)) {
+            for (const d of Object.keys(dataObj)) {
                 this.model[d] = dataObj[d];
             }
         }
@@ -4664,7 +4670,7 @@ class Module {
             change = true;
         }
         else {
-            for (let k of Object.keys(props)) {
+            for (const k of Object.keys(props)) {
                 // object 默认改变
                 if (props[k] !== this.props[k]) {
                     change = true;
@@ -4686,7 +4692,7 @@ class Module {
     compile() {
         //注册子模块
         if (this.modules && Array.isArray(this.modules)) {
-            for (let cls of this.modules) {
+            for (const cls of this.modules) {
                 ModuleFactory.addClass(cls);
             }
             delete this.modules;
@@ -4709,7 +4715,7 @@ class Module {
         }
         //添加从源dom传递的事件
         if (this.events) {
-            for (let ev of this.events) {
+            for (const ev of this.events) {
                 this.domManager.vdomTree.addEvent(ev);
             }
         }
@@ -4718,21 +4724,21 @@ class Module {
     }
     /**
      * 设置不渲染到根dom的属性集合
-     * @param props     待移除的属性名属组
+     * @param props -     待移除的属性名属组
      */
     setExcludeProps(props) {
         this.excludedProps = props;
     }
     /**
      * 处理根节点属性
-     * @param src       编译节点
-     * @param dst       dom节点
+     * @param src -       编译节点
+     * @param dst -       dom节点
      */
     handleRootProps(src, dst) {
         //已合并属性集合
         const added = {};
         if (src.props && src.props.size > 0) {
-            for (let k of src.props) {
+            for (const k of src.props) {
                 let value;
                 if (this.excludedProps && this.excludedProps.includes(k[0])) {
                     continue;
@@ -4777,7 +4783,7 @@ class Module {
         }
         if (this.props) {
             //处理未添加的属性
-            for (let p of Object.keys(this.props)) {
+            for (const p of Object.keys(this.props)) {
                 if (added[p] || this.excludedProps && this.excludedProps.includes(p)) {
                     continue;
                 }
@@ -4787,7 +4793,7 @@ class Module {
     }
     /**
      * 获取html node
-     * @param key   dom key 或 props键值对
+     * @param key -   dom key 或 props键值对
      * @returns     html node
      */
     getElement(key) {
@@ -4795,17 +4801,17 @@ class Module {
     }
     /**
      * save html node
-     * @param key   dom key
-     * @param node  html node
+     * @param key -   dom key
+     * @param node -  html node
      */
     saveElement(key, node) {
         this.domManager.saveElement(key, node);
     }
     /**
      * 获取模块类名对应的第一个子模块(如果设置deep，则深度优先)
-     * @param name          子模块类名或别名
-     * @param deep          是否深度获取
-     * @param attrs         属性集合
+     * @param name -          子模块类名或别名
+     * @param deep -          是否深度获取
+     * @param attrs -         属性集合
      */
     getModule(name, deep, attrs) {
         if (!this.children) {
@@ -4818,18 +4824,18 @@ class Module {
         return find(this);
         /**
          * 查询
-         * @param mdl   模块
+         * @param mdl -   模块
          * @returns     符合条件的子模块
          */
         function find(mdl) {
-            for (let id of mdl.children) {
-                let m = ModuleFactory.get(id);
+            for (const id of mdl.children) {
+                const m = ModuleFactory.get(id);
                 if (m) {
                     if (m.constructor === cls) {
                         if (attrs) { //属性集合不为空
                             //全匹配标识
                             let matched = true;
-                            for (let k of Object.keys(attrs)) {
+                            for (const k of Object.keys(attrs)) {
                                 if (!m.props || m.props[k] !== attrs[k]) {
                                     matched = false;
                                     break;
@@ -4845,7 +4851,7 @@ class Module {
                     }
                     //递归查找
                     if (deep) {
-                        let r = find(m);
+                        const r = find(m);
                         if (r) {
                             return r;
                         }
@@ -4856,26 +4862,26 @@ class Module {
     }
     /**
      * 获取模块类名对应的所有子模块
-     * @param className     子模块类名
-     * @param deep          深度查询
+     * @param className -     子模块类名
+     * @param deep -          深度查询
      */
     getModules(className, deep) {
         if (!this.children) {
             return;
         }
-        let arr = [];
+        const arr = [];
         find(this);
         return arr;
         /**
          * 查询
-         * @param module
+         * @param module -
          */
         function find(module) {
             if (!module.children) {
                 return;
             }
-            for (let id of module.children) {
-                let m = ModuleFactory.get(id);
+            for (const id of module.children) {
+                const m = ModuleFactory.get(id);
                 if (m && m.constructor) {
                     if (m.constructor.name === className) {
                         arr.push(m);
@@ -4891,10 +4897,10 @@ class Module {
      * 监听
      * 如果第一个参数为属性名，则第二个参数为钩子函数，第三个参数为deep，默认model为根模型
      * 否则按照以下说明
-     * @param model     模型或属性
-     * @param key       属性/属性数组，支持多级属性
-     * @param operate   钩子函数
-     * @param deep      是否深度监听
+     * @param model -     模型或属性
+     * @param key -       属性/属性数组，支持多级属性
+     * @param operate -   钩子函数
+     * @param deep -      是否深度监听
      * @returns         可回收监听器，执行后取消监听
      */
     watch(model, key, operate, deep) {
@@ -4909,9 +4915,9 @@ class Module {
      * 设置模型属性值
      * 如果第一个参数为属性名，则第二个参数为属性值，默认model为根模型
      * 否则按照以下说明
-     * @param model     模型
-     * @param key       子属性，可以分级，如 name.firstName
-     * @param value     属性值
+     * @param model -     模型
+     * @param key -       子属性，可以分级，如 name.firstName
+     * @param value -     属性值
      */
     set(model, key, value) {
         if (model['__key']) {
@@ -4925,8 +4931,8 @@ class Module {
      * 获取模型属性值
      * 如果第一个参数为属性名，默认model为根模型
      * 否则按照以下说明
-     * @param model     模型
-     * @param key       属性名，可以分级，如 name.firstName，如果为null，则返回自己
+     * @param model -     模型
+     * @param key -       属性名，可以分级，如 name.firstName，如果为null，则返回自己
      * @returns         属性值
      */
     get(model, key) {
@@ -4939,8 +4945,8 @@ class Module {
     }
     /**
      * 调用方法
-     * @param methodName    方法名
-     * @param pn            参数，最多10个参数
+     * @param methodName -    方法名
+     * @param pn -            参数，最多10个参数
      */
     invokeMethod(methodName, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) {
         if (typeof this[methodName] === 'function') {
@@ -4949,8 +4955,8 @@ class Module {
     }
     /**
      * 调用外部方法，当该模块作为子模块使用时，方法属于使用该模块的模板对应的module
-     * @param methodName    方法名
-     * @param pn            参数，最多10个参数
+     * @param methodName -    方法名
+     * @param pn -            参数，最多10个参数
      */
     invokeOuterMethod(methodName, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) {
         if (!this.templateModuleId) {
@@ -4973,14 +4979,13 @@ class Module {
 
 /**
  * 路由管理类
- * @since 	1.0
  */
 class Router {
     /**
      * 构造器
-     * @param basePath          路由基础路径，显示的完整路径为 basePath + route.path
-     * @param defaultEnter      默认进入时事件函数，传递参数： module,离开前路径
-     * @param defaultLeave      默认离开时事件函数，传递参数： module,进入时路径
+     * @param basePath -          路由基础路径，显示的完整路径为 basePath + route.path
+     * @param defaultEnter -      默认进入时事件函数，传递参数： module,离开前路径
+     * @param defaultLeave -      默认离开时事件函数，传递参数： module,进入时路径
      */
     constructor(basePath, defaultEnter, defaultLeave) {
         /**
@@ -4994,11 +4999,19 @@ class Router {
         /**
          * 激活Dom map
          * key: path
-         * value:{moduleId:dom所属模板模块id，model:对应model,field:激活字段名}
+         * value: object，格式为：
+         * ```js
+         *  {
+         *      moduleId:dom所属模板模块id，
+         *      model:对应model,
+         *      field:激活字段名
+         *  }
+         * ```
          */
         this.activeModelMap = new Map();
         /**
-         * 绑定到module的router指令对应的key，即router容器对应的key，格式为
+         * 绑定到module的router指令对应的key，即router容器对应的key，格式为:
+         * ```js
          *  {
          *      moduleId:{
          *          mid:router所在模块id,
@@ -5008,6 +5021,7 @@ class Router {
          *      }
          *      ,...
          *  }
+         * ```
          *  moduleId: router所属模块id（如果为slot且slot不是innerRender，则为模板对应模块id，否则为当前模块id）
          */
         this.routerMap = new Map();
@@ -5015,7 +5029,7 @@ class Router {
         this.onDefaultEnter = defaultEnter;
         this.onDefaultLeave = defaultLeave;
         //添加popstate事件
-        window.addEventListener('popstate', e => {
+        window.addEventListener('popstate', () => {
             //根据state切换module
             const state = history.state;
             if (!state) {
@@ -5027,8 +5041,8 @@ class Router {
     }
     /**
      * 把路径加入跳转列表(准备跳往该路由)
-     * @param path 	路径
-     * @param type  启动路由类型，参考startType，默认0
+     * @param path - 	路径
+     * @param type -  启动路由类型，参考startType，默认0
      */
     go(path) {
         // 当前路径的父路径不处理
@@ -5053,15 +5067,14 @@ class Router {
             return;
         }
         //从等待队列拿路径加载
-        let path = this.waitList.shift();
-        this.start(path).then(() => {
+        this.start(this.waitList.shift()).then(() => {
             //继续加载
             this.load();
         });
     }
     /**
      * 切换路由
-     * @param path 	路径
+     * @param path - 	路径
      */
     start(path) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -5069,7 +5082,7 @@ class Router {
             if (this.currentPath && this.currentPath.startsWith(path)) {
                 return;
             }
-            let diff = this.compare(this.currentPath, path);
+            const diff = this.compare(this.currentPath, path);
             // 不存在上一级模块,则为主模块，否则为上一级模块
             let parentModule = diff[0] === null ? ModuleFactory.getMain() : yield this.getModule(diff[0]);
             //onleave事件，从末往前执行
@@ -5083,7 +5096,7 @@ class Router {
                     this.onDefaultLeave(module, this.currentPath);
                 }
                 if (Util.isFunction(r.onLeave)) {
-                    r.onLeave(module, path, this.currentPath);
+                    r.onLeave(module, this.currentPath);
                 }
                 //从父模块移除
                 const pm = module.getParent();
@@ -5094,7 +5107,7 @@ class Router {
                 module.unmount();
             }
             if (diff[2].length === 0) { //路由相同，参数不同
-                let route = diff[0];
+                const route = diff[0];
                 if (route !== null) {
                     const module = yield this.getModule(route);
                     // 模块处理
@@ -5125,7 +5138,7 @@ class Router {
             }
             //如果是history popstate或新路径是当前路径的子路径，则不加入history
             if (this.startType !== 1) {
-                let path1 = (this.basePath || '') + path;
+                const path1 = (this.basePath || '') + path;
                 //子路由或父路由，替换state
                 if (path.startsWith(this.currentPath)) {
                     history.replaceState({ url: path1 }, '', path1);
@@ -5142,7 +5155,7 @@ class Router {
     }
     /**
      * 获取module
-     * @param route 路由对象
+     * @param route - 路由对象
      * @returns     路由对应模块
      */
     getModule(route) {
@@ -5165,8 +5178,8 @@ class Router {
     }
     /**
      * 比较两个路径对应的路由链
-     * @param path1 	第一个路径
-     * @param path2 	第二个路径
+     * @param path1 - 	第一个路径
+     * @param path2 - 	第二个路径
      * @returns 		数组 [父路由或不同参数的路由，需要销毁的路由数组，需要增加的路由数组，不同参数路由的父路由]
      */
     compare(path1, path2) {
@@ -5243,10 +5256,10 @@ class Router {
     }
     /**
      * 添加激活对象
-     * @param moduleId  模块id
-     * @param path      路由路径
-     * @param model     激活字段所在model
-     * @param field     字段名
+     * @param moduleId -  模块id
+     * @param path -      路由路径
+     * @param model -     激活字段所在model
+     * @param field -     字段名
      */
     addActiveModel(moduleId, path, model, field) {
         if (!model || !field) {
@@ -5257,12 +5270,12 @@ class Router {
         //保存path到routerMap
         if (this.routerMap.has(moduleId)) {
             const o = this.routerMap.get(moduleId);
-            if (!o.paths) {
-                o.paths = [path];
+            if (!o['paths']) {
+                o['paths'] = [path];
             }
             else {
-                if (!o.paths.includes(path)) {
-                    o.paths.push(path);
+                if (!o['paths'].includes(path)) {
+                    o['paths'].push(path);
                 }
             }
         }
@@ -5272,13 +5285,13 @@ class Router {
     }
     /**
      * 依赖模块相关处理
-     * @param module 	模块
-     * @param pm        依赖模块
-     * @param path 		view对应的route路径
+     * @param module - 	模块
+     * @param pm -        依赖模块
+     * @param path - 		view对应的route路径
      */
     dependHandle(module, route, pm) {
         //设置参数
-        let o = {
+        const o = {
             path: route.path
         };
         if (!Util.isEmpty(route.data)) {
@@ -5294,8 +5307,8 @@ class Router {
             }
             else {
                 //得到router实际所在module
-                pm = ModuleFactory.get(mobj.mid);
-                module.srcDom = mobj.dom.children[0];
+                pm = ModuleFactory.get(mobj['mid']);
+                module.srcDom = mobj['dom'].children[0];
                 pm.addChild(module);
                 //激活
                 module.active();
@@ -5305,8 +5318,8 @@ class Router {
     }
     /**
      * 设置路由元素激活属性
-     * @param module    模块
-     * @param path      路径
+     * @param module -    模块
+     * @param path -      路径
      * @returns
      */
     setDomActive(path) {
@@ -5314,42 +5327,42 @@ class Router {
             return;
         }
         const obj = this.activeModelMap.get(path);
-        if (!this.routerMap.has(obj.moduleId)) {
+        if (!this.routerMap.has(obj['moduleId'])) {
             return;
         }
         //获取模块 active path数组
-        const arr = this.routerMap.get(obj.moduleId).paths;
+        const arr = this.routerMap.get(obj['moduleId'])['paths'];
         if (!arr) {
             return;
         }
         //当前路径对应model置true
-        obj.model[obj.field] = true;
+        obj['model'][obj['field']] = true;
         //同模块下的其他路径对应model置false
-        for (let p of arr) {
+        for (const p of arr) {
             if (p !== path && this.activeModelMap.has(p)) {
-                let o = this.activeModelMap.get(p);
-                o.model[o.field] = false;
+                const o = this.activeModelMap.get(p);
+                o['model'][o['field']] = false;
             }
         }
     }
     /**
      * 获取路由数组
-     * @param path 	要解析的路径
-     * @param clone 是否clone，如果为false，则返回路由树的路由对象，否则返回克隆对象
+     * @param path - 	要解析的路径
+     * @param clone - 是否clone，如果为false，则返回路由树的路由对象，否则返回克隆对象
      * @returns     路由对象数组
      */
     getRouteList(path, clone) {
         if (!this.root) {
             return [];
         }
-        let pathArr = path.split('/');
+        const pathArr = path.split('/');
         let node = this.root;
         let paramIndex = 0; //参数索引
-        let retArr = [];
+        const retArr = [];
         let fullPath = ''; //完整路径
         let preNode = this.root; //前一个节点
         for (let i = 0; i < pathArr.length; i++) {
-            let v = pathArr[i].trim();
+            const v = pathArr[i].trim();
             if (v === '') {
                 continue;
             }
@@ -5398,9 +5411,9 @@ class Router {
     }
     /**
      * 登记路由容器到管理器中
-     * @param moduleId      模块id
-     * @param module        路由实际所在模块（当使用slot时，与moduleId对应模块不同）
-     * @param key           路由容器key
+     * @param moduleId -      模块id
+     * @param module -        路由实际所在模块（当使用slot时，与moduleId对应模块不同）
+     * @param key -           路由容器key
      */
     registRouter(moduleId, module, dom) {
         let obj;
@@ -5427,7 +5440,7 @@ class Router {
     }
     /**
      * 尝试激活路径
-     * @param path  待激活的路径
+     * @param path -  待激活的路径
      */
     activePath(path) {
         // 如果当前路径为空或待激活路径是当前路径的子路径
@@ -5442,11 +5455,11 @@ class Router {
  */
 class MODULE extends DefineElement {
     constructor(node, module) {
-        super(node);
+        super(node, module);
         //类名
         let clazz = node.getProp('name');
         if (!clazz) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'MODULE', 'className');
+            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'MODULE', 'className']);
         }
         node.delProp('name');
         node.addDirective(new Directive('module', clazz, module.id));
@@ -5457,11 +5470,11 @@ class MODULE extends DefineElement {
  */
 class FOR extends DefineElement {
     constructor(node, module) {
-        super(node);
+        super(node, module);
         //条件
         let cond = node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'FOR', 'cond');
+            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'FOR', 'cond']);
         }
         node.delProp('cond');
         node.addDirective(new Directive('repeat', cond, module.id));
@@ -5472,7 +5485,7 @@ class FOR extends DefineElement {
  */
 class RECUR extends DefineElement {
     constructor(node, module) {
-        super(node);
+        super(node, module);
         //条件
         let cond = node.getProp('cond');
         node.delProp('cond');
@@ -5484,11 +5497,11 @@ class RECUR extends DefineElement {
  */
 class IF extends DefineElement {
     constructor(node, module) {
-        super(node);
+        super(node, module);
         //条件
         let cond = node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'IF', 'cond');
+            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'IF', 'cond']);
         }
         node.delProp('cond');
         node.addDirective(new Directive('if', cond, module.id));
@@ -5499,7 +5512,7 @@ class IF extends DefineElement {
  */
 class ELSE extends DefineElement {
     constructor(node, module) {
-        super(node);
+        super(node, module);
         node.addDirective(new Directive('else', null, module.id));
     }
 }
@@ -5508,11 +5521,11 @@ class ELSE extends DefineElement {
  */
 class ELSEIF extends DefineElement {
     constructor(node, module) {
-        super(node);
+        super(node, module);
         //条件
         let cond = node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ELSEIF', 'cond');
+            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'ELSEIF', 'cond']);
         }
         node.delProp('cond');
         node.addDirective(new Directive('elseif', cond, module.id));
@@ -5523,7 +5536,7 @@ class ELSEIF extends DefineElement {
  */
 class ENDIF extends DefineElement {
     constructor(node, module) {
-        super(node);
+        super(node, module);
         node.addDirective(new Directive('endif', null, module.id));
     }
 }
@@ -5532,11 +5545,11 @@ class ENDIF extends DefineElement {
  */
 class SHOW extends DefineElement {
     constructor(node, module) {
-        super(node);
+        super(node, module);
         //条件
         let cond = node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'SHOW', 'cond');
+            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'SHOW', 'cond']);
         }
         node.delProp('cond');
         node.addDirective(new Directive('show', cond, module.id));
@@ -5547,7 +5560,7 @@ class SHOW extends DefineElement {
  */
 class SLOT extends DefineElement {
     constructor(node, module) {
-        super(node);
+        super(node, module);
         //条件
         let cond = node.getProp('name') || 'default';
         node.delProp('name');
@@ -5563,11 +5576,11 @@ class ROUTE extends DefineElement {
         if (!node.hasProp('tag')) {
             node.setProp('tag', 'a');
         }
-        super(node);
+        super(node, module);
         //条件
         let cond = node.getProp('path');
         if (!cond) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ROUTE', 'path');
+            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'ROUTE', 'path']);
         }
         node.addDirective(new Directive('route', cond, module.id));
     }
@@ -5577,7 +5590,7 @@ class ROUTE extends DefineElement {
  */
 class ROUTER extends DefineElement {
     constructor(node, module) {
-        super(node);
+        super(node, module);
         node.addDirective(new Directive('router', null, module.id));
     }
 }
@@ -5809,7 +5822,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
         //show指令参数 {origin:通过style设置的初始display属性,rendered:是否渲染过}
         let showParam = module.objectManager.getDomParam(dom.key, '$show');
         //为false且未渲染过，则不渲染
-        if (!this.value && (!showParam || !showParam.rendered)) {
+        if (!this.value && (!showParam || !showParam['rendered'])) {
             return false;
         }
         if (!showParam) {
@@ -5827,8 +5840,8 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
                 let ra = regResult[0].split(':');
                 display = ra[1].trim();
                 //保存第一个display属性
-                if (!showParam.origin && display !== 'none') {
-                    showParam.origin = display;
+                if (!showParam['origin'] && display !== 'none') {
+                    showParam['origin'] = display;
                 }
             }
         }
@@ -5851,11 +5864,11 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
         }
         else {
             //设置渲染标志
-            showParam.rendered = true;
+            showParam['rendered'] = true;
             if (display === 'none') {
                 if (style) {
-                    if (showParam.origin) {
-                        style = style.substring(0, regResult.index) + 'display:' + showParam.origin + style.substring(regResult.index + regResult[0].length);
+                    if (showParam['origin']) {
+                        style = style.substring(0, regResult.index) + 'display:' + showParam['origin'] + style.substring(regResult.index + regResult[0].length);
                     }
                     else {
                         style = style.substring(0, regResult.index) + style.substring(regResult.index + regResult[0].length);
@@ -5979,7 +5992,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
      */
     Nodom.createDirective('route', function (module, dom) {
         if (!Nodom['$Router']) {
-            throw new NError('uninit', NodomMessage.TipWords.route);
+            throw new NError('uninit', [NodomMessage.TipWords.route]);
         }
         //a标签需要设置href
         if (dom.tagName === 'a') {
@@ -6020,7 +6033,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
      */
     Nodom.createDirective('router', function (module, dom) {
         if (!Nodom['$Router']) {
-            throw new NError('uninit', NodomMessage.TipWords.route);
+            throw new NError('uninit', [NodomMessage.TipWords.route]);
         }
         //建立新子节点            
         dom.children = [{ key: dom.key + '_r', model: dom.model }];

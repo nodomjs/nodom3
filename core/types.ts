@@ -1,12 +1,14 @@
+import { DefineElement } from "./defineelement";
 import { NEvent } from "./event";
 import { Model } from "./model";
+import { Module } from "./module";
 import { Route } from "./route";
 import { VirtualDom } from "./virtualdom";
 
 /**
  * 路由配置
  */
-export interface IRouteCfg {
+export type RouteCfg = {
     /**
      * 路由路径，可以带通配符*，可以带参数 /:
      */
@@ -15,25 +17,27 @@ export interface IRouteCfg {
     /**
      * 路由对应模块对象或类或模块类名
      */
-    module?:any;
+    module?:Module;
 
     /**
      * 模块路径，当module为类名时需要，默认执行延迟加载
      */
     modulePath?:string;
+
     /**
      * 子路由数组
      */
-    routes?: Array<IRouteCfg>;
+    routes?: Array<RouteCfg>;
 
     /**
      * 进入路由事件方法
      */
-    onEnter?: Function;
+
+    onEnter?: (module,url)=>void;
     /**
      * 离开路由方法
      */
-    onLeave?: Function;
+    onLeave?: (module,url)=>void;
     
     /**
      * 父路由
@@ -62,16 +66,16 @@ export enum EModuleState {
 /**
  * 渲染后的节点接口
  */
-export interface IRenderedDom{
+export type RenderedDom = {
     /**
      * 元素名，如div
      */
     tagName?: string;
 
     /**
-     * key:string|number,整颗渲染树唯一
+     * key:节点key，整棵渲染树唯一
      */
-    key: any;
+    key: string|number;
  
     /**
       * 绑定模型
@@ -81,13 +85,12 @@ export interface IRenderedDom{
     /**
      * 直接属性 不是来自于attribute，而是直接作用于html element，如el.checked,el.value等
      */
-    assets?: Object;
+    assets?: object;
 
     /**
      * 静态属性(attribute)集合
-     * {prop1:value1,...}
      */
-    props?: Object;
+    props?: object;
 
     /**
      * 事件集合
@@ -100,20 +103,20 @@ export interface IRenderedDom{
     textContent?: string;
 
     /**
-     * 子节点数组[]
+     * 子节点数组
      */
-    children?: Array<IRenderedDom>;
+    children?: Array<RenderedDom>;
 
     /**
      * 父虚拟dom
      */
-    parent?: IRenderedDom;
+    parent?: RenderedDom;
 
     /**
      * staticNum 静态标识数
      *  0 表示静态，不进行比较
-     *  > 0 每次比较后-1
-     *  < 0 不处理
+     *  1 每次比较后-1
+     *  -1 每次渲染
      */
     staticNum?: number;
  
@@ -133,3 +136,44 @@ export interface IRenderedDom{
 	isSvg?:boolean;
 }
 
+/**
+ * 未知类
+ */
+export type UnknownClass = ()=>void;
+
+/**
+ * 自定义element 类
+ */
+export type DefineElementClass = (dom:VirtualDom,module:Module)=>DefineElement;
+
+/**
+ * 未知方法
+ */
+export type UnknownMethod = ()=>void;
+
+/**
+ * 事件方法
+ */
+
+export type EventMethod = (model,dom,evobj,event)=>void;
+
+/**
+ * 指令方法
+ */
+export type DirectiveMethod = (module:Module,dom:RenderedDom)=>boolean;
+
+/**
+ * 表达式方法
+ */
+export type ExpressionMethod = (model:Model)=>unknown;
+
+/**
+ * diff 后的更改dom节点数组，依次为
+ * 0: 类型 add 1, upd 2,del 3,move 4 ,rep 5
+ * 1: 目标节点       
+ * 2: 相对节点（被替换时有效）
+ * 3: 父节点
+ * 4: 添加或移动的目标index
+ * 5: 被移动前位置
+ */
+export type ChangedDom = [number,RenderedDom,RenderedDom?,RenderedDom?,number?,number?];

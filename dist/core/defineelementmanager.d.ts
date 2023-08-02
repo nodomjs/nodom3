@@ -1,3 +1,4 @@
+import { DefineElementClass } from "./types";
 /**
  * 自定义元素管理器
  */
@@ -8,19 +9,18 @@ export declare class DefineElementManager {
     private static elements;
     /**
      * 添加自定义元素类
-     * @param clazz     自定义元素类或类数组
-     * @param alias     别名
+     * @param clazz -   自定义元素类或类数组
      */
-    static add(clazz: any, alias?: string): void;
+    static add(clazz: unknown[] | unknown): void;
     /**
      * 获取自定义元素类
-     * @param tagName   元素名
+     * @param tagName - 元素名
      * @returns         自定义元素类
      */
-    static get(tagName: string): any;
+    static get(tagName: string): DefineElementClass;
     /**
      * 是否存在自定义元素
-     * @param tagName   元素名
+     * @param tagName - 元素名
      * @returns         存在或不存在
      */
     static has(tagName: string): boolean;

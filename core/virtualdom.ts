@@ -7,7 +7,7 @@ import { Module } from './module'
 import { Util } from './util'
 
 /**
- * 虚拟dom，编译后的dom节点，与渲染后的dom节点(IRenderedDom)不同
+ * 虚拟dom，编译后的dom节点，与渲染后的dom节点(RenderedDom)不同
  */
 export class VirtualDom {
 	/**
@@ -18,7 +18,7 @@ export class VirtualDom {
 	/**
 	 * key，数字或字符串，整颗虚拟dom树唯一
 	 */
-	public key: any;
+	public key: number|string
 
 	/**
 	 * 绑定模型
@@ -43,14 +43,13 @@ export class VirtualDom {
 	/**
 	 * 直接属性 不是来自于attribute，而是直接作用于html element，如el.checked,el.value等
 	 */
-	public assets: Map<string, any>
+	public assets: Map<string, string|number|boolean>
 
 	/**
 	 * 属性(attribute)集合
-	 * {prop1:value1,...}
 	 * 属性值可能是值，也可能是表达式，还可能是数组，当为子模块时，存在从props传递过来的属性，如果模块模版存在相同属性，则会变成数组。
 	 */
-	public props: Map<string, any>
+	public props: Map<string, string|number|boolean|object|Expression>
 
 	/**
 	 * 删除的class名数组
@@ -85,18 +84,18 @@ export class VirtualDom {
 	/**
 	 * staticNum 静态标识数
 	 *  0 表示静态，不进行比较
-	 *  > 0 每次比较后-1
-	 *  < 0 表达式，每次渲染后不处理
+	 *  1 渲染后 -1
+	 *  -1 每次都渲染
 	 * 默认为1，至少渲染1次
 	 */
 	public staticNum: number
 
 	/**
-	 * @param tag       标签名
-	 * @param key       key
-	 * @param module 	模块
+	 * @param tag -       标签名
+	 * @param key -       key
+	 * @param module - 	模块
 	 */
-	constructor(tag?: string, key?: number, module?: Module) {
+	constructor(tag?: string, key?: number|string, module?: Module) {
 		this.key = key || (module ? module.getDomKeyId() : Util.genId())
 		this.staticNum = 1;
 		if (tag) {
@@ -106,7 +105,7 @@ export class VirtualDom {
 
 	/**
 	 * 移除多个指令
-	 * @param directives 	待删除的指令类型数组或指令类型
+	 * @param directives - 	待删除的指令类型数组或指令类型
 	 * @returns             如果虚拟dom上的指令集为空，则返回void
 	 */
 	public removeDirectives(directives: string[]) {
@@ -121,7 +120,7 @@ export class VirtualDom {
 
 	/**
 	 * 移除指令
-	 * @param directive 	待删除的指令类型名
+	 * @param directive - 	待删除的指令类型名
 	 * @returns             如果虚拟dom上的指令集为空，则返回void
 	 */
 	public removeDirective(directive: string) {
@@ -143,8 +142,8 @@ export class VirtualDom {
 
 	/**
 	 * 添加指令
-	 * @param directive     指令对象
-	 * @param sort          是否排序
+	 * @param directive -     指令对象
+	 * @param sort -          是否排序
 	 * @returns             如果虚拟dom上的指令集不为空，且指令集中已经存在传入的指令对象，则返回void
 	 */
 	public addDirective(directive: Directive, sort?: boolean) {
@@ -181,7 +180,7 @@ export class VirtualDom {
 
 	/**
 	 * 是否有某个类型的指令
-	 * @param typeName 	    指令类型名
+	 * @param typeName - 	    指令类型名
 	 * @returns             如果指令集不为空，且含有传入的指令类型名则返回true，否则返回false
 	 */
 	public hasDirective(typeName: string): boolean {
@@ -190,8 +189,8 @@ export class VirtualDom {
 
 	/**
 	 * 获取某个类型的指令
-	 * @param module            模块
-	 * @param directiveType 	指令类型名
+	 * @param module -            模块
+	 * @param directiveType - 	指令类型名
 	 * @returns                 如果指令集为空，则返回void；否则返回指令类型名等于传入参数的指令对象
 	 */
 	public getDirective(directiveType: string): Directive {
@@ -203,8 +202,8 @@ export class VirtualDom {
 
 	/**
 	 * 添加子节点
-	 * @param dom       子节点
-	 * @param index     指定位置，如果不传此参数，则添加到最后
+	 * @param dom -       子节点
+	 * @param index -     指定位置，如果不传此参数，则添加到最后
 	 */
 	public add(dom: VirtualDom, index?: number) {
 		if (!this.children) {
@@ -220,10 +219,10 @@ export class VirtualDom {
 
 	/**
 	 * 移除子节点
-	 * @param dom   子节点
+	 * @param dom -   子节点
 	 */
 	public remove(dom: VirtualDom) {
-		let index = this.children.indexOf(dom)
+		const index = this.children.indexOf(dom)
 		if (index !== -1) {
 			this.children.splice(index, 1)
 		}
@@ -231,8 +230,8 @@ export class VirtualDom {
 
 	/**
 	 * 是否拥有属性
-	 * @param propName  属性名
-	 * @param isExpr    是否只检查表达式属性
+	 * @param propName -  属性名
+	 * @param isExpr -    是否只检查表达式属性
 	 * @returns         如果属性集含有传入的属性名返回true，否则返回false
 	 */
 	public hasProp(propName: string) {
@@ -243,11 +242,10 @@ export class VirtualDom {
 
 	/**
 	 * 获取属性值
-	 * @param propName  属性名
-	 * @param isExpr    是否只获取表达式属性
+	 * @param propName -  属性名
 	 * @returns         传入属性名的value
 	 */
-	public getProp(propName: string, isExpr?: boolean) {
+	public getProp(propName: string) {
 		if (this.props) {
 			return this.props.get(propName)
 		}
@@ -255,10 +253,10 @@ export class VirtualDom {
 
 	/**
 	 * 设置属性值
-	 * @param propName  属性名
-	 * @param v         属性值
+	 * @param propName -  属性名
+	 * @param v -         属性值
 	 */
-	public setProp(propName: string, v: any) {
+	public setProp(propName: string, v: string|number|boolean|object|Expression) {
 		if (!this.props) {
 			this.props = new Map()
 		}
@@ -279,7 +277,7 @@ export class VirtualDom {
 
 	/**
 	 * 删除属性
-	 * @param props     属性名或属性名数组
+	 * @param props -     属性名或属性名数组
 	 * @returns         如果虚拟dom上的属性集为空，则返回void
 	 */
 	public delProp(props: string | string[]) {
@@ -287,7 +285,7 @@ export class VirtualDom {
 			return
 		}
 		if (Util.isArray(props)) {
-			for (let p of <string[]>props) {
+			for (const p of <string[]>props) {
 				this.props.delete(p)
 			}
 		} else {
@@ -299,10 +297,10 @@ export class VirtualDom {
 
 	/**
 	 * 设置asset
-	 * @param assetName     asset name
-	 * @param value         asset value
+	 * @param assetName -     asset name
+	 * @param value -         asset value
 	 */
-	public setAsset(assetName: string, value: any) {
+	public setAsset(assetName: string, value: string|number|boolean) {
 		if (!this.assets) {
 			this.assets = new Map()
 		}
@@ -312,7 +310,7 @@ export class VirtualDom {
 
 	/**
 	 * 删除asset
-	 * @param assetName     asset name
+	 * @param assetName -     asset name
 	 * @returns             如果虚拟dom上的直接属性集为空，则返回void
 	 */
 	public delAsset(assetName: string) {
@@ -325,18 +323,18 @@ export class VirtualDom {
 
 	/**
 	 * 设置cache参数
-	 * @param module    模块
-	 * @param name      参数名
-	 * @param value     参数值
+	 * @param module -    模块
+	 * @param name -      参数名
+	 * @param value -     参数值
 	 */
-	public setParam(module: Module, name: string, value: any) {
+	public setParam(module: Module, name: string, value: string|boolean|number|object) {
 		module.objectManager.setDomParam(this.key, name, value)
 	}
 
 	/**
 	 * 获取参数值
-	 * @param module    模块
-	 * @param name      参数名
+	 * @param module -    模块
+	 * @param name -      参数名
 	 * @returns         参数值
 	 */
 	public getParam(module: Module, name: string) {
@@ -345,8 +343,8 @@ export class VirtualDom {
 
 	/**
 	 * 移除参数
-	 * @param module    模块
-	 * @param name      参数名
+	 * @param module -    模块
+	 * @param name -      参数名
 	 */
 	public removeParam(module: Module, name: string) {
 		module.objectManager.removeDomParam(this.key, name)
@@ -365,24 +363,24 @@ export class VirtualDom {
 	 * 克隆
 	 */
 	public clone(): VirtualDom {
-		let dst: VirtualDom = new VirtualDom(this.tagName, this.key)
+		const dst: VirtualDom = new VirtualDom(this.tagName, this.key)
 		if (this.tagName) {
 			//属性
 			if (this.props && this.props.size > 0) {
-				for (let p of this.props) {
+				for (const p of this.props) {
 					dst.setProp(p[0], p[1])
 				}
 			}
 
 			if (this.assets && this.assets.size > 0) {
-				for (let p of this.assets) {
+				for (const p of this.assets) {
 					dst.setAsset(p[0], p[1])
 				}
 			}
 
 			if (this.directives && this.directives.length > 0) {
 				dst.directives = []
-				for (let d of this.directives) {
+				for (const d of this.directives) {
 					dst.directives.push(d.clone())
 				}
 			}
@@ -391,7 +389,7 @@ export class VirtualDom {
 
 			//子节点clone
 			if (this.children) {
-				for (let c of this.children) {
+				for (const c of this.children) {
 					dst.add(c.clone())
 				}
 			}
@@ -405,8 +403,8 @@ export class VirtualDom {
 
 	/**
 	 * 保存事件
-	 * @param event     事件对象
-	 * @param index 	位置
+	 * @param event -     事件对象
+	 * @param index - 	位置
 	 */
 	public addEvent(event: NEvent,index?:number) {
 		if (!this.events) {

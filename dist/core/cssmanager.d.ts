@@ -1,5 +1,5 @@
 import { Module } from "./module";
-import { IRenderedDom } from "./types";
+import { RenderedDom } from "./types";
 /**
  * css 管理器
  * 针对不同的rule，处理方式不同
@@ -25,30 +25,30 @@ export declare class CssManager {
     private static cssPreName;
     /**
      * 处理style 元素
-     * @param module    模块
-     * @param dom       虚拟dom
-     * @param root      模块root dom
-     * @param add       是否添加根模块类名
+     * @param module -    模块
+     * @param dom -       虚拟dom
+     * @param root -      模块root dom
+     * @param add -       是否添加根模块类名
      * @returns         如果是styledom，则返回true，否则返回false
      */
-    static handleStyleDom(module: Module, dom: IRenderedDom, root: IRenderedDom): void;
+    static handleStyleDom(module: Module, dom: RenderedDom, root: RenderedDom): void;
     /**
      * 处理 style 下的文本元素
-     * @param module    模块
-     * @param dom       style text element
+     * @param module -    模块
+     * @param dom -       style text element
      * @returns         如果是styleTextdom返回true，否则返回false
      */
-    static handleStyleTextDom(module: Module, dom: IRenderedDom): boolean;
+    static handleStyleTextDom(module: Module, dom: RenderedDom): boolean;
     /**
      * 添加多个css rule
-     * @param cssText           rule集合
-     * @param module            模块
-     * @param scopeName         作用域名(前置选择器)
+     * @param cssText -           rule集合
+     * @param module -            模块
+     * @param scopeName -         作用域名(前置选择器)
      */
     static addRules(module: Module, cssText: string, scopeName?: string): void;
     /**
      * 清除模块css rules
-     * @param module  模块
+     * @param module -  模块
      * @returns       如果模块不存在css rules，则返回void
      */
     static clearModuleRules(module: Module): void;

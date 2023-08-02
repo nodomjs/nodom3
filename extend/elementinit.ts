@@ -5,17 +5,19 @@ import { NodomMessage } from "../core/nodom";
 import { VirtualDom } from "../core/virtualdom";
 import { Directive } from "../core/directive";
 import { Module } from "../core/module";
+import { Expression } from "../core/expression";
+import { DefineElementClass } from "../core/types";
 
 /**
  * module 元素
  */
 class MODULE extends DefineElement{
     constructor(node: VirtualDom,module:Module){
-        super(node);
+        super(node,module);
         //类名
-        let clazz = node.getProp('name');
+        let clazz = <string>node.getProp('name');
         if (!clazz) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'MODULE', 'className');
+            throw new NError('itemnotempty', [NodomMessage.TipWords['element'],'MODULE', 'className']);
         }
         node.delProp('name');
         node.addDirective(new Directive('module',clazz,module.id));
@@ -27,11 +29,11 @@ class MODULE extends DefineElement{
  */
 class FOR extends DefineElement{
     constructor(node: VirtualDom,module:Module){
-        super(node);
+        super(node,module);
         //条件
-        let cond = node.getProp('cond');
+        let cond = <Expression>node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'FOR', 'cond');
+            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'FOR', 'cond']);
         }
         node.delProp('cond');
         node.addDirective(new Directive('repeat',cond,module.id));
@@ -42,9 +44,9 @@ class FOR extends DefineElement{
  */
 class RECUR extends DefineElement{
     constructor(node: VirtualDom,module:Module){
-        super(node);
+        super(node,module);
         //条件
-        let cond = node.getProp('cond');
+        let cond = <Expression>node.getProp('cond');
         node.delProp('cond');
         node.addDirective(new Directive('recur',cond,module.id));
     }
@@ -55,11 +57,11 @@ class RECUR extends DefineElement{
  */
 class IF extends DefineElement{
     constructor(node: VirtualDom,module:Module){
-        super(node);
+        super(node,module);
         //条件
-        let cond = node.getProp('cond');
+        let cond = <Expression>node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'IF', 'cond');
+            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'IF', 'cond']);
         }
         node.delProp('cond');
         node.addDirective(new Directive('if',cond,module.id));
@@ -71,7 +73,7 @@ class IF extends DefineElement{
  */
 class ELSE extends DefineElement{
     constructor(node: VirtualDom,module:Module){
-        super(node);
+        super(node,module);
         node.addDirective(new Directive('else',null,module.id));
     }
 }
@@ -81,11 +83,11 @@ class ELSE extends DefineElement{
  */
 class ELSEIF extends DefineElement{
     constructor(node: VirtualDom,module:Module){
-        super(node);
+        super(node,module);
         //条件
-        let cond = node.getProp('cond');
+        let cond = <Expression>node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ELSEIF', 'cond');
+            throw new NError('itemnotempty',[NodomMessage.TipWords['element'], 'ELSEIF', 'cond']);
         }
         node.delProp('cond');
         node.addDirective(new Directive('elseif',cond,module.id));
@@ -97,7 +99,7 @@ class ELSEIF extends DefineElement{
  */
 class ENDIF extends DefineElement{
     constructor(node: VirtualDom,module:Module){
-        super(node);
+        super(node,module);
         node.addDirective(new Directive('endif',null,module.id));
     }
 }
@@ -107,11 +109,11 @@ class ENDIF extends DefineElement{
  */
 class SHOW extends DefineElement{
     constructor(node: VirtualDom,module:Module){
-        super(node);
+        super(node,module);
         //条件
-        let cond = node.getProp('cond');
+        let cond = <Expression>node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'SHOW', 'cond');
+            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'SHOW', 'cond']);
         }
         node.delProp('cond');
         node.addDirective(new Directive('show',cond,module.id));
@@ -123,11 +125,11 @@ class SHOW extends DefineElement{
  */
 class SLOT extends DefineElement{
     constructor(node: VirtualDom,module:Module){
-        super(node);
+        super(node,module);
         //条件
         let cond = node.getProp('name') || 'default';
         node.delProp('name');
-        node.addDirective(new Directive('slot',cond,module.id));
+        node.addDirective(new Directive('slot',<string>cond,module.id));
     }
 }
 
@@ -141,13 +143,13 @@ class ROUTE extends DefineElement{
             node.setProp('tag','a');
         }
         
-        super(node);
+        super(node,module);
         //条件
         let cond = node.getProp('path');
         if (!cond) {
-            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ROUTE', 'path');
+            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'ROUTE', 'path']);
         }
-        node.addDirective(new Directive('route',cond,module.id));
+        node.addDirective(new Directive('route',<string>cond,module.id));
     }
 }
 
@@ -156,7 +158,7 @@ class ROUTE extends DefineElement{
  */
 class ROUTER extends DefineElement{
     constructor(node: VirtualDom,module:Module){
-        super(node);
+        super(node,module);
         node.addDirective(new Directive('router',null,module.id));
     }
 }

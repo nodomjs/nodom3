@@ -219,7 +219,7 @@ class M1 extends Module{
 序号| 参数 | 类型
 -|-|-
  1| 事件对应dom的model | Model
- 2| 事件对应的虚拟dom | IRenderedDom
+ 2| 事件对应的虚拟dom | RenderedDom
  3| nodom event对象 | NEvent
  4| Html Event对象 | Html Event
  
@@ -244,7 +244,7 @@ class M1 extends Module{
 
 ### 虚拟Dom、编译及渲染
 1. 模板串经过编译后，形成虚拟dom树，树中节点为虚拟Dom(VirtualDom)；
-2. 虚拟dom树经过`renderDom`方法渲染后，形成渲染树，树中节点为渲染节点(IRenderedDom)；
+2. 虚拟dom树经过`renderDom`方法渲染后，形成渲染树，树中节点为渲染节点(RenderedDom)；
 3. 渲染树经过`renderToHtml`方法渲染后，渲染到html document，渲染方式分为首次渲染和增量渲染。
 
 ## 详细介绍
@@ -639,7 +639,7 @@ class Main extends Module{
  序号 | 说明  | 类型 
  -|-|-
  1 | 事件对象对应虚拟dom的model| Model 
- 2 | 事件对象对应虚拟dom | IRenderedDom
+ 2 | 事件对象对应虚拟dom | RenderedDom
  3 | nodom event对象| NEvent
  4 | HtmlEvent对象 | Html Event
 
@@ -757,7 +757,7 @@ Nodom提供了指令简写方式，可以通过自定义标签方式简写指令
 |  序号  | 说明 | 类型 | 备注 |
 | - | - | - | - |
 |  1 | 指令名 | string | 无 |
-|  2 | 指令执行方法 | Function | 执行方法默认传递两个参数：1 module（dom所属模块）, 2 dom（所属渲染节点，类型IRenderedDom）。方法中的this指向指令|
+|  2 | 指令执行方法 | Function | 执行方法默认传递两个参数：1 module（dom所属模块）, 2 dom（所属渲染节点，类型RenderedDom）。方法中的this指向指令|
 |  3 | 优先级 | Number | 1-10，如果设置优先级<5，需慎重 |
 
 指令执行方法返回true/false，当返回false时，不再进行当前节点的后续渲染，包括子节点渲染，同时该dom节点不加入到渲染树中，也就是说，不会渲染到document中，更多详情参考源码 /extend/directiveinit.ts。 
@@ -765,7 +765,7 @@ Nodom提供了指令简写方式，可以通过自定义标签方式简写指令
 ```javascript
 Nodom.createDirective(
 	'directive name',
-	function (module: Module, dom: IRenderedDom){
+	function (module: Module, dom: RenderedDom){
 		//your code
 	},
 	10

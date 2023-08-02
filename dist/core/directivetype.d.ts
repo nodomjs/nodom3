@@ -1,3 +1,4 @@
+import { DirectiveMethod } from "./types";
 /**
  * 指令类
  */
@@ -13,12 +14,12 @@ export declare class DirectiveType {
     /**
      * 渲染时执行方法
      */
-    handle: Function;
+    handler: DirectiveMethod;
     /**
      * 构造方法
-     * @param name      指令类型名
-     * @param handle    渲染时执行方法
-     * @param prio      类型优先级
+     * @param name -      指令类型名
+     * @param handle -    渲染时执行方法
+     * @param prio -      类型优先级
      */
-    constructor(name: string, handle: Function, prio?: number);
+    constructor(name: string, handler: DirectiveMethod, prio?: number);
 }

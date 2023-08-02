@@ -14,19 +14,30 @@ export class ModelManager {
     public module:Module;
 
     /**
-     * 绑定module map，slot引用外部数据时有效
-     * {model:[moduleid1,moduleid2,...]}
+     * model绑定module map，slot引用外部数据，模块传值时有效
+     *  key:    model
+     *  value:  model绑定的module id 数组
      */
     public bindMap:WeakMap<object,number[]> = new WeakMap();
 
     /**
      * 数据map
-     * {data:{model:model,key:key}
+     * ```js
+     * {
+     *      data1:{
+     *          model:model,
+     *          key:key
+     *      },
+     *      data2:,
+     *      datan
+     * }
+     * ```
      * 其中：
-     *      data:       初始数据对象
-     *      model:      model对象
+     *   datan: 初始数据对象
+     *   model: model对象
+     *   key:   model key
      */
-    private dataMap: WeakMap<object,any> = new WeakMap();
+    private dataMap: WeakMap<object,{model:Model,key:number}> = new WeakMap();
 
     /**
      * 存储模型对应属性名，如果为父传子，则需要保存属于该模型的属性名
@@ -34,14 +45,24 @@ export class ModelManager {
      * value: model名字
      */
     
-    private nameMap:WeakMap<object,any> = new WeakMap();
+    private nameMap:WeakMap<object,string> = new WeakMap();
     /** 
      * model对应监听器map 
-     *  key:model
-     *  value:{key1:{f:foo1,deep:true/false},key2:,...}
+     * key:model
+     * value:object
+     * ```js
+     * {
+     *      key1:{
+     *          f:foo1,
+     *          deep:true/false
+     *      },
+     *      key2:,
+     *      kn:
+     * }
+     * ```
      *        其中：prop为被监听属性，foo为监听器方法，deep为是否深度监听
      */
-    private watchMap:WeakMap<object,any> = new WeakMap();
+    private watchMap:WeakMap<object,object> = new WeakMap();
 
     /**
      * 是否存在深度watcher
@@ -50,7 +71,7 @@ export class ModelManager {
 
     /**
      * 构造器
-     * @param module    模块
+     * @param module -    模块
      */
     constructor(module:Module){
         this.module = module;
@@ -58,28 +79,28 @@ export class ModelManager {
 
     /**
      * 获取model，不存在则新建
-     * @param data      数据
+     * @param data -      数据
      * @returns         model
      */
-    public getModel(data:any):Model{
+    public getModel(data:object):Model{
         return this.dataMap.has(data)?this.dataMap.get(data).model:undefined;
     }
 
     /**
      * 获取model key
-     * @param model     model对象
+     * @param model -     model对象
      * @returns         model对应key
      */
-    public getModelKey(data:any):number{
+    public getModelKey(data:object):number{
         return this.dataMap.has(data)?this.dataMap.get(data).key:undefined;
     }
 
     /**
      * 设置模型名
-     * @param model 模型 
-     * @param name  名
+     * @param model - 模型 
+     * @param name -  名
      */
-    public setModelName(model:any,name:string){
+    public setModelName(model:Model,name:string){
         if(!this.nameMap.has(model)){
             this.nameMap.set(model,name);
         }
@@ -87,17 +108,17 @@ export class ModelManager {
 
     /**
      * 获取模型名
-     * @param model 模型 
+     * @param model - 模型 
      * @returns     模型名
      */
-    public getModelName(model:any):string{
+    public getModelName(model:Model):string{
         return this.nameMap.get(model);
     }
 
     /**
      * 添加数据到map
-     * @param data      原始数据
-     * @param model     模型
+     * @param data -      原始数据
+     * @param model -     模型
      */
     public add(data,model){
         //避免重复添加
@@ -109,19 +130,19 @@ export class ModelManager {
     
     /**
      * 添加绑定
-     * @param model     模型 
-     * @param moduleId  模块id
+     * @param model -     模型 
+     * @param moduleId -  模块id
      */
-    public bindModel(model:any,module:Module){
+    public bindModel(model:Model,module:Module){
         if(!model){
             return;
         }
         bind(this.bindMap,model,module);
         /**
          * 绑定
-         * @param bindMap 
-         * @param model 
-         * @param module 
+         * @param bindMap - 
+         * @param model - 
+         * @param module - 
          */
         function bind(bindMap,model,module){
             if(model.__module === module){
@@ -138,7 +159,7 @@ export class ModelManager {
                 mids.push(module.id);
             }
             //级联绑定
-            for(let key of Object.keys(model)){
+            for(const key of Object.keys(model)){
                 if(model[key] && typeof model[key] === 'object'){
                     bind(bindMap,model[key],module);
                 }
@@ -149,19 +170,19 @@ export class ModelManager {
     /**
      * 更新导致渲染
      * 如果不设置oldValue和newValue，则直接强制渲染
-     * @param model     model
-     * @param key       属性
-     * @param oldValue  旧值
-     * @param newValue  新值
+     * @param model -     model
+     * @param key -       属性
+     * @param oldValue -  旧值
+     * @param newValue -  新值
      */
-    public update(model: Model, key: string, oldValue?: any, newValue?: any) {
+    public update(model: Model, key: string, oldValue?: unknown, newValue?: unknown) {
         //处理watch
         handleWatcher(this.module,model);
         //添加module渲染
         Renderer.add(this.module);
         //对绑定模块添加渲染
         if(this.bindMap.has(model)){
-            for(let id of this.bindMap.get(model)){
+            for(const id of this.bindMap.get(model)){
                 const m = ModuleFactory.get(id);
                 if(m){
                     handleWatcher(m,model);
@@ -172,12 +193,12 @@ export class ModelManager {
         
         /**
          * 处理watcher
-         * @param mdl   模块
-         * @param model 模型
+         * @param mdl -   模块
+         * @param model - 模型
          */  
         function handleWatcher(mdl,model){
             const map = mdl.modelManager.watchMap;
-            let watcher = map.get(model);
+            const watcher = map.get(model);
             //当前model存在watcher
             if(watcher && watcher[key]){
                 //查找对应key是否存在watch
@@ -185,14 +206,14 @@ export class ModelManager {
             }else if(mdl.modelManager.hasDeepWatch){   //进行deep查找
                 for(let m = model;m && m.__parent;m=m.__parent){
                     //如果已经跨模块，则表示为父传子，父模块指向当前模块
-                    let pm = m.__parent.__module === mdl?m.__parent:mdl.model;
+                    const pm = m.__parent.__module === mdl?m.__parent:mdl.model;
                     if(!map.has(pm)){
                         continue;
                     }
                     const watcher = map.get(pm);
                     const name = mdl.modelManager.getModelName(m)||m.__name;
                     if(watcher && watcher[name]){
-                        let cfg = watcher[name];
+                        const cfg = watcher[name];
                         // 当前model或父model deep watch
                         if(cfg.deep){
                             cfg.f.call(mdl,model,key,oldValue,newValue);
@@ -208,15 +229,15 @@ export class ModelManager {
     /**
      * 监听某个数据项
      * 注意：执行此操作时，该数据项必须已经存在，否则监听失败
-     * @param model     带watch的model
-     * @param key       数据项名或数组
-     * @param operate   数据项变化时执行方法
-     * @param module    指定模块，如果指定，则表示该model绑定的所有module都会触发watch事件，在model父(模块)传子(模块)传递的是对象时会导致多个watch出发
-     * @param deep      是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
+     * @param model -     带watch的model
+     * @param key -       数据项名或数组
+     * @param operate -   数据项变化时执行方法
+     * @param module -    指定模块，如果指定，则表示该model绑定的所有module都会触发watch事件，在model父(模块)传子(模块)传递的是对象时会导致多个watch出发
+     * @param deep -      是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
      * 
      * @returns         unwatch函数
      */
-    public watch(model:Model,key: string|string[], operate: Function,deep?:boolean):Function {
+    public watch(model:Model,key: string|string[], operate: (m,k,ov,nv)=>void,deep?:boolean):()=>void {
         if(!operate || typeof operate !== 'function'){
             return;
         }
@@ -226,7 +247,7 @@ export class ModelManager {
         //撤销watch数组，数据项为{m:model,k:监听属性,f:触发方法}
         let arr = [];
         if(Array.isArray(key)){
-            for(let k of key){
+            for(const k of key){
                 watchOne(model,k,operate);
             }
         }else{
@@ -239,8 +260,8 @@ export class ModelManager {
             if(!Array.isArray(arr)){
                 return;
             }
-            for(let f of arr){
-                let obj = me.watchMap.get(f.m);
+            for(const f of arr){
+                const obj = me.watchMap.get(f.m);
                 if(!obj){
                     continue;
                 }
@@ -256,12 +277,12 @@ export class ModelManager {
         
         /**
          * 监听一个
-         * @param model     当前model  
-         * @param key       监听属性，可以支持多级属性，如果为多级属性，倒数第二级对应数据项必须为对象
-         * @param operate   操作方法
+         * @param model -     当前model  
+         * @param key -       监听属性，可以支持多级属性，如果为多级属性，倒数第二级对应数据项必须为对象
+         * @param operate -   操作方法
          * @returns 
          */
-        function watchOne(model:Model,key:string,operate:Function){
+        function watchOne(model:Model,key:string,operate:(m,k,ov,nv)=>void){
             if (!model || typeof model !== 'object') {
                 return;
             }
@@ -288,14 +309,14 @@ export class ModelManager {
     
     /**
      * 查询model子属性
-     * @param key       属性名，可以分级，如 name.firstName
-     * @param model     模型
+     * @param key -       属性名，可以分级，如 name.firstName
+     * @param model -     模型
      * @returns         属性对应model proxy
      */
-    public get(model:Model, key?: string):any {
+    public get(model:Model, key?: string):unknown {
         if(key){
             if (key.indexOf('.') !== -1) {    //层级字段
-                let arr = key.split('.');
+                const arr = key.split('.');
                 for (let i = 0; i < arr.length - 1; i++) {
                     model = model[arr[i]];
                     if (!model) {
@@ -314,13 +335,13 @@ export class ModelManager {
 
     /**
      * 设置值
-     * @param model     模型
-     * @param key       子属性，可以分级，如 name.firstName
-     * @param value     属性值
+     * @param model -     模型
+     * @param key -       子属性，可以分级，如 name.firstName
+     * @param value -     属性值
      */
-    public set(model:Model,key:string,value:any){
+    public set(model:Model,key:string,value:unknown){
         if (key.indexOf('.') !== -1) {    //层级字段
-            let arr = key.split('.');
+            const arr = key.split('.');
             for (let i = 0; i < arr.length - 1; i++) {
                 //不存在，则创建新的model
                 if (!model[arr[i]]) {

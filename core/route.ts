@@ -1,4 +1,5 @@
-import { IRouteCfg } from "./types";
+import { Module } from "./module";
+import { RouteCfg, UnknownClass } from "./types";
 import { Util } from "./util";
 
 /**
@@ -16,7 +17,7 @@ import { Util } from "./util";
     /**
      * 路由参数数据
      */
-    data:any = {};
+    data:object = {};
     /**
      * 子路由
      */
@@ -24,11 +25,11 @@ import { Util } from "./util";
     /**
      * 进入路由事件方法
      */
-    onEnter:Function;
+    onEnter:(module:Module,path:string)=>void;
     /**
      * 离开路由方法
      */
-    onLeave:Function;
+    onLeave:(module:Module,path:string)=>void;
     
     /**
      * 路由路径
@@ -42,7 +43,7 @@ import { Util } from "./util";
     /**
      * 路由对应模块对象或类或模块类名
      */
-    module:any;
+    module:string|UnknownClass|Module;
     
     /**
      * 模块路径，当module为类名时需要，默认执行延迟加载
@@ -56,15 +57,15 @@ import { Util } from "./util";
 
     /**
      * 
-     * @param config 路由配置项
+     * @param config - 路由配置项
      */
-    constructor(config?:IRouteCfg,parent?:Route) {
+    constructor(config?:RouteCfg,parent?:Route) {
         if (!config || Util.isEmpty(config.path)) {
             return;
         }
         this.id = Util.genId();
         //参数赋值
-        for(let o of Object.keys(config)){
+        for(const o of Object.keys(config)){
             this[o] = config[o];   
         }
         this.parent = parent;
@@ -85,7 +86,7 @@ import { Util } from "./util";
     
     /**
      * 添加子路由
-     * @param child 
+     * @param child - 
      */
     public addChild(child:Route){
         this.children.push(child);
@@ -96,13 +97,13 @@ import { Util } from "./util";
      * 通过路径解析路由对象
      */
     private parse(){
-        let pathArr:Array<string> = this.path.split('/');
+        const pathArr:Array<string> = this.path.split('/');
         let node:Route = this.parent;
         let param:Array<string> = [];
         let paramIndex:number = -1; //最后一个参数开始
         let prePath:string = '';    //前置路径
         for (let i = 0; i < pathArr.length; i++) {
-            let v = pathArr[i].trim();
+            const v = pathArr[i].trim();
             if (v === '') {
                 pathArr.splice(i--, 1);
                 continue;
@@ -119,7 +120,7 @@ import { Util } from "./util";
                 this.path = v; //暂存path
                 let j = 0;
                 for (; j < node.children.length; j++) {
-                    let r = node.children[j];
+                    const r = node.children[j];
                     if (r.path === v) {
                         node = r;
                         break;
@@ -146,7 +147,7 @@ import { Util } from "./util";
      * @returns 克隆对象
      */
     public clone(){
-        let r = new Route();
+        const r = new Route();
         Object.getOwnPropertyNames(this).forEach(item=>{
             if(item === 'data'){    
                 return;

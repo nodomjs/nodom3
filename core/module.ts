@@ -6,7 +6,7 @@ import { ObjectManager } from "./objectmanager";
 import { Renderer } from "./renderer";
 import { Util } from "./util";
 import { DiffTool } from "./difftool";
-import { EModuleState, IRenderedDom } from "./types";
+import { EModuleState, RenderedDom, UnknownClass, UnknownMethod } from "./types";
 import { EventFactory } from "./eventfactory";
 import { DomManager } from "./dommanager";
 import { ModelManager } from "./modelmanager";
@@ -77,7 +77,7 @@ export class Module {
     /**
      * 来源dom，子模块对应dom
      */
-    public srcDom:IRenderedDom;
+    public srcDom:RenderedDom;
 
     /**
      * 源节点传递的事件，需要追加到模块根节点上
@@ -92,13 +92,13 @@ export class Module {
     /**
      * 父模块通过dom节点传递的属性
      */
-    public props:any;
+    public props:object;
 
     /**
      * 子模块类集合，模板中引用的模块类需要声明
      * 如果类已经通过registModule注册过，这里不再需要定义，只需import即可
      */
-    public modules: any;
+    public modules: UnknownClass[];
 
     /**
      * 不渲染的属性（这些属性用于生产模板，不作为属性渲染到模块根节点）
@@ -150,10 +150,10 @@ export class Module {
 
     /**
      * 模板串方法，使用时重载
-     * @param props     props对象，在模板容器dom中进行配置，从父模块传入
+     * @param props -   props对象，在模板容器dom中进行配置，从父模块传入
      * @returns         模板串
      */
-    public template(props?:any):string{
+    public template(props?:object):string{
         return null;
     }
 
@@ -161,7 +161,7 @@ export class Module {
      * 数据方法，使用时重载
      * @returns     数据对象
      */
-    public data():any{
+    public data():object{
         return {};
     }
     
@@ -226,7 +226,7 @@ export class Module {
 
     /**
      * 添加子模块
-     * @param module    模块id或模块
+     * @param module -    模块id或模块
      */
     public addChild(module: number|Module) {
         if(typeof module === 'number'){
@@ -242,10 +242,10 @@ export class Module {
 
     /**
      * 移除子模块
-     * @param module    子模块
+     * @param module -    子模块
      */
     public removeChild(module: Module) {
-        let ind=this.children.indexOf(module.id);
+        const ind=this.children.indexOf(module.id);
         if (ind !== -1) {
             module.unmount();
             this.children.splice(ind,1);
@@ -270,7 +270,7 @@ export class Module {
         //执行挂载前事件
         this.doModuleEvent('onBeforeMount');
         //渲染到fragment
-        let rootEl = new DocumentFragment();
+        const rootEl = new DocumentFragment();
         const el = Renderer.renderToHtml(this,this.domManager.renderedTree,rootEl,true);
         //主模块，直接添加到根模块
         if(this === ModuleFactory.getMain()){
@@ -326,8 +326,8 @@ export class Module {
         this.state = EModuleState.UNMOUNTED;
         //子模块递归卸载
         if (this.children) {
-            for (let id of this.children) {
-                let m = ModuleFactory.get(id);
+            for (const id of this.children) {
+                const m = ModuleFactory.get(id);
                 if (m) {
                     m.unmount();
                 }
@@ -349,12 +349,12 @@ export class Module {
 
     /**
      * 执行模块事件
-     * @param eventName 	事件名
+     * @param eventName - 	事件名
      * @returns             执行结果，各事件返回值如下：
      *                          onBeforeRender：如果为true，表示不进行渲染
      */
     private doModuleEvent(eventName: string):boolean{
-        let foo = this[eventName];
+        const foo = this[eventName];
         if(foo && typeof foo==='function'){
             return foo.apply(this,[this.model]);
         }
@@ -362,24 +362,24 @@ export class Module {
 
     /**
      * 获取模块方法
-     * @param name  方法名
+     * @param name -  方法名
      * @returns     方法
      */
-    public getMethod(name: string): Function {
+    public getMethod(name: string): UnknownMethod {
         return this[name];
     }
 
     /**
      * 设置props
-     * @param props     属性值
-     * @param dom       子模块对应渲染后节点
+     * @param props -     属性值
+     * @param dom -       子模块对应渲染后节点
      */
-    public setProps(props:any,dom:IRenderedDom){
-        let dataObj = props.$data;
-        delete props.$data;
+    public setProps(props:object,dom:RenderedDom){
+        const dataObj = props['$data'];
+        delete props['$data'];
         //props数据复制到模块model
         if(dataObj){
-            for(let d of Object.keys(dataObj)){
+            for(const d of Object.keys(dataObj)){
                 this.model[d] = dataObj[d];
             }
         }
@@ -390,7 +390,7 @@ export class Module {
         if(!this.props){
             change = true;
         }else{
-            for(let k of Object.keys(props)){
+            for(const k of Object.keys(props)){
                 // object 默认改变
                 if(props[k] !== this.props[k]){
                     change = true;
@@ -413,7 +413,7 @@ export class Module {
     public compile(){
         //注册子模块
         if(this.modules && Array.isArray(this.modules)){
-            for (let cls of this.modules) {
+            for (const cls of this.modules) {
                 ModuleFactory.addClass(cls);
             }
             delete this.modules;
@@ -437,7 +437,7 @@ export class Module {
         
         //添加从源dom传递的事件
         if(this.events){
-            for(let ev of this.events){
+            for(const ev of this.events){
                 this.domManager.vdomTree.addEvent(ev);
             }
         }
@@ -447,7 +447,7 @@ export class Module {
 
     /**
      * 设置不渲染到根dom的属性集合
-     * @param props     待移除的属性名属组
+     * @param props -     待移除的属性名属组
      */
     public setExcludeProps(props:string[]){
         this.excludedProps = props;
@@ -455,14 +455,14 @@ export class Module {
 
     /**
      * 处理根节点属性
-     * @param src       编译节点
-     * @param dst       dom节点
+     * @param src -       编译节点
+     * @param dst -       dom节点
      */
     public handleRootProps(src,dst){
         //已合并属性集合
         const added = {};
         if(src.props && src.props.size>0){
-            for(let k of src.props){
+            for(const k of src.props){
                 let value;
                 if(this.excludedProps && this.excludedProps.includes(k[0])){
                     continue;
@@ -502,7 +502,7 @@ export class Module {
         }
         if(this.props){
             //处理未添加的属性
-            for(let p of Object.keys(this.props)){
+            for(const p of Object.keys(this.props)){
                 if(added[p] || this.excludedProps && this.excludedProps.includes(p)){
                     continue;
                 }
@@ -513,17 +513,17 @@ export class Module {
 
     /**
      * 获取html node
-     * @param key   dom key 或 props键值对
+     * @param key -   dom key 或 props键值对
      * @returns     html node
      */
-    public getElement(key:any):Node{
+    public getElement(key:object|string|number):Node{
         return this.domManager.getElement(key);
     }
 
     /**
      * save html node
-     * @param key   dom key
-     * @param node  html node
+     * @param key -   dom key
+     * @param node -  html node
      */
     public saveElement(key:number|string,node:Node){
         this.domManager.saveElement(key,node);
@@ -531,11 +531,11 @@ export class Module {
 
     /**
      * 获取模块类名对应的第一个子模块(如果设置deep，则深度优先)
-     * @param name          子模块类名或别名
-     * @param deep          是否深度获取
-     * @param attrs         属性集合
+     * @param name -          子模块类名或别名
+     * @param deep -          是否深度获取
+     * @param attrs -         属性集合
      */
-    public getModule(name:string,deep?:boolean,attrs?:any):Module{
+    public getModule(name:string,deep?:boolean,attrs?:object):Module{
         if(!this.children){
             return;
         }
@@ -546,18 +546,18 @@ export class Module {
         return find(this);
         /**
          * 查询
-         * @param mdl   模块
+         * @param mdl -   模块
          * @returns     符合条件的子模块
          */
         function find(mdl){
-            for(let id of mdl.children){
-                let m:Module = ModuleFactory.get(id);
+            for(const id of mdl.children){
+                const m:Module = ModuleFactory.get(id);
                 if(m){
                     if(m.constructor === cls){
                         if(attrs){  //属性集合不为空
                             //全匹配标识
                             let matched:boolean = true;
-                            for(let k of Object.keys(attrs)){
+                            for(const k of Object.keys(attrs)){
                                 if(!m.props || m.props[k] !== attrs[k]){
                                     matched = false;
                                     break;
@@ -572,7 +572,7 @@ export class Module {
                     }
                     //递归查找
                     if(deep){
-                        let r = find(m);
+                        const r = find(m);
                         if(r){
                             return r;
                         }
@@ -585,27 +585,27 @@ export class Module {
 
     /**
      * 获取模块类名对应的所有子模块
-     * @param className     子模块类名
-     * @param deep          深度查询
+     * @param className -     子模块类名
+     * @param deep -          深度查询
      */
      public getModules(className:string,deep?:boolean):Module[]{
         if(!this.children){
             return;
         }
-        let arr = [];
+        const arr = [];
         find(this);
         return arr;
 
         /**
          * 查询
-         * @param module 
+         * @param module - 
          */
         function find(module:Module){
             if(!module.children){
                 return;
             }
-            for(let id of module.children){
-                let m:Module = ModuleFactory.get(id);
+            for(const id of module.children){
+                const m:Module = ModuleFactory.get(id);
                 if(m && m.constructor){
                     if(m.constructor.name === className){
                         arr.push(m);
@@ -622,17 +622,17 @@ export class Module {
      * 监听
      * 如果第一个参数为属性名，则第二个参数为钩子函数，第三个参数为deep，默认model为根模型
      * 否则按照以下说明
-     * @param model     模型或属性
-     * @param key       属性/属性数组，支持多级属性
-     * @param operate   钩子函数
-     * @param deep      是否深度监听
+     * @param model -     模型或属性
+     * @param key -       属性/属性数组，支持多级属性
+     * @param operate -   钩子函数
+     * @param deep -      是否深度监听
      * @returns         可回收监听器，执行后取消监听
      */
-    public watch(model:Model|string|string[],key:string|string[]|Function,operate?:Function|boolean,deep?:boolean){
+    public watch(model:Model|string|string[],key:string|string[]|((m,k,ov,nv)=>void),operate?:boolean| ((m,k,ov,nv)=>void),deep?:boolean){
         if(model['__key']){
-            return this.modelManager.watch(model,<any>key,<Function>operate,deep);
+            return this.modelManager.watch(model,<string>key,<()=>void>operate,deep);
         }else{
-            return this.modelManager.watch(this.model,<any>model,<any>key,<boolean>operate);
+            return this.modelManager.watch(this.model,<string>model,<()=>void>key,<boolean>operate);
         }
     }
 
@@ -640,13 +640,13 @@ export class Module {
      * 设置模型属性值
      * 如果第一个参数为属性名，则第二个参数为属性值，默认model为根模型
      * 否则按照以下说明
-     * @param model     模型
-     * @param key       子属性，可以分级，如 name.firstName
-     * @param value     属性值
+     * @param model -     模型
+     * @param key -       子属性，可以分级，如 name.firstName
+     * @param value -     属性值
      */
-    public set(model:Model|string,key:any,value?:any){
+    public set(model:Model|string,key:unknown,value?:unknown){
         if(model['__key']){
-            this.modelManager.set(model,key,value);
+            this.modelManager.set(model,<string>key,value);
         }else{
             this.modelManager.set(this.model,<string>model,key);
         }
@@ -656,11 +656,11 @@ export class Module {
      * 获取模型属性值
      * 如果第一个参数为属性名，默认model为根模型
      * 否则按照以下说明
-     * @param model     模型
-     * @param key       属性名，可以分级，如 name.firstName，如果为null，则返回自己
+     * @param model -     模型
+     * @param key -       属性名，可以分级，如 name.firstName，如果为null，则返回自己
      * @returns         属性值
      */
-    public get(model:Model|string, key?:any):any {
+    public get(model:Model|string, key?:string):unknown {
         if(model['__key']){
             return this.modelManager.get(model,key);
         }else{
@@ -670,8 +670,8 @@ export class Module {
 
     /**
      * 调用方法
-     * @param methodName    方法名
-     * @param pn            参数，最多10个参数
+     * @param methodName -    方法名
+     * @param pn -            参数，最多10个参数
      */
     public invokeMethod(methodName:string,p1?,p2?,p3?,p4?,p5?,p6?,p7?,p8?,p9?,p10?){
         if(typeof this[methodName] === 'function'){
@@ -681,8 +681,8 @@ export class Module {
 
     /**
      * 调用外部方法，当该模块作为子模块使用时，方法属于使用该模块的模板对应的module
-     * @param methodName    方法名
-     * @param pn            参数，最多10个参数
+     * @param methodName -    方法名
+     * @param pn -            参数，最多10个参数
      */
     public invokeOuterMethod(methodName:string,p1?,p2?,p3?,p4?,p5?,p6?,p7?,p8?,p9?,p10?){
         if(!this.templateModuleId){

@@ -12,18 +12,18 @@ export declare class Scheduler {
     static dispatch(): void;
     /**
      * 启动调度器
-     * @param scheduleTick 	渲染间隔（ms），默认50ms
+     * @param scheduleTick - 	渲染间隔（ms），默认50ms
      */
     static start(scheduleTick?: number): void;
     /**
      * 添加任务
-     * @param foo 		任务和this指向
-     * @param thiser 	this指向
+     * @param foo - 		任务和this指向
+     * @param thiser - 		this指向
      */
-    static addTask(foo: Function, thiser?: any): void;
+    static addTask(foo: () => void, thiser?: object): void;
     /**
      * 移除任务
-     * @param foo 	任务
+     * @param foo - 	任务
      */
     static removeTask(foo: any): void;
 }

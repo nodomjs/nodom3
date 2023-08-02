@@ -36,7 +36,7 @@ export class Compiler {
 	/**
 	 * 文本节点
 	 */
-	private textArr: Array<any> = []
+	private textArr: Array<string|Expression> = []
 
 	/**
 	 * 是否是表达式文本节点
@@ -59,7 +59,7 @@ export class Compiler {
 	private isSvg:boolean;
 	/**
 	 * 构造器
-	 * @param module
+	 * @param module -
 	 */
 	constructor(module: Module) {
 		this.module = module
@@ -67,7 +67,7 @@ export class Compiler {
 
 	/**
 	 * 编译
-	 * @param elementStr     待编译html串
+	 * @param elementStr -     待编译html串
 	 * @returns              虚拟dom
 	 */
 	public compile(elementStr: string): VirtualDom {
@@ -96,7 +96,7 @@ export class Compiler {
 
 	/**
 	 * 编译模板
-	 * @param srcStr 	源串
+	 * @param srcStr - 	源串
 	 */
 	private compileTemplate(srcStr: string) {
 		while (srcStr.length !== 0) {
@@ -118,7 +118,7 @@ export class Compiler {
 
 	/**
 	 * 处理开始标签
-	 * @param srcStr 待编译字符串
+	 * @param srcStr - 待编译字符串
 	 * @returns 编译处理后的字符串
 	 */
 	private compileStartTag(srcStr: string): string {
@@ -171,7 +171,7 @@ export class Compiler {
 
 	/**
 	 * 处理标签属性
-	 * @param srcStr 待编译字符串
+	 * @param srcStr - 待编译字符串
 	 * @returns 编译后字符串
 	 */
 	private compileAttributes(srcStr: string): string {
@@ -186,9 +186,9 @@ export class Compiler {
 					srcStr = srcStr.substring(match.index + match[0].length).trimStart()
 					break;
 				} else { //属性
-					let name = match[1][0]!=='$'?match[1].toLowerCase():match[1];
+					const name = match[1][0]!=='$'?match[1].toLowerCase():match[1];
 					// 是普通属性
-					let value: any = !match[3]
+					let value:string|Expression = !match[3]
 						? undefined
 						: match[3].startsWith(`"`)
 						? match[3].substring(1, match[3].length - 1)
@@ -216,7 +216,7 @@ export class Compiler {
 				srcStr = srcStr.substring(match.index + match[0].length).trimStart()
 			} else {
 				if (this.current) {
-					throw new NError('tagError', this.current.tagName)
+					throw new NError('tagError', [this.current.tagName])
 				}
 				throw new NError('wrongTemplate')
 			}
@@ -226,7 +226,7 @@ export class Compiler {
 
 	/**
 	 * 编译结束标签
-	 * @param srcStr 	源串
+	 * @param srcStr - 	源串
 	 * @returns 		剩余的串
 	 */
 	private compileEndTag(srcStr: string): string {
@@ -235,9 +235,17 @@ export class Compiler {
 		if(match){
 			const name = match[1].toLowerCase().trim();
 			//如果找不到匹配的标签头则丢弃
-			const index = (<any>this.domArr).findLastIndex((item)=>item.tagName === name);
+			let index;
+			for(let i=this.domArr.length-1;i>=0;i--){
+				if(this.domArr[i].tagName === name){
+					index = i;
+					break;
+				}
+			}
 			//关闭
-			this.forceClose(index);
+			if(index){
+				this.forceClose(index);
+			}
 			return srcStr.substring(match.index + match[0].length + 1)
 		}
 		return srcStr;
@@ -245,7 +253,7 @@ export class Compiler {
 
 	/**
 	 * 强制闭合
-	 * @param index 在domArr中的索引号
+	 * @param index - 在domArr中的索引号
 	 * @returns 
 	 */
 	private forceClose(index){
@@ -259,7 +267,7 @@ export class Compiler {
 	
 	/**
 	 * 编译text
-	 * @param srcStr 	源串
+	 * @param srcStr - 	源串
 	 * @returns 		
 	 */
 	private compileText(srcStr: string): string {
@@ -303,7 +311,7 @@ export class Compiler {
 			}
 		}
 		// 最开始是< 或者字符消耗完毕 退出循环
-		let text = new VirtualDom(undefined, this.genKey())
+		const text = new VirtualDom(undefined, this.genKey())
 		if(this.isExprText){
 			text.expressions = [...this.textArr];
 			//动态文本节点，staticNum=-1
@@ -323,13 +331,13 @@ export class Compiler {
 
 	/**
 	 * 预处理html保留字符 如 &nbsp;,&lt;等
-	 * @param str   待处理的字符串
+	 * @param str -   待处理的字符串
 	 * @returns     解析之后的串
 	 */
 	private preHandleText(str: string): string {
-		let reg = /&[a-z]+;/
+		const reg = /&[a-z]+;/
 		if (reg.test(str)) {
-			let div = document.createElement('div')
+			const div = document.createElement('div')
 			div.innerHTML = str
 			return div.textContent
 		}
@@ -338,10 +346,10 @@ export class Compiler {
 
 	/**
 	 * 处理当前节点是模块或者自定义节点
-	 * @param dom 	虚拟dom节点
+	 * @param dom - 	虚拟dom节点
 	 */
 	private postHandleNode(dom:VirtualDom) {
-		let clazz = DefineElementManager.get(dom.tagName)
+		const clazz = DefineElementManager.get(dom.tagName)
 		if (clazz) {
 			Reflect.construct(clazz, [dom, this.module])
 		}
@@ -353,7 +361,7 @@ export class Compiler {
 	}
 	/**
 	 * 处理插槽
-	 * @param dom 	虚拟dom节点
+	 * @param dom - 	虚拟dom节点
 	 */
 	private handleSlot(dom:VirtualDom) {
 		if (
@@ -365,7 +373,7 @@ export class Compiler {
 		}
 		let slotCt: VirtualDom
 		for (let j = 0; j < dom.children.length; j++) {
-			let c = dom.children[j]
+			const c = dom.children[j]
 			if (c.hasDirective('slot')) {
 				//带slot的不处理
 				continue
@@ -406,7 +414,7 @@ export class Compiler {
 	}
 	/**
 	 * 判断节点是否为空节点
-	 * @param dom	带检测节点
+	 * @param dom -	带检测节点
 	 * @returns
 	 */
 	private isVoidTab(dom: VirtualDom) {

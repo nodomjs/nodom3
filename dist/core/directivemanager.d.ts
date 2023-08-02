@@ -1,4 +1,5 @@
 import { DirectiveType } from "./directivetype";
+import { DirectiveMethod } from "./types";
 /**
  * 指令管理器
  */
@@ -9,26 +10,26 @@ export declare class DirectiveManager {
     private static directiveTypes;
     /**
      * 增加指令映射
-     * @param name      指令类型名
-     * @param handle    渲染处理函数
-     * @param prio      类型优先级
+     * @param name -      指令类型名
+     * @param handle -    渲染处理函数
+     * @param prio -      类型优先级
      */
-    static addType(name: string, handle: Function, prio?: number): void;
+    static addType(name: string, handler: DirectiveMethod, prio?: number): void;
     /**
      * 移除指令映射
-     * @param name  指令类型名
+     * @param name -      指令类型名
      */
     static removeType(name: string): void;
     /**
      * 获取指令
-     * @param name  指令类型名
-     * @returns     指令类型或undefined
+     * @param name -      指令类型名
+     * @returns         指令类型或undefined
      */
     static getType(name: string): DirectiveType;
     /**
      * 是否含有某个指令
-     * @param name  指令类型名
-     * @returns     true/false
+     * @param name -      指令类型名
+     * @returns         true/false
      */
     static hasType(name: string): boolean;
 }

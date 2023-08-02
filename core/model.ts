@@ -11,31 +11,31 @@ import { Module } from "./module";
  */
 export class Model {
     /**
-     * @param data 		数据
-     * @param module 	模块对象
-     * @param parent    父模型
-     * @param name      模型在父对象中的prop name
+     * @param data - 		数据
+     * @param module - 	模块对象
+     * @param parent -    父模型
+     * @param name -      模型在父对象中的prop name
      * @returns         模型代理对象
      */
-    constructor(data: any, module: Module, parent?:any, name?:any) {
+    constructor(data: object, module: Module, parent?:Model, name?:string) {
         //数据不存在或已经代理，无需再创建
-        if(!data || data.__source){
+        if(!data || data['__source']){
             return;
         }
         
         // 创建模型
-        let proxy = new Proxy(data, {
-            set(src: any, key: string, value: any, receiver: any){
+        const proxy = new Proxy(data, {
+            set(src: object, key: string, value: unknown, receiver: Model){
                 let value1 = value;
                 //proxy转换为源对象，否则比较会出错
-                if(value && value.__source){
-                    const source = value.__source;
+                if(value && value['__source']){
+                    const source = value['__source'];
                     // 已经被代理，但是可能没添加当前module
                     if(source){
                         //可能父传子，需要添加引用
-                        if(value.__module !== module){
+                        if(value['__module'] !== module){
                             module.modelManager.add(source,value);
-                            value.__module.modelManager.bindModel(value,module);
+                            value['__module'].modelManager.bindModel(value,module);
                             //保存value在本模块中的属性名
                             module.modelManager.setModelName(value,key);
                         }
@@ -46,12 +46,12 @@ export class Model {
                 if (src[key] === value1) {
                     return true;
                 }
-                let ov = src[key];
-                let r = Reflect.set(src, key, value1, receiver);
+                const ov = src[key];
+                const r = Reflect.set(src, key, value1, receiver);
                 module.modelManager.update(receiver, key, ov, value);
                 return r;
             },
-            get(src: any, key: string | symbol, receiver){
+            get(src: object, key: string, receiver){
                 //如果为代理，则返回源数据
                 if(key === '__source'){
                     return receiver?src:undefined;
@@ -84,8 +84,8 @@ export class Model {
                 }
                 return res;
             },
-            deleteProperty(src: any, key: any){
-                let oldValue = src[key];
+            deleteProperty(src: object, key: string){
+                const oldValue = src[key];
                 delete src[key];
                 module.modelManager.update(proxy,key,oldValue,undefined);
                 return true;

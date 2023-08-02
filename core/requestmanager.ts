@@ -13,25 +13,25 @@ export class RequestManager{
      * key:     url
      * value:   请求参数
      */
-    private static requestMap:Map<string,any> = new Map();
+    private static requestMap:Map<string,object> = new Map();
 
     /**
      * 设置相同请求拒绝时间间隔
-     * @param time  时间间隔（ms）
+     * @param time -  时间间隔（ms）
      */
     public static setRejectTime(time:number){
         this.rejectReqTick = time;
     }
     /**
      * ajax 请求
-     * @param config    object 或 string
+     * @param config -    object 或 string
      *                  如果为string，则直接以get方式获取资源
      *                  object 项如下:
      *                  参数名|类型|默认值|必填|可选值|描述
      *                  -|-|-|-|-|-
      *                  url|string|无|是|无|请求url
      *					method|string|GET|否|GET,POST,HEAD|请求类型
-     *					params|Object/FormData|{}|否|无|参数，json格式
+     *					params|Object/FormData|空object|否|无|参数，json格式
      *					async|bool|true|否|true,false|是否异步
      *  				timeout|number|0|否|无|请求超时时间
      *                  type|string|text|否|json,text|
@@ -41,14 +41,14 @@ export class RequestManager{
      *                  pwd|string|无|否|无|需要认证的请求对应的密码
      *                  rand|bool|无|否|无|请求随机数，设置则浏览器缓存失效
      */
-    public static async request(config): Promise<any> {
+    public static async request(config): Promise<unknown> {
         const time = Date.now();
         //如果设置了rejectReqTick，则需要进行判断
         if(this.rejectReqTick>0){
             if(this.requestMap.has(config.url)){
                 const obj = this.requestMap.get(config.url);
-                if(time - obj.time < this.rejectReqTick && Util.compare(obj.params,config.params)){
-                    return new Promise((resolve,reject)=>{
+                if(time - obj['time'] < this.rejectReqTick && Util.compare(obj['params'],config.params)){
+                    return new Promise((resolve)=>{
                         resolve(null)
                     });
                 }
@@ -107,8 +107,8 @@ export class RequestManager{
                     //参数
                     let pa: string;
                     if (Util.isObject(config.params)) {
-                        let ar: string[] = [];
-                        for(let k of Object.keys(config.params)){
+                        const ar: string[] = [];
+                        for(const k of Object.keys(config.params)){
                             const v = config.params[k];
                             if(v === undefined || v === null){
                                 continue;
@@ -129,8 +129,8 @@ export class RequestManager{
                     if (config.params instanceof FormData) {
                         data = config.params;
                     } else {
-                        let fd: FormData = new FormData();
-                        for(let k of Object.keys(config.params)){
+                        const fd: FormData = new FormData();
+                        for(const k of Object.keys(config.params)){
                             const v = config.params[k];
                             if(v === undefined || v === null){
                                 continue;
@@ -154,7 +154,7 @@ export class RequestManager{
         }).catch((re) => {
             switch (re.type) {
                 case "error":
-                    throw new NError("notexist1", NodomMessage.TipWords['resource'], re.url);
+                    throw new NError("notexist1",[NodomMessage.TipWords['resource'], re.url]);
                 case "timeout":
                     throw new NError("timeout");
                 case "jsonparse":
@@ -170,8 +170,8 @@ export class RequestManager{
         const time = Date.now();
         if(this.rejectReqTick>0){
             if(this.requestMap){
-                for(let kv of this.requestMap){
-                    if(time - kv[1].time > this.rejectReqTick){
+                for(const kv of this.requestMap){
+                    if(time - kv[1]['time'] > this.rejectReqTick){
                         this.requestMap.delete(kv[0]);
                     }
                 }

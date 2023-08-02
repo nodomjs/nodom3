@@ -1,28 +1,28 @@
-import { IRenderedDom } from "./types";
+import { ChangedDom, RenderedDom } from "./types";
 /**
  * 比较器
  */
 export class DiffTool{
     /**
      * 比较节点
-     * @param src           待比较节点（新树节点）
-     * @param dst 	        被比较节点 (旧树节点)
-     * @param changeArr     增删改的节点数组
+     * @param src -           待比较节点（新树节点）
+     * @param dst - 	        被比较节点 (旧树节点)
+     * @param changeArr -     增删改的节点数组
      * @returns	            [[type(add 1, upd 2,move 3 ,rep 4,del 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),loc(位置)]]
      */
-    public static compare(src:IRenderedDom,dst:IRenderedDom):any[] {
+    public static compare(src:RenderedDom,dst:RenderedDom):ChangedDom[] {
         const changeArr = [];
         compare(src,dst);
         return changeArr;
 
         /**
          * 比较节点
-         * @param src           待比较节点（新树节点）
-         * @param dst 	        被比较节点 (旧树节点)
+         * @param src -         待比较节点（新树节点）
+         * @param dst - 	    被比较节点 (旧树节点)
          * @returns	            [[type(add 1, upd 2,del 3,move 4 ,rep 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),
-         *                       loc(dom在父的children index)]]
+         *                      loc(dom在父的children index)]]
          */
-        function compare(src:IRenderedDom,dst:IRenderedDom) {
+        function compare(src:RenderedDom,dst:RenderedDom) {
             if (!src.tagName) { //文本节点
                 if (!dst.tagName) {
                     if ((src.staticNum || dst.staticNum) && src.textContent !== dst.textContent) {
@@ -50,8 +50,8 @@ export class DiffTool{
 
         /**
          * 比较子节点
-         * @param src   新节点
-         * @param dst   旧节点
+         * @param src -   新节点
+         * @param dst -   旧节点
          */
         function compareChildren(src,dst){
             //子节点处理
@@ -66,7 +66,7 @@ export class DiffTool{
                     src.children.forEach((item,index) => addChange(1, item,null, dst,index));
                 } else { //都有子节点
                     //存储比较后需要add的key
-                    let addObj={};
+                    const addObj={};
                     //子节点对比策略
                     let [newStartIdx,newEndIdx,oldStartIdx,oldEndIdx] = [0,src.children.length-1,0,dst.children.length-1];
                     let [newStartNode,newEndNode,oldStartNode,oldEndNode] = [
@@ -126,10 +126,10 @@ export class DiffTool{
                     //有多余老节点，需要删除或变成移动
                     if(oldStartIdx<=oldEndIdx){
                         for (let i = oldStartIdx,index=i; i <= oldEndIdx; i++,index++) {
-                            let ch=dst.children[i];
+                            const ch=dst.children[i];
                             //如果要删除的节点在addArr中，则表示move，否则表示删除
                             if(addObj.hasOwnProperty(ch.key)){ 
-                                let o = addObj[ch.key];
+                                const o = addObj[ch.key];
                                 if(index !== o[4]){ //修改add为move
                                     o[0] = 4;
                                     //设置move前位置
@@ -155,22 +155,22 @@ export class DiffTool{
         
         /**
          * 判断节点是否修改
-         * @parma src   新树节点
-         * @param dst   旧树节点
+         * @param src - 新树节点
+         * @param dst - 旧树节点
          * @returns     true/false
          */
-        function isChanged(src:IRenderedDom,dst:IRenderedDom):boolean{
-            for(let p of ['props','assets','events']){
+        function isChanged(src:RenderedDom,dst:RenderedDom):boolean{
+            for(const p of ['props','assets','events']){
                 //属性比较
                 if(!src[p] && dst[p] || src[p] && !dst[p]){
                     return true;
                 }else if(src[p] && dst[p]){
-                    let keys = Object.keys(src[p]);
-                    let keys1 = Object.keys(dst[p]);
+                    const keys = Object.keys(src[p]);
+                    const keys1 = Object.keys(dst[p]);
                     if(keys.length !== keys1.length){
                         return true;
                     }else{
-                        for(let k of keys){
+                        for(const k of keys){
                             if(src[p][k] !== dst[p][k]){
                                 return true;
                             }
@@ -183,15 +183,15 @@ export class DiffTool{
         
         /**
          * 添加到修改数组
-         * @param type      类型 add 1, upd 2,del 3,move 4 ,rep 5
-         * @param dom       目标节点       
-         * @param dom1      相对节点（被替换）
-         * @param parent    父节点
-         * @param loc       添加或移动的目标index
-         * @param loc1      被移动前位置
+         * @param type -      类型 add 1, upd 2,del 3,move 4 ,rep 5
+         * @param dom -       目标节点       
+         * @param dom1 -      相对节点（被替换）
+         * @param parent -    父节点
+         * @param loc -       添加或移动的目标index
+         * @param loc1 -      被移动前位置
          * @returns         添加的change数组
         */
-        function addChange(type:number,dom: IRenderedDom, dom1: IRenderedDom,parent?:IRenderedDom,loc?:number,loc1?:number){
+        function addChange(type:number,dom: RenderedDom, dom1: RenderedDom,parent?:RenderedDom,loc?:number,loc1?:number){
             const o = [type,dom,dom1,parent,loc,loc1];
             changeArr.push(o);
             return o;

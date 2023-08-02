@@ -1,7 +1,6 @@
 import { NEvent } from "./event";
 import { Module } from "./module";
-import { Renderer } from "./renderer";
-import { IRenderedDom } from "./types";
+import { RenderedDom } from "./types";
 
 /**
  * 事件工厂
@@ -15,39 +14,40 @@ export class EventFactory{
     /**
      * 事件map
      * key:虚拟domkey，
-     * value: {
-     *          eventName1:
-     *            {
-     *              own:[event对象,...],
-     *              delg:[{key:被代理key,event:event对象,...],
-     *              toDelg:[event对象],
-     *              capture:useCapture
-     *           },
-     *           eventName2:...
-     *           bindMap:{}
-     *           
-     *        }
+     * value: object
+     * ```js
+     * {
+     *      bindMap:{},
+     *      eventName1:{
+     *          own:[event对象,...],
+     *          delg:[{key:被代理key,event:event对象,...],
+     *          toDelg:[event对象],
+     *          capture:useCapture
+     *      },
+     *      eventName2:,
+     *      eventNamen:
+     * }
+     * ```
+     * 其中：
      *    eventName:事件名，如click等
      *    配置项说明:
+     *      bindMap:已绑定事件map，其中键为事件名，值为capture，解绑时需要
      *      own:自己的事件数组
      *      delg:代理事件数组（代理子对象）
-     *        
-     *      bindMap:已绑定事件map，其中键为事件名，值为capture，解绑时需要
-     *      capture:在own和delg都存在时，如果capture为true，则先执行own，再执行delg，为false时则相反。
-     *                如果只有own，则和html event的cature事件处理机制相同
+     *      capture:在own和delg都存在时，如果capture为true，则先执行own，再执行delg，为false时则相反。如果只有own，则和html event的cature事件处理机制相同。
      */
-    private eventMap:Map<number,any>;
+    private eventMap:Map<number|string,object>;
 
     /**
      * domkey对应event对象数组
      * key: dom key
      * value: NEvent数组
      */
-    private addedEvents:Map<number,NEvent[]>;
+    private addedEvents:Map<number|string,NEvent[]>;
 
     /**
      * 构造器
-     * @param module 模块
+     * @param module - 模块
      */
     constructor(module:Module){
         this.module = module;
@@ -57,10 +57,10 @@ export class EventFactory{
 
     /**
      * 保存事件
-     * @param key       dom key 
-     * @param event     事件对象
+     * @param key -       dom key 
+     * @param event -     事件对象
      */
-    public addEvent(dom:IRenderedDom,event: NEvent):boolean{
+    public addEvent(dom:RenderedDom,event: NEvent):boolean{
         const key = dom.key;
         //判断是否已添加，避免重复添加
         if(this.addedEvents.has(key) && this.addedEvents.get(key).includes(event)){
@@ -89,11 +89,11 @@ export class EventFactory{
 
     /**
      * 添加到dom的own或delg事件队列
-     * @param key       dom key 
-     * @param event     事件对象
-     * @param key1      被代理dom key，仅对代理事件有效
+     * @param key -       dom key 
+     * @param event -     事件对象
+     * @param key1 -      被代理dom key，仅对代理事件有效
      */
-    private addToArr(key:number,event:NEvent,key1?:number){
+    private addToArr(key:number|string,event:NEvent,key1?:number|string){
         let cfg;
         if(!this.eventMap.has(key)){
             cfg = {bindMap:{}};
@@ -124,32 +124,32 @@ export class EventFactory{
 
     /**
      * 获取事件对象
-     * @param key   dom key
+     * @param key -   dom key
      * @returns     事件对象
      */
-    public getEvent(key:number):any{
+    public getEvent(key:number):object{
         return this.eventMap.get(key);
     }
 
     /**
      * 移除所有事件
-     * @param dom 
+     * @param dom - 
      */
-    public removeAllEvents(dom:IRenderedDom){
+    public removeAllEvents(dom:RenderedDom){
         if(!this.addedEvents.has(dom.key)){
             return;
         }
-        for(let ev of this.addedEvents.get(dom.key)){
+        for(const ev of this.addedEvents.get(dom.key)){
             this.removeEvent(dom,ev);
         }
         this.addedEvents.delete(dom.key);
     }   
     /**
      * 删除事件
-     * @param event     事件对象
-     * @param key       对应dom keys
+     * @param event -     事件对象
+     * @param key -       对应dom keys
      */
-    public removeEvent(dom:IRenderedDom,event: NEvent) {
+    public removeEvent(dom:RenderedDom,event: NEvent) {
         if(!this.addedEvents.has(dom.key) || !this.addedEvents.get(dom.key).includes(event)){
             return;
         }
@@ -162,22 +162,22 @@ export class EventFactory{
             if(!dom.parent || !this.eventMap.has(dom.parent.key)){
                 return;
             }
-            let cfg = this.eventMap.get(dom.parent.key);
+            const cfg = this.eventMap.get(dom.parent.key);
             if(!cfg[event.name]){
                 return;
             }
-            let obj = cfg[event.name];
-            let index = obj.delg.findIndex(item=>item.key===dom.key && item.event===event);
+            const obj = cfg[event.name];
+            const index = obj.delg.findIndex(item=>item.key===dom.key && item.event===event);
             if(index !== -1){
                 obj.delg.splice(index,1);
             }
         }else{ //own
-            let cfg = this.eventMap.get(dom.key);
+            const cfg = this.eventMap.get(dom.key);
             if(!cfg[event.name]){
                 return;
             }
-            let obj = cfg[event.name];
-            let index = obj.own.findIndex(item=>item===event);
+            const obj = cfg[event.name];
+            const index = obj.own.findIndex(item=>item===event);
             if(index !== -1){
                 obj.own.splice(index,1);
             }
@@ -186,21 +186,21 @@ export class EventFactory{
 
     /**
      * 绑定dom事件
-     * @param key   dom key
+     * @param key -   dom key
      */
-    public bind(key:any){
+    public bind(key:string|number){
         if(!this.eventMap.has(key)){
             return;
         }
         const el = this.module.getElement(key);
         const cfg = this.eventMap.get(key);
-        for(let key of Object.keys(cfg)){
+        for(const key of Object.keys(cfg)){
             // bindMap 不是事件名
             if(key === 'bindMap'){
                 continue;
             }
             el.addEventListener(key,handler,cfg[key].capture);
-            cfg.bindMap[key] = {handler:handler,capture:cfg[key].capture};
+            cfg['bindMap'][key] = {handler:handler,capture:cfg[key].capture};
         }
         const me = this;
         function handler(e){
@@ -210,51 +210,51 @@ export class EventFactory{
 
     /**
      * 从eventfactory解绑所有事件
-     * @param key           dom key
-     * @param eventName     事件名
+     * @param key -           dom key
+     * @param eventName -     事件名
      */
     public unbind(key:number,eventName:string){
         if(!this.eventMap.has(key)){
             return;
         }
         const eobj = this.eventMap.get(key);
-        if(!eobj.bindMap || !eobj[eventName]){
+        if(!eobj['bindMap'] || !eobj[eventName]){
             return;
         }
         const el = this.module.getElement(key);
-        const cfg = eobj.bindMap[eventName];
+        const cfg = eobj['bindMap'][eventName];
         //从html element解绑
         if(el && cfg){
             el.removeEventListener(eventName,cfg.handler,cfg.capture);
         }
-        delete eobj.bindMap[eventName];
+        delete eobj['bindMap'][eventName];
     }
 
     /**
      * 解绑html element事件
-     * @param key   dom key
+     * @param key -   dom key
      */
-    public unbindAll(key:number){
+    public unbindAll(key:number|string){
         if(!this.eventMap.has(key)){
             return;
         }
         const eobj = this.eventMap.get(key);
-        if(!eobj.bindMap){
+        if(!eobj['bindMap']){
             return;
         }
         const el = this.module.getElement(key);
         if(el){
-            for(let key of Object.keys(eobj.bindMap)){
-                const v = eobj.bindMap[key];
+            for(const key of Object.keys(eobj['bindMap'])){
+                const v = eobj['bindMap'][key];
                 el.removeEventListener(key,v.handler,v.capture);
             }
         }
-        eobj.bindMap = {};
+        eobj['bindMap'] = {};
     }
 
     /**
      * 是否拥有key对应的事件对象
-     * @param key   dom key
+     * @param key -   dom key
      * @returns     如果key对应事件存在，返回true，否则返回false
      */
     public hasEvent(key:number):boolean{
@@ -266,7 +266,7 @@ export class EventFactory{
      */
     public clear(){
         //解绑事件
-        for(let key of this.addedEvents.keys()){
+        for(const key of this.addedEvents.keys()){
             this.unbindAll(key);
         }
         this.addedEvents.clear();
@@ -275,12 +275,12 @@ export class EventFactory{
 
     /**
      * 事件handler
-     * @param module    模块
-     * @param e         HTML Event
+     * @param module - 模块
+     * @param e - HTML Event
      */
     private handler(module,e){
         //从事件element获取事件
-        let el = e.currentTarget;
+        const el = e.currentTarget;
         const key = el.key;
         const dom = module.domManager.getRenderedDom(key);
         if(!dom){
@@ -302,7 +302,7 @@ export class EventFactory{
     
         /**
          * 处理自有事件
-         * @param events 
+         * @param events - 
          * @returns 
          */
         function doOwn(events){
@@ -339,7 +339,7 @@ export class EventFactory{
 
         /**
          * 处理代理事件
-         * @param events 
+         * @param events - 
          * @returns         是否禁止冒泡
          */
         function doDelg(events):boolean{

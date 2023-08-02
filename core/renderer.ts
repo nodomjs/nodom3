@@ -4,7 +4,7 @@ import { VirtualDom } from "./virtualdom";
 import { Model } from "./model";
 import { Expression } from "./expression";
 import { CssManager } from "./cssmanager";
-import { IRenderedDom } from "./types";
+import { ChangedDom, RenderedDom } from "./types";
 
 /**
  * 渲染器
@@ -28,11 +28,11 @@ export class Renderer {
     /**
      * 当前模块根dom
      */
-    private static currentRootDom:IRenderedDom;
+    private static currentRootDom:RenderedDom;
 
     /**
      * 设置根
-     * @param rootEl 
+     * @param rootEl - 
      */
     public static setRootEl(rootEl){
         this.rootEl = rootEl;
@@ -56,7 +56,7 @@ export class Renderer {
 
     /**
      * 添加到渲染列表
-     * @param module 模块
+     * @param module - 模块
      */
     public static add(module:Module) {
         //如果已经在列表中，不再添加
@@ -68,7 +68,7 @@ export class Renderer {
     
     /**
      * 从渲染队列移除
-     * @param moduleId 
+     * @param moduleId - 
      */
     public static remove(moduleId:number){
         let index;
@@ -82,7 +82,7 @@ export class Renderer {
      */
     public static render() {
         for(;this.waitList.length>0;){
-            let id = this.waitList[0];
+            const id = this.waitList[0];
             if(id){ //存在id为null情况，remove方法造成
                 const m = ModuleFactory.get(id);
                 this.currentModule = m;
@@ -96,19 +96,19 @@ export class Renderer {
 
     /**
      * 渲染dom
-     * @param module            模块 
-     * @param src               源dom
-     * @param model             模型，如果src已经带有model，则此参数无效，一般为指令产生的model（如slot）
-     * @param parent            父dom
-     * @param key               key 附加key，放在domkey的后面
+     * @param module -            模块 
+     * @param src -               源dom
+     * @param model -             模型，如果src已经带有model，则此参数无效，一般为指令产生的model（如slot）
+     * @param parent -            父dom
+     * @param key -               key 附加key，放在domkey的后面
      * @returns 
      */
-    public static renderDom(module:Module,src:VirtualDom,model:Model,parent?:IRenderedDom,key?:any):IRenderedDom{
+    public static renderDom(module:Module,src:VirtualDom,model:Model,parent?:RenderedDom,key?:number|string):RenderedDom{
         //构建key，如果带key，则需要重新构建唯一key
         const key1 = key?src.key + '_' + key:src.key;
         
         //初始化渲染节点
-        let dst:IRenderedDom = {
+        const dst:RenderedDom = {
             key:key1,
             model:model,
             vdom:src,
@@ -150,7 +150,7 @@ export class Renderer {
                 CssManager.handleStyleDom(module,dst,Renderer.currentRootDom);
             }else if(src.assets && src.assets.size>0){
                 dst.assets ||= {};
-                for(let p of src.assets){
+                for(const p of src.assets){
                     dst.assets[p[0]] = p[1];
                 }
             }
@@ -163,7 +163,7 @@ export class Renderer {
                 dst.events = [];
                 // 可能存在事件变化，需要先移除
                 module.eventFactory.removeAllEvents(dst);
-                for(let ev of src.events){
+                for(const ev of src.events){
                     //当事件串为表达式时，需要处理
                     ev.handleExpr(module,model);
                     //如果不是根节点，设置事件module为渲染module
@@ -179,16 +179,16 @@ export class Renderer {
             //子节点渲染
             if(src.children && src.children.length>0){
                 dst.children = [];
-                for(let c of src.children){
+                for(const c of src.children){
                     this.renderDom(module,c,dst.model,dst,key?key:null);
                 }
             }
         }else{ //文本节点
             if(src.expressions){ //文本节点
                 let value = '';
-                for(let expr of src.expressions){
+                for(const expr of src.expressions){
                     if (expr instanceof Expression) { //处理表达式
-                        let v1 = expr.val(module,dst.model);
+                        const v1 = expr.val(module,dst.model);
                         value += v1 !== undefined ? v1 : '';
                     } else {
                         value += expr;
@@ -208,16 +208,16 @@ export class Renderer {
 
     /**
      * 处理指令
-     * @param module    模块
-     * @param src       编译节点
-     * @param dst       渲染节点
+     * @param module -    模块
+     * @param src -       编译节点
+     * @param dst -       渲染节点
      * @returns         true继续执行，false不执行后续渲染代码，也不加入渲染树
     */
     private static handleDirectives(module,src,dst):boolean {
         if(!src.directives || src.directives.length===0){
             return true;
         }
-        for(let d of src.directives){
+        for(const d of src.directives){
             //model指令不执行
             if(d.type.name==='model'){
                 continue;
@@ -230,11 +230,11 @@ export class Renderer {
     }
     /**
      * 处理属性
-     * @param module    模块
-     * @param src       编译节点
-     * @param dst       渲染节点
+     * @param module -    模块
+     * @param src -       编译节点
+     * @param dst -       渲染节点
      */
-    private static handleProps(module:Module,src:VirtualDom,dst:IRenderedDom):void{
+    private static handleProps(module:Module,src:VirtualDom,dst:RenderedDom):void{
         if(dst === this.currentRootDom){
             module.handleRootProps(src,dst);
             return;
@@ -242,33 +242,33 @@ export class Renderer {
         if(!src.props || src.props.size === 0){
             return;
         }
-        for(let k of src.props){
+        for(const k of src.props){
             dst.props[k[0]] = k[1] instanceof Expression?k[1].val(module,dst.model):k[1];
         }
     }
 
     /**
      * 更新到html树
-     * @param module    模块
-     * @param src       渲染节点
+     * @param module -    模块
+     * @param src -       渲染节点
      * @returns         渲染后的节点    
      */
-    public static updateToHtml(module: Module,dom:IRenderedDom):Node {
-        let el = module.getElement(dom.key);
+    public static updateToHtml(module: Module,dom:RenderedDom):Node {
+        const el = module.getElement(dom.key);
         if(!el){
             return this.renderToHtml(module,dom,null);
         }else if(dom.tagName){   //html dom节点已存在
             //设置element key属性
-            (<any>el).key = dom.key;
-            let attrs = (<HTMLElement>el).attributes;
-            let arr = [];
+            (<object>el)['key'] = dom.key;
+            const attrs = (<HTMLElement>el).attributes;
+            const arr = [];
             if(attrs){
                 for(let i=0;i<attrs.length;i++){
                     arr.push(attrs[i].name);
                 }
             }
             //设置属性
-            for(let p of Object.keys(dom.props)){
+            for(const p of Object.keys(dom.props)){
                 (<HTMLElement>el).setAttribute(p,dom.props[p]===undefined?'':dom.props[p]);
                 let ind;
                 if((ind=arr.indexOf(p)) !== -1){
@@ -277,13 +277,13 @@ export class Renderer {
             }
             //清理多余attribute
             if(arr.length>0){
-                for(let a of arr){
+                for(const a of arr){
                     (<HTMLElement>el).removeAttribute(a);
                 }
             }
             //处理asset
             if (dom.assets) {
-                for (let k of Object.keys(dom.assets)) {
+                for (const k of Object.keys(dom.assets)) {
                     el[k] = dom.assets[k];
                 }    
             }
@@ -292,19 +292,19 @@ export class Renderer {
             //绑定事件
             module.eventFactory.bind(dom.key);
         }else{  //文本节点
-            (<any>el).textContent = dom.textContent;
+            (<object>el)['textContent'] = dom.textContent;
         }
         return el;
     }
 
     /**
      * 渲染到html树
-     * @param module 	        模块
-     * @param src               渲染节点
-     * @param parentEl 	        父html
-     * @param isRenderChild     是否渲染子节点
+     * @param module - 	        模块
+     * @param src -               渲染节点
+     * @param parentEl - 	        父html
+     * @param isRenderChild -     是否渲染子节点
      */
-    public static renderToHtml(module: Module,src:IRenderedDom, parentEl:Node,isRenderChild?:boolean):Node {
+    public static renderToHtml(module: Module,src:RenderedDom, parentEl:Node,isRenderChild?:boolean):Node {
         let el;
         if(src.tagName){
             el = newEl(src);
@@ -322,10 +322,10 @@ export class Renderer {
         
         /**
          * 新建element节点
-         * @param dom 		虚拟dom
+         * @param dom - 		虚拟dom
          * @returns 		新的html element
          */
-        function newEl(dom:IRenderedDom): HTMLElement {
+        function newEl(dom:RenderedDom): HTMLElement {
             //style不处理
             if(dom.tagName === 'style'){
                 return;
@@ -342,16 +342,16 @@ export class Renderer {
             //把el引用与key关系存放到cache中
             module.saveElement(dom.key,el);
             //设置element key属性
-            (<any>el).key = dom.key;
+            (<object>el)['key'] = dom.key;
             //设置属性
-            for(let p of Object.keys(dom.props)){
+            for(const p of Object.keys(dom.props)){
                 if(dom.props[p] !== undefined && dom.props[p] !== null && dom.props[p] !== ''){
                     el.setAttribute(p,dom.props[p]);
                 }
             }
             //asset
             if(dom.assets){
-                for (let p of Object.keys(dom.assets)) {
+                for (const p of Object.keys(dom.assets)) {
                     el[p] = dom.assets[p];
                 }
             }
@@ -363,22 +363,22 @@ export class Renderer {
         /**
          * 新建文本节点
          */
-        function newText(dom:IRenderedDom): Node {
+        function newText(dom:RenderedDom): Node {
             //样式表处理，如果是样式表文本，则不添加到dom树
             if(CssManager.handleStyleTextDom(module,dom)){
                  return;
             }
-            let node = document.createTextNode(<string>dom.textContent || '');
+            const node = document.createTextNode(<string>dom.textContent || '');
             module.saveElement(dom.key,node);
             return node;
         }
 
         /**
          * 生成子节点
-         * @param pEl 	父节点
-         * @param vdom  虚拟dom节点	
+         * @param pEl - 	父节点
+         * @param vdom -  虚拟dom节点	
          */
-        function genSub(pEl: Node, vdom: IRenderedDom) {
+        function genSub(pEl: Node, vdom: RenderedDom) {
             if (vdom.children && vdom.children.length > 0) {
                 vdom.children.forEach(item => {
                     let el1;
@@ -398,15 +398,16 @@ export class Renderer {
 
     /**
      * 处理更改的dom节点
-     * @param module        待处理模块
-     * @param changeDoms    更改的dom参数数组，数组元素说明如下：
+     * @param module -        待处理模块
+     * @param changeDoms -    更改的dom参数数组，数组元素说明如下：
      *                      0:type(操作类型) add 1, upd 2,del 3,move 4 ,rep 5
      *                      1:dom           待处理节点
      *                      2:dom1          被替换或修改节点，rep时有效    
      *                      3:parent        父节点
      *                      4:loc           位置,add和move时有效
+     *                      5:index
      */
-    public static handleChangedDoms(module:Module,changeDoms:any[]){
+    public static handleChangedDoms(module:Module,changeDoms:ChangedDom[]){
         //替换数组
         const repArr =[];
         //添加数组
@@ -414,7 +415,7 @@ export class Renderer {
         //移动数组
         const moveArr = [];
         //保留原有html节点
-        for (let item of changeDoms) {
+        for (const item of changeDoms) {
             switch(item[0]){
                 case 1:  //添加
                     addArr.push(item);
@@ -439,7 +440,7 @@ export class Renderer {
         }
         //替换
         if(repArr.length>0){
-            for(let item of repArr){
+            for(const item of repArr){
                 const pEl = module.getElement(item[3].key);
                 let n2;
                 if(item[2].moduleId){ //子模块先free再获取，先还原为空文本，再实现新的子模块mount
@@ -463,7 +464,7 @@ export class Renderer {
         //操作map，用于存放添加或移动过的位置
         const opMap = moveArr.length>0?{}:undefined;
         //处理添加元素
-        for(let item of addArr){
+        for(const item of addArr){
             const pEl = <HTMLElement>module.getElement(item[3].key);
             const n1 = Renderer.renderToHtml(module, item[1], null, true);
             if (pEl.childNodes && pEl.childNodes.length > item[4]) {
@@ -478,7 +479,7 @@ export class Renderer {
             }
         }
         //处理move元素
-        for(let item of moveArr){
+        for(const item of moveArr){
             const pEl = <HTMLElement>module.getElement(item[3].key);
             const n1 = module.getElement(item[1].key);
             if(!n1 || n1 === pEl.childNodes[item[4]]){

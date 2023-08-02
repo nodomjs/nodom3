@@ -6,7 +6,7 @@ import { Module } from "../core/module";
 import { ModuleFactory } from "../core/modulefactory";
 import { Nodom, NodomMessage} from "../core/nodom";
 import { Renderer } from "../core/renderer";
-import { IRenderedDom } from "../core/types";
+import { RenderedDom } from "../core/types";
 import { Util } from "../core/util";
 
 (function () {
@@ -25,10 +25,10 @@ import { Util } from "../core/util";
      */
     Nodom.createDirective(
         'module',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             let m: Module;
             //存在moduleId，表示已经渲染过，不渲染
-            let mid = module.objectManager.getDomParam(dom.key, 'moduleId');
+            let mid = <number>module.objectManager.getDomParam(dom.key, 'moduleId');
             if (mid) {
                 m = ModuleFactory.get(mid);
             } else {
@@ -44,7 +44,7 @@ import { Util } from "../core/util";
                 Renderer.getCurrentModule().addChild(m);
             }
             //保存到dom上，提升渲染性能
-            dom.moduleId = mid;
+            dom.moduleId = <number>mid;
             //变成文本节点，作为子模块占位符，子模块渲染后替换占位符
             delete dom.tagName;
             //设置props，如果改变了props，启动渲染
@@ -76,7 +76,7 @@ import { Util } from "../core/util";
      */
     Nodom.createDirective(
         'model',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             let model: Model = module.get(dom.model,this.value);
             if (model) {
                 dom.model = model;
@@ -92,7 +92,7 @@ import { Util } from "../core/util";
      */
     Nodom.createDirective(
         'repeat',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             let rows = this.value;
             // 无数据，不渲染
             if (!Util.isArray(rows) || rows.length === 0) {
@@ -110,7 +110,7 @@ import { Util } from "../core/util";
                     continue;
                 }
                 if (idxName && typeof rows[i] === 'object') {
-                    rows[i][idxName] = i;
+                    rows[i][<string>idxName] = i;
                 }
                 let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].__key);
                 //删除index属性
@@ -141,7 +141,7 @@ import { Util } from "../core/util";
      */
     Nodom.createDirective(
         'recur',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             const src = dom.vdom;
             //当前节点是递归节点存放容器
             if (dom.props.hasOwnProperty('ref')) {
@@ -195,7 +195,7 @@ import { Util } from "../core/util";
      * 描述：条件指令
      */
     Nodom.createDirective('if',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             if(!dom.parent){
                 return;
             }
@@ -211,7 +211,7 @@ import { Util } from "../core/util";
      */
     Nodom.createDirective(
         'else',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             if(!dom.parent){
                 return;
             }
@@ -224,7 +224,7 @@ import { Util } from "../core/util";
      * elseif 指令
      */
     Nodom.createDirective('elseif',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             if(!dom.parent){
                 return;
             }
@@ -248,7 +248,7 @@ import { Util } from "../core/util";
      */
     Nodom.createDirective(
         'endif',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             if(!dom.parent){
                 return;
             }
@@ -265,11 +265,11 @@ import { Util } from "../core/util";
      */
     Nodom.createDirective(
         'show',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             //show指令参数 {origin:通过style设置的初始display属性,rendered:是否渲染过}
             let showParam = module.objectManager.getDomParam(dom.key, '$show');
             //为false且未渲染过，则不渲染
-            if(!this.value && (!showParam || !showParam.rendered)){
+            if(!this.value && (!showParam || !showParam['rendered'])){
                 return false;
             }
             if(!showParam){
@@ -287,8 +287,8 @@ import { Util } from "../core/util";
                     let ra = regResult[0].split(':');
                     display = ra[1].trim();
                     //保存第一个display属性
-                    if(!showParam.origin && display !== 'none'){
-                        showParam.origin = display;
+                    if(!showParam['origin'] && display !== 'none'){
+                        showParam['origin'] = display;
                     }
                 }
             }
@@ -309,11 +309,11 @@ import { Util } from "../core/util";
                 }
             }else{
                 //设置渲染标志
-                showParam.rendered = true;
+                showParam['rendered'] = true;
                 if(display === 'none'){
                     if(style){
-                        if(showParam.origin){
-                            style = style.substring(0,regResult.index) + 'display:' + showParam.origin + style.substring(regResult.index + regResult[0].length);
+                        if(showParam['origin']){
+                            style = style.substring(0,regResult.index) + 'display:' + showParam['origin'] + style.substring(regResult.index + regResult[0].length);
                         }else{
                             style = style.substring(0,regResult.index) + style.substring(regResult.index + regResult[0].length);
                         }
@@ -333,7 +333,7 @@ import { Util } from "../core/util";
      * 描述：字段指令
      */
     Nodom.createDirective('field',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             dom.assets ||= {};
             //修正staticnum
             if(dom.staticNum === 0){
@@ -346,7 +346,7 @@ import { Util } from "../core/util";
                 setTimeout(()=>{
                     const el = <HTMLSelectElement>module.domManager.getElement(dom.key);
                     if(el){
-                        el.value = dataValue;
+                        el.value = <string>dataValue;
                     }
                 },0)
             }else if(dom.tagName === 'input'){
@@ -385,7 +385,7 @@ import { Util } from "../core/util";
                 dom.assets['value'] = v;
             }
             
-            let event: NEvent = GlobalCache.get('$fieldChangeEvent');
+            let event: NEvent = <NEvent>GlobalCache.get('$fieldChangeEvent');
             if (!event) {
                 event = new NEvent(null, 'change',
                     function (model, dom) {
@@ -438,9 +438,9 @@ import { Util } from "../core/util";
      * route指令
      */
     Nodom.createDirective('route',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             if(!Nodom['$Router']){
-                throw new NError('uninit',NodomMessage.TipWords.route);
+                throw new NError('uninit',[NodomMessage.TipWords.route]);
             }
             //a标签需要设置href
             if (dom.tagName === 'a') {
@@ -461,7 +461,7 @@ import { Util } from "../core/util";
                 }
             }
             //添加click事件,避免重复创建事件对象，创建后缓存
-            let event: NEvent = GlobalCache.get('$routeClickEvent');
+            let event: NEvent = <NEvent>GlobalCache.get('$routeClickEvent');
             if (!event) {
                 event = new NEvent(module, 'click',
                     function (model, dom, evObj, e) {
@@ -485,9 +485,9 @@ import { Util } from "../core/util";
      * 增加router指令
      */
     Nodom.createDirective('router',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             if(!Nodom['$Router']){
-                throw new NError('uninit',NodomMessage.TipWords.route)
+                throw new NError('uninit',[NodomMessage.TipWords.route])
             }
             //建立新子节点            
             dom.children = [{key:dom.key+'_r',model:dom.model}];
@@ -502,7 +502,7 @@ import { Util } from "../core/util";
      * 用于模块中，可实现同名替换
      */
     Nodom.createDirective('slot',
-        function (module: Module, dom: IRenderedDom) {
+        function (module: Module, dom: RenderedDom) {
             this.value = this.value || 'default';
             let mid = dom.parent.moduleId;
             const src = dom.vdom;
