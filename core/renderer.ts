@@ -8,20 +8,24 @@ import { ChangedDom, RenderedDom } from "./types";
 
 /**
  * 渲染器
+ * @remarks
+ * nodom渲染操作在渲染器中实现
  */
 export class Renderer {
     /**
-     * 根rootEl
+     * 应用根El
      */
     private static rootEl:HTMLElement;
 
     /**
-     * 等待渲染列表（模块名）
+     * 等待渲染列表
      */
     private static waitList: Array < number > = [];
 
     /**
-     * 当前module
+     * 当前渲染模块
+     * @remarks
+     * slot渲染时，如果未使用`innerRender`，则渲染过程中指令、表达式依赖的模块会切换成templateModuleId对应模块，但currentModule不变。
      */
     public static currentModule:Module;
 
@@ -31,16 +35,16 @@ export class Renderer {
     private static currentRootDom:RenderedDom;
 
     /**
-     * 设置根
-     * @param rootEl - 
+     * 设置根容器
+     * @param rootEl - 根html element
      */
     public static setRootEl(rootEl){
         this.rootEl = rootEl;
     }
 
     /**
-     * 获取根element
-     * @returns 根element
+     * 获取根容器
+     * @returns 根 html element
      */
     public static getRootEl():HTMLElement{
         return this.rootEl;
@@ -68,17 +72,20 @@ export class Renderer {
     
     /**
      * 从渲染队列移除
-     * @param moduleId - 
+     * @param moduleId - 模块id
      */
-    public static remove(moduleId:number){
+    public static remove(module:Module){
         let index;
-        if((index = this.waitList.indexOf(moduleId)) !== -1){
+        if((index = this.waitList.indexOf(module.id)) !== -1){
             //不能破坏watiList顺序，用null替换
             this.waitList.splice(index,1,null);
         }
     }
+
     /**
-     * 队列渲染
+     * 渲染
+     * @remarks
+     * 如果存在渲染队列，则从队列中取出并依次渲染
      */
     public static render() {
         for(;this.waitList.length>0;){
@@ -96,12 +103,15 @@ export class Renderer {
 
     /**
      * 渲染dom
-     * @param module -            模块 
-     * @param src -               源dom
-     * @param model -             模型，如果src已经带有model，则此参数无效，一般为指令产生的model（如slot）
-     * @param parent -            父dom
-     * @param key -               key 附加key，放在domkey的后面
-     * @returns 
+     * @remarks
+     * 此过程将VirtualDom转换为RenderedDom
+     * 
+     * @param module -      模块 
+     * @param src -         源dom
+     * @param model -       模型
+     * @param parent -      父dom
+     * @param key -         key 附加key，放在domkey的后面
+     * @returns             渲染后节点
      */
     public static renderDom(module:Module,src:VirtualDom,model:Model,parent?:RenderedDom,key?:number|string):RenderedDom{
         //构建key，如果带key，则需要重新构建唯一key
@@ -208,9 +218,9 @@ export class Renderer {
 
     /**
      * 处理指令
-     * @param module -    模块
-     * @param src -       编译节点
-     * @param dst -       渲染节点
+     * @param module -  模块
+     * @param src -     编译节点
+     * @param dst -     渲染节点
      * @returns         true继续执行，false不执行后续渲染代码，也不加入渲染树
     */
     private static handleDirectives(module,src,dst):boolean {
@@ -230,11 +240,11 @@ export class Renderer {
     }
     /**
      * 处理属性
-     * @param module -    模块
-     * @param src -       编译节点
-     * @param dst -       渲染节点
+     * @param module -  模块
+     * @param src -     编译节点
+     * @param dst -     渲染节点
      */
-    private static handleProps(module:Module,src:VirtualDom,dst:RenderedDom):void{
+    private static handleProps(module:Module,src:VirtualDom,dst:RenderedDom){
         if(dst === this.currentRootDom){
             module.handleRootProps(src,dst);
             return;
@@ -249,8 +259,8 @@ export class Renderer {
 
     /**
      * 更新到html树
-     * @param module -    模块
-     * @param src -       渲染节点
+     * @param module -  模块
+     * @param src -     渲染节点
      * @returns         渲染后的节点    
      */
     public static updateToHtml(module: Module,dom:RenderedDom):Node {
@@ -300,9 +310,10 @@ export class Renderer {
     /**
      * 渲染到html树
      * @param module - 	        模块
-     * @param src -               渲染节点
-     * @param parentEl - 	        父html
-     * @param isRenderChild -     是否渲染子节点
+     * @param src -             渲染节点
+     * @param parentEl - 	    父html
+     * @param isRenderChild -   是否渲染子节点
+     * @returns                 渲染后的html节点
      */
     public static renderToHtml(module: Module,src:RenderedDom, parentEl:Node,isRenderChild?:boolean):Node {
         let el;
@@ -399,13 +410,7 @@ export class Renderer {
     /**
      * 处理更改的dom节点
      * @param module -        待处理模块
-     * @param changeDoms -    更改的dom参数数组，数组元素说明如下：
-     *                      0:type(操作类型) add 1, upd 2,del 3,move 4 ,rep 5
-     *                      1:dom           待处理节点
-     *                      2:dom1          被替换或修改节点，rep时有效    
-     *                      3:parent        父节点
-     *                      4:loc           位置,add和move时有效
-     *                      5:index
+     * @param changeDoms -    修改后的dom节点数组
      */
     public static handleChangedDoms(module:Module,changeDoms:ChangedDom[]){
         //替换数组

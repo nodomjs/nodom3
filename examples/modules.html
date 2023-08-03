@@ -4,14 +4,12 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 		<title>nodom-example start</title>
-		<link rel="stylesheet" type='text/css' href='css/index.css' />
-		</head>
+	</head>
 
 	<body>
-        <div></div>
-	</body>
+    </body>
 	<script type='module'>
-		import{nodom,Module} from '/dist/nodom.esm.js'
+		import{Nodom,Module} from '/dist/nodom.esm.js'
 
         class M1 extends Module{
             template(){
@@ -88,6 +86,9 @@
                         <h2>多模块嵌套</h2>
                         <h3>单个module</h3>
                         <button e-click='changeText'>修改text</button>
+                        <button e-click='getM2'>获取第一个M2模块</button>
+                        <button e-click='getM21'>获取第二个M2模块</button>
+                        <button e-click='getEl'>获取第一个class='cls2'的DIV</button>
                         <m1 p1={{getP1(a,b)}} e-click='clickM1'>
                             m1 slot
                         </m1>
@@ -107,7 +108,11 @@
                                     m3 text is:{{getText()}}
                                 </span>
                             </m3>
+                            <m2 p2={{getP2()}} e-click='clickM2' p1='a'>
+                                m2 text is:{{getText()}}
+                            </m2>
                         </m1>
+                        <div class='cls2'>我是class='cls2'的div</div>
                     </div>
 				`
 			}
@@ -162,7 +167,22 @@
             changeText(){
                 this.model.text = 'changed value';
             }
+
+            getM2(){
+                const m = this.getModule('M2',true);
+                console.log(m);
+            }
+
+            getM21(){
+                const m = this.getModule('M2',true,{p1:'a'});
+                console.log(m);
+            }
+
+            getEl(){
+                const el = this.getElement({class:'cls2'});
+                console.log(el);
+            }
        	}
-    	nodom(MMain,'div');
+    	Nodom.app(MMain);
 	</script>
 </html>

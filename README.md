@@ -9,6 +9,9 @@ nodom是一款基于数据驱动的web mvvm框架。用于搭建单页应用(SPA
 1. nodom3: https://www.npmjs.com/package/nodom3
 2. nodom3-cli(脚手架):https://www.npmjs.com/package/nodom3-cli
 
+### API
+更多使用细节参考[API](./api/nodom3.md)。
+
 ### 目录结构
 1. 核心库目录./core：核心框架源码
 2. 扩展目录./extend：预定义指令、自定义element和事件
@@ -66,7 +69,7 @@ Nodom['$Router'].foo();
 下列代码引入`nodom.esm.min.js`文件，即es module模式的nodom生产环境包。
 
 ```js
-import{nodom,Module} from "https://unpkg.com/nodom3"
+import{Nodom,Module} from "https://unpkg.com/nodom3"
 ```
 
 ### 下载引入
@@ -74,13 +77,13 @@ Nodom使用ES Module实现模块化，无需构建工具即可完成模块化开
 ```html
 <script type="module">
 	//引入nodom和Module
-    import{nodom,Module} from '/dist/nodom.esm.js'
+    import{Nodom,Module} from '/dist/nodom.esm.js'
 	//定义模块类
 	class Module1 extends Module{
 		...
 	}
 	//启动应用，把Module1渲染到document.body
-	nodom(Module1);
+	Nodom.app(Module1);
 </script>
 ```
 
@@ -117,7 +120,7 @@ Nodom使用ES Module实现模块化，无需构建工具即可完成模块化开
 			}
 		}
 		//把MHello模块渲染到document.body下
-		nodom(MHello);
+		Nodom.app(MHello);
 	</script>
 </html>
 ```
@@ -1419,7 +1422,7 @@ class Main extends Module{
 `GlobalCache`内置`get(获取)`、`set(设置)`、`remove(移除)`、`subscribe(订阅)`方法以便操作数据。
 
 ```js
-import{nodom,Nodom,Module,GlobalCache} from '/dist/nodom.esm.js'
+import{Nodom,Module,GlobalCache} from '/dist/nodom.esm.js'
 //无论数据是否存在，都可以订阅
 GlobalCache.set("globalData", {
 	msg: 0,

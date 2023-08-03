@@ -20,36 +20,36 @@ export declare class Util {
     static initKeyMap(): void;
     /**
      * 是否为 js 保留关键字
-     * @param name -  名字
-     * @returns     如果为保留字，则返回true，否则返回false
+     * @param name -    名字
+     * @returns         如果为保留字，则返回true，否则返回false
      */
     static isKeyWord(name: string): boolean;
     /******对象相关******/
     /**
      * 对象复制
-     * @param srcObj -    源对象
-     * @param expKey -    不复制的键正则表达式或名
-     * @param extra -     clone附加参数
+     * @param srcObj -  源对象
+     * @param expKey -  不复制的键正则表达式或属性名
+     * @param extra -   附加参数
      * @returns         复制的对象
      */
     static clone(srcObj: object, expKey?: RegExp | string[], extra?: object): object;
     /**
      * 比较两个对象值是否相同(只比较object和array)
-     * @param src -   源对象
-     * @param dst -   目标对象
+     * @param src - 源对象
+     * @param dst - 目标对象
      * @returns     值相同则返回true，否则返回false
      */
     static compare(src: object, dst: object): boolean;
     /**
      * 获取对象自有属性
-     * @param obj -   需要获取属性的对象
+     * @param obj - 需要获取属性的对象
      * @returns     返回属性数组
      */
     static getOwnProps(obj: any): Array<string>;
     /**************对象判断相关************/
     /**
      * 判断是否为函数
-     * @param foo -   检查的对象
+     * @param foo - 检查的对象
      * @returns     true/false
      */
     static isFunction(foo: any): boolean;
@@ -72,16 +72,16 @@ export declare class Util {
     static isObject(obj: any): boolean;
     /**
      * 判断对象/字符串是否为空
-     * @param obj -   检查的对象
+     * @param obj - 检查的对象
      * @returns     true/false
      */
     static isEmpty(obj: any): boolean;
     /******日期相关******/
     /**
      * 日期格式化
-     * @param timestamp -  时间戳
-     * @param format -     日期格式
-     * @returns          日期串
+     * @param timestamp -   时间戳
+     * @param format -      日期格式
+     * @returns             日期串
      */
     static formatDate(timeStamp: string | number, format: string): string;
     /******字符串相关*****/

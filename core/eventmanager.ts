@@ -2,7 +2,9 @@ import { NEvent } from "./event";
 import { Module } from "./module";
 import { RenderedDom } from "./types";
 /**
- * 事件管理器，用于管理自定义事件
+ * 事件管理器
+ * @remarks
+ * 用于管理自定义事件
  */
 export class EventManager {
     /**
@@ -12,8 +14,8 @@ export class EventManager {
     
     /**
      * 处理外部事件
-     * @param dom -       dom节点
-     * @param event -     事件对象
+     * @param dom -     dom节点
+     * @param event -   事件对象
      * @returns         如果有是外部事件，则返回true，否则返回false
      */
     public static handleExtendEvent(module:Module,dom:RenderedDom,event:NEvent):boolean{
@@ -35,25 +37,25 @@ export class EventManager {
     }
 
     /**
-     * 注册扩展事件
-     * @param eventName -    事件名
-     * @param handleObj -    事件处理集
+     * 注册自定义事件
+     * @param eventName -  事件名
+     * @param handleObj -  事件处理集
      */
     public static regist(eventName:string,handleObj:object) {
         this.extendEventMap.set(eventName,handleObj);
     }
  
     /**
-     * 取消注册扩展事件
-     * @param eventName -     事件名
+     * 取消注册自定义事件
+     * @param eventName -   事件名
      */
     public static unregist(eventName:string) {
         return this.extendEventMap.delete(eventName);
     }
 
     /**
-     * 获取扩展事件
-     * @param eventName -     事件名
+     * 获取自定义事件
+     * @param eventName -   事件名
      * @returns             事件处理集
      */
     public static get(eventName:string):object{

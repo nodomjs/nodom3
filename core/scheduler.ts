@@ -2,7 +2,9 @@ import { NError } from "./error";
 import { Util } from "./util";
 
 /**
- * 调度器，用于每次空闲的待操作序列调度
+ * 调度器
+ * @remarks
+ * 管理所有需调度的任务并进行循环调度，默认采用requestAnimationFrame方式进行循环
  */
 export class Scheduler{
 	/**
@@ -40,8 +42,8 @@ export class Scheduler{
 
 	/**
 	 * 添加任务
-	 * @param foo - 		任务和this指向
-	 * @param thiser - 		this指向
+	 * @param foo - 	待执行任务函数
+	 * @param thiser - 	this指向
 	 */
 	public static addTask(foo:()=>void,thiser?:object){
 		if(!Util.isFunction(foo)){
@@ -52,7 +54,7 @@ export class Scheduler{
 
 	/**
 	 * 移除任务
-	 * @param foo - 	任务
+	 * @param foo - 	任务函数
 	 */
 	public static removeTask(foo){
 		if(!Util.isFunction(foo)){

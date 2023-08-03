@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nodom test</title>
+</head>
+<body>
+    <div></div>
+</body>
+<script type='module'>
+    import {Nodom,Module,GlobalCache,ModuleFactory} from '/dist/nodom.esm.js'
+    
+    class ModuleA extends Module{
+        template(props){
+            let s;
+          	return `
+                <div style='background:#9cf'>
+                    <div>modulea</div>
+                    <div style='color:red'>
+                        <slot/>
+                    </div>
+                    <!--<div  style='border:1px solid'>
+                        <for cond={{rows}}>
+                            <slot innerRender/>
+                        </for>
+                    </div>-->
+                </div>
+            `;
+        }
+        data() {
+            return {
+                name: "yang",
+                // showme: true,
+                x1: 0,
+                x2: 0,
+                rows: [{ name: "nodom1" }, { name: "nodom2" }, { name: "nodom3" }],
+            };
+        }
+        keyup() {
+            console.log("keyup");
+        }
+        clickShow(model) {
+            // model.showme = !model.showme;
+            console.log(this.getElement("ul1"));
+        }
+        clickme(model) {
+            console.log(model);
+        }
+    }
+
+    class ModuleB extends Module{
+        template(){
+            return `<div>
+                <button e-click='change'>修改a.b.c</button>
+                moduleb is {{a.b.c}}
+            </div>`
+        }
+
+        change(){
+            this.model.a.b.c = 'not ok';
+            console.log(this.getParent().model);
+        }
+    }
+
+    class ModuleC extends Module{
+        template(){
+            return `<div>
+                <button e-click='change'>c修改a.c</button>
+                <div> c is render:{{ok}}</div>
+                <slot />
+            </div>`
+        }
+
+        data(){
+            return {
+                ok:'ok'       
+            }   
+        }
+        change(){
+            console.log(this.model)
+
+        }
+    }
+   
+    class Module1 extends Module {
+        modules = [ModuleA,ModuleB,ModuleC];
+        template(props) {
+            return `
+                <div >
+                    <p>隐藏</p>
+                    <button e-click='change1'>change1</button>
+                    <modulea style={{style}} >
+                        <span>{{name}}</span>
+                    </modulea>
+                    <p>通过数据传对象到子模块，可反向修改</p>
+                    <div >parent tob.b.c value is {{tob.b.c}}</div>
+                    <p>第一个moduleb</p>
+                    <moduleb $a={{tob}}/>
+                    <p>第二个moduleb</p>
+                    <moduleb $a={{tob}} />
+                    <p>slot</p>
+                    <button e-click='changetoc' >修改toc</button>
+                    <modulec x-model='toc'>
+                        <div e-click='updc'>this is {{toc.c}}</div>
+                    </modulec>
+                    
+                </div>
+            `;
+            
+        }
+        data() {
+            return {
+                xxx: 1,
+                name: "outer",
+                style: "width:600px",
+                show: true,
+                showma:false,
+                tob:{
+                    
+                },
+                toc:{
+                    toc:{c:'cslot'}
+                    
+                },
+                rows: [
+                    { id: 1, name: "nodom", title: "click1" },
+                    { id: 2, name: "noomi", title: "click2" },
+                    { id: 3, name: "relaen", title: "click3" },
+                ],
+            };
+        }
+
+        change1(model) {
+            model.style='background:#ccc'
+            model.showma = !model.showma;
+            this.set(model,'tob.b.c','nodom')
+        }
+
+        changetoc(){
+            this.model.toc.toc.c='change slot'
+        }
+
+        updc(m){
+            m.toc.c = 'changed'
+        }
+    }
+		Nodom.app(Module1, "div");
+	</script>
+</html>

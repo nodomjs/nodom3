@@ -13,10 +13,10 @@ import { Util } from "./util";
 /**
  * nodom提示消息
  */
-export let NodomMessage=NodomMessage_zh;
+export let NodomMessage = NodomMessage_zh;
 
 /**
- * nodom 类
+ * Nodom接口暴露类
  */
 export class Nodom{
     /**
@@ -25,11 +25,11 @@ export class Nodom{
     public static isDebug:boolean;
 
     /**
-     * 新建一个App
+     * 应用初始化
      * @param clazz -     模块类
-     * @param selector -  根容器标签选择器，如果不写，则使用document.body
+     * @param selector -  根模块容器选择器，默认使用document.body
      */
-    public static app(clazz:()=>void,selector:string){
+    public static app(clazz:unknown,selector?:string){
         //设置渲染器的根 element
         Renderer.setRootEl(document.querySelector(selector)||document.body);
         //渲染器启动渲染任务
@@ -38,7 +38,7 @@ export class Nodom{
         Scheduler.addTask(RequestManager.clearCache);
         //启动调度器
         Scheduler.start();
-        ModuleFactory.get(clazz).active();
+        ModuleFactory.get(<UnknownClass>clazz).active();
     }
 
     /**
@@ -65,9 +65,10 @@ export class Nodom{
 
     /**
      * use插件（实例化）
+     * @remarks
      * 插件实例化后以单例方式存在，第二次use同一个插件，将不进行任何操作，实例化后可通过Nodom['$类名']方式获取
-     * @param clazz -     插件类
-     * @param params -    参数
+     * @param clazz -   插件类
+     * @param params -  参数
      * @returns         实例化后的插件对象
      */
     public static use(clazz:unknown,params?:unknown[]):unknown{
@@ -81,8 +82,38 @@ export class Nodom{
     }
 
     /**
-     * 暴露的创建路由方法
-     * @param config -  数组或单个配置
+     * 创建路由
+     * @remarks
+     * 配置项可以用嵌套方式
+     * @example
+     * ```js
+     * Nodom.createRoute([{
+     *   path: '/router',
+     *   //直接用模块类，需import
+     *   module: MdlRouteDir,
+     *   routes: [
+     *       {
+     *           path: '/route1',
+     *           module: MdlPMod1,
+     *           routes: [{
+     *               path: '/home',
+     *               //直接用路径，实现懒加载
+     *               module:'/examples/modules/route/mdlmod1.js'
+     *           }, ...]
+     *       }, {
+     *           path: '/route2',
+     *           module: MdlPMod2,
+     *           //设置进入事件
+     *           onEnter: function (module,path) {},
+     *           //设置离开事件
+     *           onLeave: function (module,path) {},
+     *           ...
+     *       }
+     *   ]
+     * }])
+     * ```
+     * @param config -  路由配置
+     * @param parent -  父路由
      */
     public static createRoute(config: RouteCfg | Array<RouteCfg>,parent?:Route): Route {
         if(!Nodom['$Router']){
@@ -105,7 +136,6 @@ export class Nodom{
      * 创建指令
      * @param name -      指令名 
      * @param priority -  优先级（1最小，1-10为框架保留优先级）
-     * @param init -      初始化方法
      * @param handler -   渲染时方法
      */
     public static createDirective(name: string, handler: DirectiveMethod,priority?: number) {
@@ -114,8 +144,8 @@ export class Nodom{
 
     /**
      * 注册模块
-     * @param clazz -     模块类
-     * @param name -      注册名，如果没有，则为类名
+     * @param clazz -   模块类
+     * @param name -    注册名，如果没有，则为类名
      */
     public static registModule(clazz:unknown,name?:string){
         ModuleFactory.addClass(<UnknownClass>clazz,name);
@@ -123,43 +153,36 @@ export class Nodom{
 
     /**
      * ajax 请求，如果需要用第三方ajax插件替代，重载该方法
-     * @param config -    object 或 string
-     *                  如果为string，则直接以get方式获取资源
-     *                  object 项如下:
-     *                  参数名|类型|默认值|必填|可选值|描述
-     *                  -|-|-|-|-|-
-     *                  url|string|无|是|无|请求url
-     *					method|string|GET|否|GET,POST,HEAD|请求类型
-     *					params|Object/FormData|空object|否|无|参数，json格式
-     *					async|bool|true|否|true,false|是否异步
-     *  				    timeout|number|0|否|无|请求超时时间
-     *                  type|string|text|否|json,text|
-     *					withCredentials|bool|false|否|true,false|同源策略，跨域时cookie保存
-     *                  header|Object|无|否|无|request header 对象
-     *                  user|string|无|否|无|需要认证的请求对应的用户名
-     *                  pwd|string|无|否|无|需要认证的请求对应的密码
-     *                  rand|bool|无|否|无|请求随机数，设置则浏览器缓存失效
+     * @param config -  object 或 string，如果为string，则表示url，直接以get方式获取资源，如果为 object，配置项如下:
+     * ```
+     *  参数名|类型|默认值|必填|可选值|描述
+     *  -|-|-|-|-|-
+     *  url|string|无|是|无|请求url
+     *	method|string|GET|否|GET,POST,HEAD|请求类型
+     *	params|object/FormData|空object|否|无|参数，json格式
+     *	async|bool|true|否|true,false|是否异步
+     *  timeout|number|0|否|无|请求超时时间
+     *  type|string|text|否|json,text|
+     *	withCredentials|bool|false|否|true,false|同源策略，跨域时cookie保存
+     *  header|Object|无|否|无|request header 对象
+     *  user|string|无|否|无|需要认证的请求对应的用户名
+     *  pwd|string|无|否|无|需要认证的请求对应的密码
+     *  rand|bool|无|否|无|请求随机数，设置则浏览器缓存失效
+     * ```
      */
     public static async request(config): Promise<unknown> {
         return await RequestManager.request(config);
     }
 
     /**
-     * 设置相同请求拒绝时间间隔
+     * 重复请求拒绝时间间隔
+     * @remarks
+     * 如果设置此项，当url一致时且间隔时间小于time，则拒绝请求
      * @param time -  时间间隔（ms）
      */
     public static setRejectTime(time:number){
         RequestManager.setRejectTime(time);
     }
-}
-
-/**
- * Nodom.app的简写方式
- * @param clazz -     模块类
- * @param selector -  根容器标签选择器，如果不写，则使用document.body
- */
-export function nodom(clazz:UnknownClass,selector?:string){
-    return Nodom.app(clazz,selector);
 }
 
 

@@ -2,12 +2,13 @@ import { Directive } from './directive'
 import { DirectiveManager } from './directivemanager'
 import { NEvent } from './event'
 import { Expression } from './expression'
-import { Model } from './model'
 import { Module } from './module'
 import { Util } from './util'
 
 /**
- * 虚拟dom，编译后的dom节点，与渲染后的dom节点(RenderedDom)不同
+ * 虚拟dom
+ * @remarks
+ * 编译后的dom节点，与渲染后的dom节点(RenderedDom)不同
  */
 export class VirtualDom {
 	/**
@@ -21,17 +22,14 @@ export class VirtualDom {
 	public key: number|string
 
 	/**
-	 * 绑定模型
-	 */
-	public model: Model
-
-	/**
+	 * 文本内容
+	 * @remarks
 	 * element为textnode时有效
 	 */
 	public textContent: string
 
 	/**
-	 * 表达式+字符串数组，用于textnode
+	 * 表达式+字符串数组，用于text node
 	 */
 	public expressions: Array<Expression | string>
 
@@ -41,25 +39,18 @@ export class VirtualDom {
 	public directives: Directive[]
 
 	/**
-	 * 直接属性 不是来自于attribute，而是直接作用于html element，如el.checked,el.value等
+	 * 直接属性
+	 * @remarks
+	 * 不是来自于attribute，而是直接作用于html element，如el.checked,el.value等
 	 */
 	public assets: Map<string, string|number|boolean>
 
 	/**
 	 * 属性(attribute)集合
-	 * 属性值可能是值，也可能是表达式，还可能是数组，当为子模块时，存在从props传递过来的属性，如果模块模版存在相同属性，则会变成数组。
+	 * @remarks
+	 * 属性值可能是值，也可能是表达式
 	 */
 	public props: Map<string, string|number|boolean|object|Expression>
-
-	/**
-	 * 删除的class名数组
-	 */
-	private removedClassMap: Map<string, boolean>
-
-	/**
-	 * 删除的style属性名map
-	 */
-	private removedStyleMap: Map<string, boolean>
 
 	/**
 	 * 事件数组
@@ -82,17 +73,21 @@ export class VirtualDom {
 	public isSvg:boolean;
 
 	/**
-	 * staticNum 静态标识数
+	 * 静态标识数
+	 * @remarks
+	 * 用于判断是否为静态节点，默认为1，表示至少渲染1次
+	 * 
 	 *  0 表示静态，不进行比较
+	 * 
 	 *  1 渲染后 -1
+	 * 
 	 *  -1 每次都渲染
-	 * 默认为1，至少渲染1次
 	 */
 	public staticNum: number
 
 	/**
-	 * @param tag -       标签名
-	 * @param key -       key
+	 * @param tag -     标签名
+	 * @param key -     key
 	 * @param module - 	模块
 	 */
 	constructor(tag?: string, key?: number|string, module?: Module) {
@@ -260,19 +255,7 @@ export class VirtualDom {
 		if (!this.props) {
 			this.props = new Map()
 		}
-		if (propName === 'style') {
-			if (this.removedStyleMap) {
-				//清空removedStyleMap
-				this.removedStyleMap.clear()
-			}
-		} else if (propName === 'class') {
-			if (this.removedClassMap) {
-				//清空removedClassMap
-				this.removedClassMap.clear()
-			}
-		}
 		this.props.set(propName, v)
-		this.setStaticOnce();
 	}
 
 	/**
@@ -284,15 +267,7 @@ export class VirtualDom {
 		if (!this.props) {
 			return
 		}
-		if (Util.isArray(props)) {
-			for (const p of <string[]>props) {
-				this.props.delete(p)
-			}
-		} else {
-			this.props.delete(<string>props)
-		}
-		//设置静态标志，至少要比较一次
-		this.setStaticOnce()
+		this.props.delete(<string>props)
 	}
 
 	/**

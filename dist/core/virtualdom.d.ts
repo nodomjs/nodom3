@@ -1,10 +1,11 @@
 import { Directive } from './directive';
 import { NEvent } from './event';
 import { Expression } from './expression';
-import { Model } from './model';
 import { Module } from './module';
 /**
- * 虚拟dom，编译后的dom节点，与渲染后的dom节点(RenderedDom)不同
+ * 虚拟dom
+ * @remarks
+ * 编译后的dom节点，与渲染后的dom节点(RenderedDom)不同
  */
 export declare class VirtualDom {
     /**
@@ -16,15 +17,13 @@ export declare class VirtualDom {
      */
     key: number | string;
     /**
-     * 绑定模型
-     */
-    model: Model;
-    /**
+     * 文本内容
+     * @remarks
      * element为textnode时有效
      */
     textContent: string;
     /**
-     * 表达式+字符串数组，用于textnode
+     * 表达式+字符串数组，用于text node
      */
     expressions: Array<Expression | string>;
     /**
@@ -32,22 +31,17 @@ export declare class VirtualDom {
      */
     directives: Directive[];
     /**
-     * 直接属性 不是来自于attribute，而是直接作用于html element，如el.checked,el.value等
+     * 直接属性
+     * @remarks
+     * 不是来自于attribute，而是直接作用于html element，如el.checked,el.value等
      */
     assets: Map<string, string | number | boolean>;
     /**
      * 属性(attribute)集合
-     * 属性值可能是值，也可能是表达式，还可能是数组，当为子模块时，存在从props传递过来的属性，如果模块模版存在相同属性，则会变成数组。
+     * @remarks
+     * 属性值可能是值，也可能是表达式
      */
     props: Map<string, string | number | boolean | object | Expression>;
-    /**
-     * 删除的class名数组
-     */
-    private removedClassMap;
-    /**
-     * 删除的style属性名map
-     */
-    private removedStyleMap;
     /**
      * 事件数组
      */
@@ -65,16 +59,20 @@ export declare class VirtualDom {
      */
     isSvg: boolean;
     /**
-     * staticNum 静态标识数
+     * 静态标识数
+     * @remarks
+     * 用于判断是否为静态节点，默认为1，表示至少渲染1次
+     *
      *  0 表示静态，不进行比较
+     *
      *  1 渲染后 -1
+     *
      *  -1 每次都渲染
-     * 默认为1，至少渲染1次
      */
     staticNum: number;
     /**
-     * @param tag -       标签名
-     * @param key -       key
+     * @param tag -     标签名
+     * @param key -     key
      * @param module - 	模块
      */
     constructor(tag?: string, key?: number | string, module?: Module);

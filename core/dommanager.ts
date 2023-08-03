@@ -4,7 +4,9 @@ import { RenderedDom } from "./types";
 import { VirtualDom } from "./virtualdom";
 
 /**
- * dom 管理器，用于管理模块的虚拟dom，旧渲染树
+ * dom管理器
+ * @remarks
+ * 用于管理module的虚拟dom树，渲染树，html节点
  */
 export class DomManager{
     /**
@@ -18,28 +20,30 @@ export class DomManager{
     public vdomTree:VirtualDom;
 
     /**
-     * 渲染过的树
+     * 渲染后的dom树
      */
     public renderedTree:RenderedDom;
 
     /**
-     *  key:html node映射
+     * html节点map
+     * @remarks
+     * 用于存放dom key对应的html节点 
      */
-    public elementMap:Map<number|string,Node> = new Map();
+    private elementMap:Map<number|string,Node> = new Map();
 
     /**
      * 构造方法
-     * @param module -    所属模块
+     * @param module -  所属模块
      */
     constructor(module:Module){
         this.module = module;
     }
     /**
-     * 从origin tree 获取虚拟dom节点
-     * @param key -   dom key 或 props 键值对
+     * 从virtual dom 树获取虚拟dom节点
+     * @param key - dom key 或 props键值对
      * @returns     编译后虚拟节点 
      */
-    public getOriginDom(key:string|number|object):VirtualDom{
+    public getVirtualDom(key:string|number|object):VirtualDom{
         if(!this.vdomTree){
             return null;
         }
@@ -65,11 +69,11 @@ export class DomManager{
     }
 
     /**
-     * 从渲染树中获取key对应的渲染节点
-     * @param key - dom key或props键值对
+     * 从渲染树获取key对应的渲染节点
+     * @param key - dom key 或 props键值对
      * @returns     渲染后虚拟节点
      */
-    public getRenderedDom(key:object):RenderedDom{
+    public getRenderedDom(key:object|string|number):RenderedDom{
         if(!this.renderedTree){
             return;
         }
@@ -80,10 +84,10 @@ export class DomManager{
          * @param key -   待查找key
          * @returns     key对应renderdom 或 undefined
          */
-        function find(dom:RenderedDom,key:object):RenderedDom{
+        function find(dom:RenderedDom,key:object|string|number):RenderedDom{
             //对象表示未props查找
             if(typeof key === 'object'){
-                if(!Object.keys(key).find(k=>key[k] !== dom.props[k])){
+                if(dom.props && !Object.keys(key).find(k=>key[k] !== dom.props[k])){
                     return dom;
                 }
             }else if(dom.key === key){ //key查找
@@ -120,19 +124,27 @@ export class DomManager{
     }
 
     /**
-     * 获取html node
-     * @param key -   dom key 或 props 键值对
-     * @returns     html node
+     * 获取html节点
+     * @remarks
+     * 当key为数字或字符串时，表示dom key，当key为对象时，表示根据dom属性进行查找
+     * 
+     * @param key - dom key 或 props键值对
+     * @returns     html节点
      */
     public getElement(key:number|string|object):Node{
         if(typeof key === 'object'){
-            key = this.getRenderedDom(key);
+            const dom = this.getRenderedDom(key);
+            if(dom){
+                key = dom.key;
+            }else{
+                return;
+            }
         }
         return this.elementMap.get(<string|number>key);
     }
 
     /**
-     * save html node
+     * 保存html节点
      * @param key -   dom key
      * @param node -  html node
      */
@@ -141,9 +153,10 @@ export class DomManager{
     }
 
     /**
-     * 释放node
-     * 包括从dom树解挂，释放对应结点资源
-     * @param dom -       虚拟dom
+     * 释放节点
+     * @remarks
+     * 释放操作包括：如果被释放节点包含子模块，则子模块需要unmount；释放对应节点资源
+     * @param dom - 虚拟dom
      */
     public freeNode(dom:RenderedDom){
         if(dom.moduleId){  //子模块
@@ -166,7 +179,7 @@ export class DomManager{
     }
 
     /**
-     * 重置
+     * 重置节点相关信息
      */
     public reset(){
         this.renderedTree = null;

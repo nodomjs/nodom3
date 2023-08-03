@@ -1,5 +1,5 @@
 /*
- * 消息js文件 中文文件
+ * 英文消息文件
  */
 export const NodomMessage_en = {
     /**

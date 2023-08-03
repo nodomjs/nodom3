@@ -12,10 +12,10 @@ const voidTagMap = new Set(
 )
 
 /**
- * - 模板标签必须闭合
- */
-/**
- * - 模板标签必须闭合
+ * 编译器
+ * 
+ * @remarks
+ * 用于编译模板串为虚拟dom(VirtualDom)节点，存放于模块的 domManager.vdomTree
  */
 export class Compiler {
 	/**
@@ -29,7 +29,7 @@ export class Compiler {
 	private current: VirtualDom
 
 	/**
-	 * 虚拟dom树
+	 * 虚拟dom数组
 	 */
 	private domArr: Array<VirtualDom> = []
 
@@ -44,7 +44,7 @@ export class Compiler {
 	private isExprText: boolean = false
 
 	/**
-	 * 当前编译的模板 主要用于报错的时候定位
+	 * 当前编译的模板，用于报错的时候定位
 	 */
 	private template: string = ''
 
@@ -54,12 +54,13 @@ export class Compiler {
 	private root:VirtualDom;
 
 	/**
-	 * 当前是否在svg区域
+	 * 当前处理标签是否在svg区域
 	 */
 	private isSvg:boolean;
+
 	/**
 	 * 构造器
-	 * @param module -
+	 * @param module - 模块
 	 */
 	constructor(module: Module) {
 		this.module = module
@@ -67,8 +68,8 @@ export class Compiler {
 
 	/**
 	 * 编译
-	 * @param elementStr -     待编译html串
-	 * @returns              虚拟dom
+	 * @param elementStr - 	待编译html串
+	 * @returns             虚拟dom树根节点
 	 */
 	public compile(elementStr: string): VirtualDom {
 		if(!elementStr){

@@ -41,21 +41,17 @@ export declare class Route {
      */
     module: string | UnknownClass | Module;
     /**
-     * 模块路径，当module为类名时需要，默认执行延迟加载
-     */
-    modulePath: string;
-    /**
      * 父路由
      */
     parent: Route;
     /**
-     *
+     * 构造器
      * @param config - 路由配置项
      */
     constructor(config?: RouteCfg, parent?: Route);
     /**
      * 添加子路由
-     * @param child -
+     * @param child - 字路由
      */
     addChild(child: Route): void;
     /**

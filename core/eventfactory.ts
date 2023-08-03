@@ -4,6 +4,8 @@ import { RenderedDom } from "./types";
 
 /**
  * 事件工厂
+ * 
+ * @remarks
  * 每个模块一个事件工厂，用于管理模块内虚拟dom对应的事件对象
  */
 export class EventFactory{
@@ -143,7 +145,8 @@ export class EventFactory{
             this.removeEvent(dom,ev);
         }
         this.addedEvents.delete(dom.key);
-    }   
+    }  
+
     /**
      * 删除事件
      * @param event -     事件对象
@@ -185,7 +188,9 @@ export class EventFactory{
     }
 
     /**
-     * 绑定dom事件
+     * 绑定key对应节点所有事件
+     * @remarks
+     * 执行addEventListener操作
      * @param key -   dom key
      */
     public bind(key:string|number){
@@ -209,9 +214,11 @@ export class EventFactory{
     }
 
     /**
-     * 从eventfactory解绑所有事件
-     * @param key -           dom key
-     * @param eventName -     事件名
+     * 解绑key对应节点的指定事件
+     * @remarks
+     * 执行removeEventListener操作
+     * @param key -         dom key
+     * @param eventName -   事件名
      */
     public unbind(key:number,eventName:string){
         if(!this.eventMap.has(key)){
@@ -231,8 +238,8 @@ export class EventFactory{
     }
 
     /**
-     * 解绑html element事件
-     * @param key -   dom key
+     * 解绑key对应节点所有事件
+     * @param key - dom key
      */
     public unbindAll(key:number|string){
         if(!this.eventMap.has(key)){
@@ -254,10 +261,10 @@ export class EventFactory{
 
     /**
      * 是否拥有key对应的事件对象
-     * @param key -   dom key
+     * @param key - dom key
      * @returns     如果key对应事件存在，返回true，否则返回false
      */
-    public hasEvent(key:number):boolean{
+    private hasEvent(key:number):boolean{
         return this.eventMap.has(key);
     }
 
@@ -274,7 +281,7 @@ export class EventFactory{
     }
 
     /**
-     * 事件handler
+     * 事件处理函数
      * @param module - 模块
      * @param e - HTML Event
      */

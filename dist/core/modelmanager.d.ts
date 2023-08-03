@@ -2,6 +2,8 @@ import { Model } from "./model";
 import { Module } from "./module";
 /**
  * 模型工厂
+ * @remarks
+ * 管理模块的model
  */
 export declare class ModelManager {
     /**
@@ -9,9 +11,13 @@ export declare class ModelManager {
      */
     module: Module;
     /**
-     * model绑定module map，slot引用外部数据，模块传值时有效
-     *  key:    model
-     *  value:  model绑定的module id 数组
+     * model与module绑定map
+     * @remarks
+     * slot引用外部数据或模块传值时有效会导致model被不同模块引用，`bindMap`用来存放对应的模块数组
+     *
+     * key:    model
+     *
+     * value:  model绑定的module id 数组
      */
     bindMap: WeakMap<object, number[]>;
     /**
@@ -66,18 +72,20 @@ export declare class ModelManager {
     constructor(module: Module);
     /**
      * 获取model，不存在则新建
-     * @param data -      数据
+     * @param data -    数据
      * @returns         model
      */
     getModel(data: object): Model;
     /**
      * 获取model key
-     * @param model -     model对象
+     * @remarks
+     * 每个model都有一个唯一 key
+     * @param model -   model对象
      * @returns         model对应key
      */
     getModelKey(data: object): number;
     /**
-     * 设置模型名
+     * 设置model名
      * @param model - 模型
      * @param name -  名
      */
@@ -96,13 +104,17 @@ export declare class ModelManager {
     add(data: any, model: any): void;
     /**
      * 添加绑定
-     * @param model -     模型
-     * @param moduleId -  模块id
+     * @remarks
+     * 当一个model被多个module引用时，需要添加绑定，以便修改时触发多个模块渲染。
+     * @param model -   模型
+     * @param module -  模块
      */
     bindModel(model: Model, module: Module): void;
     /**
      * 更新导致渲染
+     * @remarks
      * 如果不设置oldValue和newValue，则直接强制渲染
+     *
      * @param model -     model
      * @param key -       属性
      * @param oldValue -  旧值
@@ -110,29 +122,28 @@ export declare class ModelManager {
      */
     update(model: Model, key: string, oldValue?: unknown, newValue?: unknown): void;
     /**
-     * 监听某个数据项
-     * 注意：执行此操作时，该数据项必须已经存在，否则监听失败
-     * @param model -     带watch的model
-     * @param key -       数据项名或数组
-     * @param operate -   数据项变化时执行方法
-     * @param module -    指定模块，如果指定，则表示该model绑定的所有module都会触发watch事件，在model父(模块)传子(模块)传递的是对象时会导致多个watch出发
-     * @param deep -      是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
+     * 监听数据项
      *
-     * @returns         unwatch函数
+     * @param model -   被监听model
+     * @param key -     监听数据项名
+     * @param operate - 数据项变化时执行方法
+     * @param deep -    是否深度观察，如果是深度观察，则子对象更改，也会触发观察事件
+     *
+     * @returns         unwatch函数，执行此函数，可取消监听
      */
     watch(model: Model, key: string | string[], operate: (m: any, k: any, ov: any, nv: any) => void, deep?: boolean): () => void;
     /**
-     * 查询model子属性
-     * @param key -       属性名，可以分级，如 name.firstName
-     * @param model -     模型
-     * @returns         属性对应model proxy
+     * 获取model属性值
+     * @param key -     属性名，可以分级，如 name.firstName
+     * @param model -   模型
+     * @returns         属性值
      */
     get(model: Model, key?: string): unknown;
     /**
-     * 设置值
-     * @param model -     模型
-     * @param key -       子属性，可以分级，如 name.firstName
-     * @param value -     属性值
+     * 设置model属性值
+     * @param model -   模型
+     * @param key -     属性名，可以分级，如 name.firstName
+     * @param value -   属性值
      */
     set(model: Model, key: string, value: unknown): void;
 }

@@ -1,14 +1,17 @@
 import { DefineElementClass } from "./types";
 /**
  * 自定义元素管理器
+ *
+ * @remarks
+ * 所有自定义元素需要添加到管理器才能使用
  */
 export declare class DefineElementManager {
     /**
-     * 自定义element
+     * 自定义元素集合
      */
     private static elements;
     /**
-     * 添加自定义元素类
+     * 添加自定义元素
      * @param clazz -   自定义元素类或类数组
      */
     static add(clazz: unknown[] | unknown): void;

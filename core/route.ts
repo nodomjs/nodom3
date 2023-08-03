@@ -9,54 +9,49 @@ import { Util } from "./util";
     /**
      * 路由id
      */
-    id:number;
+    public id:number;
     /**
      * 路由参数名数组
      */
-    params:Array<string> = [];
+    public params:Array<string> = [];
     /**
      * 路由参数数据
      */
-    data:object = {};
+    public data:object = {};
     /**
      * 子路由
      */
-    children:Array<Route> = [];
+    public children:Array<Route> = [];
     /**
      * 进入路由事件方法
      */
-    onEnter:(module:Module,path:string)=>void;
+    public onEnter:(module:Module,path:string)=>void;
     /**
      * 离开路由方法
      */
-    onLeave:(module:Module,path:string)=>void;
+    public onLeave:(module:Module,path:string)=>void;
     
     /**
      * 路由路径
      */
-    path:string;
+    public path:string;
     /**
      * 完整路径
      */
-    fullPath:string;
+    public fullPath:string;
 
     /**
      * 路由对应模块对象或类或模块类名
      */
-    module:string|UnknownClass|Module;
+    public module:string|UnknownClass|Module;
     
-    /**
-     * 模块路径，当module为类名时需要，默认执行延迟加载
-     */
-    modulePath:string;
-
     /**
      * 父路由
      */
-    parent:Route;
+    public parent:Route;
 
     /**
-     * 
+     * 构造器
      * @param config - 路由配置项
      */
     constructor(config?:RouteCfg,parent?:Route) {
@@ -86,7 +81,7 @@ import { Util } from "./util";
     
     /**
      * 添加子路由
-     * @param child - 
+     * @param child - 字路由
      */
     public addChild(child:Route){
         this.children.push(child);
@@ -126,7 +121,6 @@ import { Util } from "./util";
                         break;
                     }
                 }
-
                 //没找到，创建新节点
                 if (j === node.children.length) {
                     if (prePath !== '') {
@@ -136,7 +130,6 @@ import { Util } from "./util";
                     prePath = v;
                 }
             }
-
             //不存在参数
             this.params = paramIndex===-1?[]:param;
         }
@@ -146,7 +139,7 @@ import { Util } from "./util";
      * 克隆
      * @returns 克隆对象
      */
-    public clone(){
+    public clone():Route{
         const r = new Route();
         Object.getOwnPropertyNames(this).forEach(item=>{
             if(item === 'data'){    

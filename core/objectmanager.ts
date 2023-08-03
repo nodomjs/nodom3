@@ -2,25 +2,30 @@ import { NCache } from "./cache";
 import { Module } from "./module";
 
 /**
- * 对象管理器，用于存储模块的内存变量
+ * 对象管理器
+ * @remarks
+ * 用于存储模块的内存变量，`$`开始的数据项可能被nodom占用，使用时禁止使用。
+ * 
  * 默认属性集
+ * 
  *  $events     事件集
+ * 
  *  $domparam   dom参数
  */
 export  class ObjectManager {
     /**
-     * NCache
+     * NCache对象
      */
     public cache:NCache;
 
     /**
-     * 模块
+     * 所属模块
      */
     public module:Module;
 
     /**
      * module   模块
-     * @param module - 
+     * @param module - 模块
      */
     constructor(module:Module){
         this.module = module;
@@ -29,8 +34,8 @@ export  class ObjectManager {
 
     /**
      * 保存到cache
-     * @param key -       键，支持"."（多级数据分割）
-     * @param value -     值
+     * @param key -     键，支持"."（多级数据分割）
+     * @param value -   值
      */
      public set(key:string,value:unknown){
         this.cache.set(key+'',value);
@@ -38,7 +43,7 @@ export  class ObjectManager {
 
     /**
      * 从cache读取
-     * @param key -   键，支持"."（多级数据分割）
+     * @param key - 键，支持多级数据，如"x.y.z"
      * @returns     缓存的值或undefined
      */
     public get(key:string){
@@ -55,10 +60,10 @@ export  class ObjectManager {
 
     /**
      * 设置事件参数
-     * @param id -        事件id
-     * @param key -       dom key
-     * @param name -      参数名  
-     * @param value -     参数值
+     * @param id -      事件id
+     * @param key -     dom key
+     * @param name -    参数名  
+     * @param value -   参数值
      */
     public setEventParam(id:number,key:number|string,name:string,value:unknown){
         this.cache.set('$events.' + id + '.$params.' + key + '.' + name,value);
@@ -66,9 +71,9 @@ export  class ObjectManager {
 
     /**
      * 获取事件参数值
-     * @param id -        事件id
-     * @param key -       dom key 
-     * @param name -      参数名
+     * @param id -      事件id
+     * @param key -     dom key 
+     * @param name -    参数名
      * @returns         参数值
      */
     public getEventParam(id:number,key:number|string,name:string){
@@ -77,9 +82,9 @@ export  class ObjectManager {
 
     /**
      * 移除事件参数
-     * @param id -        事件id
-     * @param key -       dom key
-     * @param name -      参数名
+     * @param id -      事件id
+     * @param key -     dom key
+     * @param name -    参数名
      */
     public removeEventParam(id:number,key:number|string,name:string){
         this.remove('$events.' + id + '.$params.' + key + '.' + name);
@@ -87,8 +92,8 @@ export  class ObjectManager {
 
     /**
      * 清空事件参数
-     * @param id -        事件id
-     * @param key -       dom key 
+     * @param id -      事件id
+     * @param key -     dom key 
      */
     public clearEventParams(id:number,key?:number|string){
         if(key){    //删除对应dom的事件参数
@@ -100,9 +105,9 @@ export  class ObjectManager {
 
     /**
      * 设置dom参数值
-     * @param key -       dom key 
-     * @param name -      参数名
-     * @param value -     参数值
+     * @param key -     dom key 
+     * @param name -    参数名
+     * @param value -   参数值
      */
     public setDomParam(key:number|string,name:string,value:unknown){
         this.set('$domparam.' + key + '.' + name ,value);
@@ -110,8 +115,8 @@ export  class ObjectManager {
 
     /**
      * 获取dom参数值
-     * @param key -       dom key
-     * @param name -      参数名
+     * @param key -     dom key
+     * @param name -    参数名
      * @returns         参数值
      */
     public getDomParam(key:number|string,name:string):unknown{
@@ -120,8 +125,8 @@ export  class ObjectManager {
 
     /**
      * 移除dom参数值
-     * @param key -       dom key
-     * @param name -      参数名
+     * @param key -     dom key
+     * @param name -    参数名
      */
     public removeDomParam(key:number|string,name:string){
         this.remove('$domparam.' + key + '.' + name);
@@ -129,7 +134,7 @@ export  class ObjectManager {
 
     /**
      * 清除element 参数集
-     * @param key -   dom key
+     * @param key -     dom key
      */
     public clearDomParams(key:number|string){
         this.remove('$domparam.' + key);

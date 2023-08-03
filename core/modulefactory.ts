@@ -2,26 +2,40 @@ import { Module } from "./module";
 import { UnknownClass } from "./types";
 
 /**
- * 过滤器工厂，存储模块过滤器
+ * 模块工厂
+ * @remarks
+ * 管理所有模块类、模块实例
  */
 export class ModuleFactory {
     /**
      * 模块对象集合 
+     * @remarks
+     * 格式为map，其中：
+     * 
      * key: 模块id
+     * 
      * value: 模块对象
      */
     private static modules: Map<number, Module> = new Map();
 
     /**
      * 模块类集合
+     * @remarks
+     * 格式为map，其中：
+     * 
      *  key:    模块类名或别名
+     * 
      *  value:  模块类
      */
     public static classes: Map<string, UnknownClass> = new Map();
 
     /**
      * 别名map
+     * @remarks
+     * 格式为map，其中：
+     * 
      * key:     别名
+     * 
      * value:   类名
      */
     public static aliasMap:Map<string,string> = new Map();
@@ -32,7 +46,7 @@ export class ModuleFactory {
     private static mainModule: Module;
 
     /**
-     * 添加模块到工厂
+     * 添加模块实例到工厂
      * @param item -  模块对象
      */
     public static add(item: Module) {
@@ -47,6 +61,13 @@ export class ModuleFactory {
 
     /**
      * 获得模块
+     * @remarks
+     * 当name为id时，则获取对应id的模块
+     * 
+     * 当name为字符串时，表示模块类名
+     * 
+     * 当name为class时，表示模块类
+     * 
      * @param name -  类或实例id
      */
     public static get(name: number|string|UnknownClass): Module {
@@ -75,7 +96,7 @@ export class ModuleFactory {
 
     /**
      * 是否存在模块类
-     * @param clazzName -     模块类名
+     * @param clazzName -   模块类名
      * @returns     true/false
      */
     public static hasClass(clazzName: string): boolean {
@@ -85,8 +106,8 @@ export class ModuleFactory {
 
     /**
      * 添加模块类
-     * @param clazz -     模块类
-     * @param alias -     注册别名
+     * @param clazz -   模块类
+     * @param alias -   别名
      */
     public static addClass(clazz: unknown, alias?: string) {
         //转换成小写
@@ -103,8 +124,8 @@ export class ModuleFactory {
 
     /**
      * 获取模块类
-     * @param name -  类名或别名 
-     * @returns     模块类
+     * @param name -    类名或别名 
+     * @returns         模块类
      */
     public static getClass(name:string):UnknownClass{
         name = name.toLowerCase();
@@ -112,7 +133,9 @@ export class ModuleFactory {
     }
     
     /**
-     * 装载module
+     * 加载模块
+     * @remarks
+     * 用于实现模块懒加载
      * @param modulePath -   模块类路径
      * @returns              模块类
      */
@@ -136,8 +159,9 @@ export class ModuleFactory {
     public static remove(id: number) {
         this.modules.delete(id);
     }
+
     /**
-     * 设置主模块
+     * 设置应用主模块
      * @param m - 	模块 
      */
     public static setMain(m: Module) {
@@ -145,7 +169,7 @@ export class ModuleFactory {
     }
 
     /**
-     * 获取主模块
+     * 获取应用主模块
      * @returns 	应用的主模块
      */
     public static getMain() {

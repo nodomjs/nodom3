@@ -1,14 +1,15 @@
 import { ChangedDom, RenderedDom } from "./types";
 /**
- * 比较器
+ * dom比较器
  */
 export class DiffTool{
     /**
      * 比较节点
-     * @param src -           待比较节点（新树节点）
-     * @param dst - 	        被比较节点 (旧树节点)
-     * @param changeArr -     增删改的节点数组
-     * @returns	            [[type(add 1, upd 2,move 3 ,rep 4,del 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),loc(位置)]]
+     * 
+     * @param src -         待比较节点（新树节点）
+     * @param dst - 	    被比较节点 (旧树节点)
+     * @param changeArr -   增删改的节点数组
+     * @returns	            改变的节点数组
      */
     public static compare(src:RenderedDom,dst:RenderedDom):ChangedDom[] {
         const changeArr = [];
@@ -17,10 +18,8 @@ export class DiffTool{
 
         /**
          * 比较节点
-         * @param src -         待比较节点（新树节点）
-         * @param dst - 	    被比较节点 (旧树节点)
-         * @returns	            [[type(add 1, upd 2,del 3,move 4 ,rep 5),dom(操作节点),dom1(被替换或修改节点),parent(父节点),
-         *                      loc(dom在父的children index)]]
+         * @param src -     待比较节点（新节点）
+         * @param dst - 	被比较节点 (旧节点)
          */
         function compare(src:RenderedDom,dst:RenderedDom) {
             if (!src.tagName) { //文本节点
@@ -183,15 +182,15 @@ export class DiffTool{
         
         /**
          * 添加到修改数组
-         * @param type -      类型 add 1, upd 2,del 3,move 4 ,rep 5
-         * @param dom -       目标节点       
-         * @param dom1 -      相对节点（被替换）
-         * @param parent -    父节点
-         * @param loc -       添加或移动的目标index
-         * @param loc1 -      被移动前位置
-         * @returns         添加的change数组
+         * @param type -    类型 add 1, upd 2,del 3,move 4 ,rep 5
+         * @param dom -     目标节点       
+         * @param dom1 -    相对节点（被替换时有效）
+         * @param parent -  父节点
+         * @param loc -     添加或移动的目标index
+         * @param loc1 -    被移动前位置
+         * @returns         changed dom
         */
-        function addChange(type:number,dom: RenderedDom, dom1: RenderedDom,parent?:RenderedDom,loc?:number,loc1?:number){
+        function addChange(type:number,dom:RenderedDom, dom1:RenderedDom,parent?:RenderedDom,loc?:number,loc1?:number):unknown{
             const o = [type,dom,dom1,parent,loc,loc1];
             changeArr.push(o);
             return o;

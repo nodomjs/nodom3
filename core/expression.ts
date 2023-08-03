@@ -7,8 +7,11 @@ import { Util } from "./util";
 
 /**
  * 表达式类
+ * @remarks
  * 表达式中的特殊符号
+ * 
  *  this:指向渲染的module
+ * 
  *  $model:指向当前dom的model
  */
 export class Expression {
@@ -26,11 +29,6 @@ export class Expression {
      * 源表达式串
      */
     exprStr: string;
-
-    /**
-     * 值
-     */
-    value:unknown;
 
     /**
      * @param exprStr -	表达式串
@@ -123,11 +121,11 @@ export class Expression {
 
     /**
      * 表达式计算
-     * @param module -    模块
+     * @param module -  模块
      * @param model - 	模型
      * @returns 		计算结果
      */
-    public val(module:Module,model: Model) {
+    public val(module:Module,model: Model):unknown {
         if(!this.execFunc){
             return;
         }
@@ -140,7 +138,6 @@ export class Expression {
                 console.error(e);
             }
         }
-        this.value = v;
         return v;
     }
 }

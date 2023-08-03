@@ -9,7 +9,7 @@
 		<div class="view">hahaha</div> 
 	</body>
 	<script type='module'>
-		import{nodom,Module} from '/dist/nodom.esm.js'
+		import{Nodom,Module} from '/dist/nodom.esm.js'
 		class Module1 extends Module{
 			template(){
 				let s = `
@@ -81,6 +81,6 @@
                 return s;
             }
         } 
-    	nodom(Module1,'div');
+    	Nodom.app(Module1,'div');
 	</script>
 </html>

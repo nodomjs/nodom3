@@ -15,23 +15,57 @@ import { Expression } from "./expression";
 
 /**
  * 模块类
- * 模块方法说明：模板内使用的方法，包括事件，都直接在模块内定义
- *      方法this：指向module实例
- *      事件参数: model(当前按钮对应model),dom(事件对应虚拟dom),eventObj(事件对象),e(实际触发的html event)
- *      表达式方法：参数按照表达式方式给定即可
- * 模块事件
- *      onInit              初始化后（constructor后，已经有model对象，但是尚未编译，只执行1次）
- *      onBeforeFirstRender 首次渲染前（只执行1次）
- *      onFirstRender       首次渲染后（只执行1次）
- *      onBeforeRender      渲染前
- *      onRender            渲染后
- *      onCompile           编译后
- *      onBeforeMount       挂载到document前
- *      onMount             挂载到document后
- *      onBeforeUnMount     从document脱离前
- *      onUnmount           从document脱离后
- *      onBeforeUpdate      更新到document前
- *      onUpdate            更新到document后
+ * 
+ * @remarks
+ * 模块方法说明：模板内使用的方法，包括事件方法，都在模块内定义
+ *
+ *  方法this：指向module实例
+ * 
+ *  事件参数: model(当前按钮对应model),dom(事件对应虚拟dom),eventObj(事件对象),e(实际触发的html event)  
+ * 
+ *  表达式方法：参数按照表达式方式给定即可，如：
+ * ```html
+ *  <div>
+ *      <div class={{getCls(st)}} e-click='click'>Hello Nodom</div>
+ *  </div>
+ * ```
+ * ```js
+ *  //事件方法
+ *  click(model,dom,eventObj,e){
+ *      //do something
+ *  }
+ *  //表达式方法
+ *  //state 由表达式中给定，state由表达式传递，为当前dom model的一个属性
+ *  getCls(state){
+ *      //do something
+ *  } 
+ * ```
+ * 
+ * 模块事件，在模块不同阶段执行
+ * 
+ * onInit              初始化后（constructor后，已经有model对象，但是尚未编译，只执行1次）
+ * 
+ * onBeforeFirstRender 首次渲染前（只执行1次）
+ * 
+ * onFirstRender       首次渲染后（只执行1次）
+ * 
+ * onBeforeRender      渲染前
+ * 
+ * onRender            渲染后
+ * 
+ * onCompile           编译后
+ * 
+ * onBeforeMount       挂载到document前
+ * 
+ * onMount             挂载到document后
+ * 
+ * onBeforeUnMount     从document脱离前
+ * 
+ * onUnmount           从document脱离后
+ * 
+ * onBeforeUpdate      更新到document前
+ * 
+ * onUpdate            更新到document后
  */
 export class Module {
     /**
@@ -149,17 +183,18 @@ export class Module {
     }
 
     /**
-     * 模板串方法，使用时重载
-     * @param props -   props对象，在模板容器dom中进行配置，从父模块传入
+     * 模板串方法，使用时需重载
+     * @param props -   props对象，在模板中进行配置，从父模块传入
      * @returns         模板串
+     * @virtual
      */
     public template(props?:object):string{
         return null;
     }
 
     /**
-     * 数据方法，使用时重载
-     * @returns     数据对象
+     * 数据方法，使用时需重载
+     * @returns  数据对象
      */
     public data():object{
         return {};
@@ -167,14 +202,49 @@ export class Module {
     
     /**
      * 模型渲染
+     * @remarks
+     * 渲染流程：
+     * 
+     * 1. 获取首次渲染标志
+     * 
+     * 2. 执行template方法获得模板串
+     * 
+     * 3. 与旧模板串比较，如果不同，则进行编译
+     * 
+     * 4. 判断是否存在虚拟dom树（编译时可能导致模板串为空），没有则结束
+     * 
+     * 5. 如果为首次渲染，执行onBeforeFirstRender事件 
+     * 
+     * 6. 执行onBeforeRender事件
+     * 
+     * 7. 保留旧渲染树，进行新渲染
+     * 
+     * 8. 执行onRender事件
+     * 
+     * 9. 如果为首次渲染，执行onFirstRender事件 
+     * 
+     * 10. 渲染树为空，从document解除挂载
+     * 
+     * 11. 如果未挂载，执行12，否则执行13
+     * 
+     * 12. 执行挂载，结束
+     * 
+     * 13. 新旧渲染树比较，比较结果为空，结束，否则执行14
+     * 
+     * 14. 执行onBeforeUpdate事件
+     * 
+     * 15. 更新到document
+     * 
+     * 16. 执行onUpdate事件，结束
      */
     public render(): boolean {
         if(this.state === EModuleState.UNMOUNTED){
             return;
         }
+        //获取首次渲染标志
+        const firstRender = this.oldTemplate===undefined;
         //检测模板并编译
         const templateStr = this.template(this.props);
-        const firstRender = this.oldTemplate===undefined;
         //与旧模板不一样，需要重新编译
         if(templateStr !== this.oldTemplate){
             this.oldTemplate = templateStr;
@@ -186,7 +256,7 @@ export class Module {
         }
         //首次渲染
         if(firstRender){
-            this.doModuleEvent('onBeforeFirstRender');    
+            this.doModuleEvent('onBeforeFirstRender');
         }
         //渲染前事件
         this.doModuleEvent('onBeforeRender');
@@ -294,7 +364,7 @@ export class Module {
     }
 
     /**
-     * 解挂，从document移除
+     * 从document移除
      */
     public unmount(){
         // 主模块或状态为unmounted的模块不用处理
@@ -302,7 +372,7 @@ export class Module {
             return;
         }
         //从render列表移除
-        Renderer.remove(this.id);
+        Renderer.remove(this);
         //清空event factory
         this.eventFactory.clear();
         //执行卸载前事件
@@ -349,9 +419,8 @@ export class Module {
 
     /**
      * 执行模块事件
-     * @param eventName - 	事件名
-     * @returns             执行结果，各事件返回值如下：
-     *                          onBeforeRender：如果为true，表示不进行渲染
+     * @param eventName -   事件名
+     * @returns             执行结果
      */
     private doModuleEvent(eventName: string):boolean{
         const foo = this[eventName];
@@ -362,8 +431,8 @@ export class Module {
 
     /**
      * 获取模块方法
-     * @param name -  方法名
-     * @returns     方法
+     * @param name -    方法名
+     * @returns         方法
      */
     public getMethod(name: string): UnknownMethod {
         return this[name];
@@ -371,8 +440,8 @@ export class Module {
 
     /**
      * 设置props
-     * @param props -     属性值
-     * @param dom -       子模块对应渲染后节点
+     * @param props -   属性值
+     * @param dom -     子模块对应渲染后节点
      */
     public setProps(props:object,dom:RenderedDom){
         const dataObj = props['$data'];
@@ -447,7 +516,7 @@ export class Module {
 
     /**
      * 设置不渲染到根dom的属性集合
-     * @param props -     待移除的属性名属组
+     * @param props -   待移除的属性名属组
      */
     public setExcludeProps(props:string[]){
         this.excludedProps = props;
@@ -455,8 +524,8 @@ export class Module {
 
     /**
      * 处理根节点属性
-     * @param src -       编译节点
-     * @param dst -       dom节点
+     * @param src -     编译节点
+     * @param dst -     dom节点
      */
     public handleRootProps(src,dst){
         //已合并属性集合
@@ -512,28 +581,50 @@ export class Module {
     }
 
     /**
-     * 获取html node
-     * @param key -   dom key 或 props键值对
-     * @returns     html node
+     * 获取html节点
+     * @remarks
+     * 当key为数字或字符串时，表示dom key，当key为对象时，表示根据dom属性进行查找
+     * 
+     * @param key - dom key 或 props键值对
+     * @returns     html节点
      */
     public getElement(key:object|string|number):Node{
         return this.domManager.getElement(key);
     }
 
     /**
-     * save html node
+     * 保存html节点
      * @param key -   dom key
-     * @param node -  html node
+     * @param node -  html节点
      */
     public saveElement(key:number|string,node:Node){
         this.domManager.saveElement(key,node);
     }
 
     /**
-     * 获取模块类名对应的第一个子模块(如果设置deep，则深度优先)
-     * @param name -          子模块类名或别名
-     * @param deep -          是否深度获取
-     * @param attrs -         属性集合
+     * 按模块类名获取子模块
+     * @remarks
+     * 找到第一个满足条件的子模块，如果deep=true，则深度优先
+     * 
+     * 如果attrs不为空，则同时需要匹配子模块属性
+     * 
+     * @example
+     * ```html
+     *  <div>
+     *      <Module1 />
+     *      //other code
+     *      <Module1 v1='a' v2='b' />
+     *  </div>
+     * ```
+     * ```js
+     *  const m = getModule('Module1',true, {v1:'a'});
+     *  //m 为模板中的第二个Module1
+     * ```
+     * @param name -    子模块类名或别名
+     * @param deep -    是否深度获取
+     * @param attrs -   属性集合
+     * 
+     * @returns         符合条件的子模块或undefined
      */
     public getModule(name:string,deep?:boolean,attrs?:object):Module{
         if(!this.children){
@@ -585,8 +676,8 @@ export class Module {
 
     /**
      * 获取模块类名对应的所有子模块
-     * @param className -     子模块类名
-     * @param deep -          深度查询
+     * @param className -   子模块类名
+     * @param deep -        深度查询
      */
      public getModules(className:string,deep?:boolean):Module[]{
         if(!this.children){
@@ -619,14 +710,16 @@ export class Module {
     }
 
     /**
-     * 监听
-     * 如果第一个参数为属性名，则第二个参数为钩子函数，第三个参数为deep，默认model为根模型
-     * 否则按照以下说明
+     * 监听model
+     * @remarks
+     * 参数个数可变，如果第一个参数为属性名，则第二个参数为钩子函数，第三个参数为deep，默认model为根模型
+     * 
+     * 否则按照参数说明
      * @param model -     模型或属性
      * @param key -       属性/属性数组，支持多级属性
      * @param operate -   钩子函数
      * @param deep -      是否深度监听
-     * @returns         可回收监听器，执行后取消监听
+     * @returns           回收监听器函数，执行后取消监听
      */
     public watch(model:Model|string|string[],key:string|string[]|((m,k,ov,nv)=>void),operate?:boolean| ((m,k,ov,nv)=>void),deep?:boolean){
         if(model['__key']){
@@ -638,8 +731,11 @@ export class Module {
 
     /**
      * 设置模型属性值
-     * 如果第一个参数为属性名，则第二个参数为属性值，默认model为根模型
-     * 否则按照以下说明
+     * @remarks
+     * 参数个数可变，如果第一个参数为属性名，则第二个参数为属性值，默认model为根模型
+     * 
+     * 否则按照参数说明
+     * 
      * @param model -     模型
      * @param key -       子属性，可以分级，如 name.firstName
      * @param value -     属性值
@@ -654,10 +750,13 @@ export class Module {
 
     /**
      * 获取模型属性值
-     * 如果第一个参数为属性名，默认model为根模型
-     * 否则按照以下说明
-     * @param model -     模型
-     * @param key -       属性名，可以分级，如 name.firstName，如果为null，则返回自己
+     * @remarks
+     * 参数个数可变，如果第一个参数为属性名，默认model为根模型
+     * 
+     * 否则按照参数说明
+     * 
+     * @param model -   模型
+     * @param key -     属性名，可以分级，如 name.firstName，如果为null，则返回自己
      * @returns         属性值
      */
     public get(model:Model|string, key?:string):unknown {
@@ -669,9 +768,12 @@ export class Module {
     }
 
     /**
-     * 调用方法
-     * @param methodName -    方法名
-     * @param pn -            参数，最多10个参数
+     * 调用模块内方法
+     * @remarks
+     * 参数个数可变，参数个数最多10个
+     * 
+     * @param methodName -  方法名
+     * @param pn -          参数
      */
     public invokeMethod(methodName:string,p1?,p2?,p3?,p4?,p5?,p6?,p7?,p8?,p9?,p10?){
         if(typeof this[methodName] === 'function'){
@@ -680,11 +782,39 @@ export class Module {
     }
 
     /**
-     * 调用外部方法，当该模块作为子模块使用时，方法属于使用该模块的模板对应的module
-     * @param methodName -    方法名
-     * @param pn -            参数，最多10个参数
+     * 调用模块外方法
+     * @remarks
+     * 当该模块作为子模块使用时，调用方法属于使用此模块的模板对应的模块
+     * 
+     * 对于下面的例子，模块`Module1`需要调用模块`Main`的`outerFoo方法`，则采用`invokeOuterMethod`进行调用。
+     * @example
+     * ```js
+     *  //Module1
+     *  class Module1 extends Module{
+     *      //your code
+     *  }
+     * 
+     *  //Main
+     *  class Main extends Module{
+     *      modules=[Module1];
+     *      template(){
+     *          return `
+     *              <div>
+     *                  <Module1 />
+     *              </div>
+     *          `
+     *      }
+     *      outerFoo(){
+     * 
+     *      }    
+     *  }
+     *  
+     * ```
+     * @param methodName -  方法名
+     * @param pn -          参数，最多10个参数
+     * @returns             方法返回值
      */
-    public invokeOuterMethod(methodName:string,p1?,p2?,p3?,p4?,p5?,p6?,p7?,p8?,p9?,p10?){
+    public invokeOuterMethod(methodName:string,p1?,p2?,p3?,p4?,p5?,p6?,p7?,p8?,p9?,p10?):unknown{
         if(!this.templateModuleId){
             return;
         }
@@ -696,8 +826,10 @@ export class Module {
     }
     
     /**
-     * 获取dom key id
-     * @returns     key id
+     * 获取模块当前dom key编号
+     * @remarks
+     * 主要在手动增加节点时需要，避免key重复
+     * @returns   key编号
      */
     public getDomKeyId():number{
         return ++this.domKeyId;

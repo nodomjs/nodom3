@@ -97,9 +97,12 @@ export class Router {
     }
 
     /**
-     * 把路径加入跳转列表(准备跳往该路由)
-     * @param path - 	路径 
-     * @param type -  启动路由类型，参考startType，默认0
+     * 跳转
+     * @remarks
+     * 只是添加到跳转列表，并不会立即进行跳转
+     * 
+     * @param path -    路径 
+     * @param type -    启动路由类型，参考startType，默认0
      */
     public go(path: string) {
         // 当前路径的父路径不处理
@@ -466,7 +469,7 @@ export class Router {
     }
 
     /**
-     * 登记路由容器到管理器中
+     * 注册路由容器
      * @param moduleId -      模块id
      * @param module -        路由实际所在模块（当使用slot时，与moduleId对应模块不同）
      * @param key -           路由容器key

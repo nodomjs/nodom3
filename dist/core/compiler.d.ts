@@ -1,10 +1,10 @@
 import { Module } from './module';
 import { VirtualDom } from './virtualdom';
 /**
- * - 模板标签必须闭合
- */
-/**
- * - 模板标签必须闭合
+ * 编译器
+ *
+ * @remarks
+ * 用于编译模板串为虚拟dom(VirtualDom)节点，存放于模块的 domManager.vdomTree
  */
 export declare class Compiler {
     /**
@@ -16,7 +16,7 @@ export declare class Compiler {
      */
     private current;
     /**
-     * 虚拟dom树
+     * 虚拟dom数组
      */
     private domArr;
     /**
@@ -28,7 +28,7 @@ export declare class Compiler {
      */
     private isExprText;
     /**
-     * 当前编译的模板 主要用于报错的时候定位
+     * 当前编译的模板，用于报错的时候定位
      */
     private template;
     /**
@@ -36,18 +36,18 @@ export declare class Compiler {
      */
     private root;
     /**
-     * 当前是否在svg区域
+     * 当前处理标签是否在svg区域
      */
     private isSvg;
     /**
      * 构造器
-     * @param module -
+     * @param module - 模块
      */
     constructor(module: Module);
     /**
      * 编译
-     * @param elementStr -     待编译html串
-     * @returns              虚拟dom
+     * @param elementStr - 	待编译html串
+     * @returns             虚拟dom树根节点
      */
     compile(elementStr: string): VirtualDom;
     /**

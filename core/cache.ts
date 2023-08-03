@@ -1,14 +1,13 @@
 import { Module } from "./module";
-import { UnknownMethod } from "./types";
 
 /**
- * NCache模块-存储在内存中
+ * 缓存模块
  */
 export class NCache{
     /**
      * 缓存数据容器
      */
-    private cacheData:object;
+    private cacheData:object = {};
 
     /**
      * 订阅map，格式为 
@@ -22,13 +21,9 @@ export class NCache{
      */
     private subscribeMap = new Map();
     
-    constructor(){
-        this.cacheData = {};
-    }
-
     /**
      * 通过提供的键名从内存中拿到对应的值
-     * @param key -   键，支持"."（多级数据分割）
+     * @param key - 键，支持"."（多级数据分割）
      * @returns     值或undefined
      */
     public get(key:string){
@@ -51,8 +46,8 @@ export class NCache{
 
     /**
      * 通过提供的键名和值将其存储在内存中
-     * @param key -       键 
-     * @param value -     值
+     * @param key -     键 
+     * @param value -   值
      */
     public set(key:string,value:unknown){
         let p = this.cacheData;
@@ -69,11 +64,9 @@ export class NCache{
                 key = arr[arr.length-1];
             }
         }
-        
         if(p){
             p[key] = value;
         }
-
         //处理订阅
         if(this.subscribeMap.has(key1)){
             const arr = this.subscribeMap.get(key1);
@@ -100,7 +93,6 @@ export class NCache{
                 }
             }
         }
-        
         if(p){
             delete p[key];
         }       
@@ -108,10 +100,10 @@ export class NCache{
     /**
      * 订阅
      * @param module -    订阅的模块
-     * @param key -       字段key
-     * @param handler -   回调函数 参数为key对应value 
+     * @param key -       订阅的属性名
+     * @param handler -   回调函数或方法名（方法属于module），方法传递参数为订阅属性名对应的值 
      */
-    public subscribe(module:Module,key:string,handler:string|UnknownMethod){
+    public subscribe(module:Module,key:string,handler:string|((value)=>void)){
         if(!this.subscribeMap.has(key)){
             this.subscribeMap.set(key,[{module:module,handler:handler}]);
         }else{
@@ -129,13 +121,11 @@ export class NCache{
 
     /**
      * 调用订阅方法
-     * @param module -    模块
-     * @param foo -       方法或方法名
-     * @param v -         值
-     * 
-     * @internal
+     * @param module -  模块
+     * @param foo -     方法或方法名
+     * @param v -       值
      */
-    private invokeSubscribe(module:Module,foo:string|UnknownMethod,v:unknown){
+    private invokeSubscribe(module:Module,foo:string|((value)=>void),v:unknown){
         if(typeof foo === 'string'){
             module.invokeMethod(<string>foo,v);
         }else{

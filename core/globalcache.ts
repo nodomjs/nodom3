@@ -1,18 +1,22 @@
 import { NCache } from "./cache";
 import { Module } from "./module";
-import { UnknownMethod } from "./types";
 
 /**
  * 全局缓存
+ * 
+ * @remarks
+ * 用于所有模块共享数据，实现模块通信
  */
 export class GlobalCache{
-    //NCache实例
+    /**
+     * NCache实例，用于存放缓存对象
+     */ 
     private static cache:NCache = new NCache();
 
     /**
      * 保存到cache
-     * @param key -       键，支持"."（多级数据分割）
-     * @param value -     值
+     * @param key -     键，支持"."（多级数据分割）
+     * @param value -   值
      */
     public static set(key:string,value:unknown){
         this.cache.set(key,value);
@@ -20,7 +24,7 @@ export class GlobalCache{
 
     /**
      * 从cache读取
-     * @param key -   键，支持"."（多级数据分割）
+     * @param key - 键，支持"."（多级数据分割）
      * @returns     缓存的值或undefined
      */
     public static get(key):unknown{
@@ -29,11 +33,15 @@ export class GlobalCache{
 
     /**
      * 订阅
+     * 
+     * @remarks
+     * 如果订阅的数据发生改变，则会触发handler
+     * 
      * @param module -    订阅的模块
-     * @param key -       字段key
-     * @param handler -   回调函数 参数为key对应value
+     * @param key -       订阅的属性名
+     * @param handler -   回调函数或方法名（方法属于module），方法传递参数为订阅属性名对应的值
      */
-    public static subscribe(module:Module,key:string,handler:UnknownMethod){
+    public static subscribe(module:Module,key:string,handler:string|((value)=>void)){
         this.cache.subscribe(module,key,handler);
     }
 
@@ -44,5 +52,4 @@ export class GlobalCache{
     public static remove(key){
         this.cache.remove(key);
     }
-
 }

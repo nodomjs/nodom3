@@ -3,6 +3,8 @@ import { Module } from "./module";
 import { RenderedDom } from "./types";
 /**
  * 事件工厂
+ *
+ * @remarks
  * 每个模块一个事件工厂，用于管理模块内虚拟dom对应的事件对象
  */
 export declare class EventFactory {
@@ -78,33 +80,37 @@ export declare class EventFactory {
      */
     removeEvent(dom: RenderedDom, event: NEvent): void;
     /**
-     * 绑定dom事件
+     * 绑定key对应节点所有事件
+     * @remarks
+     * 执行addEventListener操作
      * @param key -   dom key
      */
     bind(key: string | number): void;
     /**
-     * 从eventfactory解绑所有事件
-     * @param key -           dom key
-     * @param eventName -     事件名
+     * 解绑key对应节点的指定事件
+     * @remarks
+     * 执行removeEventListener操作
+     * @param key -         dom key
+     * @param eventName -   事件名
      */
     unbind(key: number, eventName: string): void;
     /**
-     * 解绑html element事件
-     * @param key -   dom key
+     * 解绑key对应节点所有事件
+     * @param key - dom key
      */
     unbindAll(key: number | string): void;
     /**
      * 是否拥有key对应的事件对象
-     * @param key -   dom key
+     * @param key - dom key
      * @returns     如果key对应事件存在，返回true，否则返回false
      */
-    hasEvent(key: number): boolean;
+    private hasEvent;
     /**
      * 清除工厂所有事件
      */
     clear(): void;
     /**
-     * 事件handler
+     * 事件处理函数
      * @param module - 模块
      * @param e - HTML Event
      */

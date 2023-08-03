@@ -11,9 +11,9 @@ export  class DirectiveManager {
     
     /**
      * 增加指令映射
-     * @param name -      指令类型名
-     * @param handle -    渲染处理函数
-     * @param prio -      类型优先级
+     * @param name -    指令类型名
+     * @param handle -  渲染处理函数
+     * @param prio -    类型优先级
      */
     public static addType(name:string,handler:DirectiveMethod,prio?:number) {
         this.directiveTypes.set(name, new DirectiveType(name,handler,prio));
@@ -21,7 +21,7 @@ export  class DirectiveManager {
 
     /**
      * 移除指令映射
-     * @param name -      指令类型名
+     * @param name -    指令类型名
      */
     public static removeType(name:string) {
         this.directiveTypes.delete(name);
@@ -29,7 +29,7 @@ export  class DirectiveManager {
 
     /**
      * 获取指令
-     * @param name -      指令类型名
+     * @param name -    指令类型名
      * @returns         指令类型或undefined
      */
     public static getType(name:string) {
@@ -38,7 +38,7 @@ export  class DirectiveManager {
 
     /**
      * 是否含有某个指令
-     * @param name -      指令类型名
+     * @param name -    指令类型名
      * @returns         true/false
      */
     public static hasType(name:string) {

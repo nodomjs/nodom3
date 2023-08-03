@@ -14,10 +14,10 @@
 	<body>
 	</body>
 	<script type='module'>
-		import{nodom} from '/dist/nodom.esm.js'
+		import{Nodom} from '/dist/nodom.esm.js'
     	import {MdlRouteMain} from './modules/route/mdlroutemain.js'
 		import {initRoute} from './modules/route/routeconfig.js'
 		initRoute();
-		nodom(MdlRouteMain);
+		Nodom.app(MdlRouteMain);
 	</script>
 </html>

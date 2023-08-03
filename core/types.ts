@@ -168,12 +168,17 @@ export type DirectiveMethod = (module:Module,dom:RenderedDom)=>boolean;
 export type ExpressionMethod = (model:Model)=>unknown;
 
 /**
- * diff 后的更改dom节点数组，依次为
- * 0: 类型 add 1, upd 2,del 3,move 4 ,rep 5
- * 1: 目标节点       
- * 2: 相对节点（被替换时有效）
- * 3: 父节点
- * 4: 添加或移动的目标index
- * 5: 被移动前位置
+ * 新旧dom树比较后更改的节点
+ * 
+ * @remarks
+ * 元素依次为：
+ * ```js
+ * 0：修改类型，可选值 1: add（添加）, 2: upd（更新）,3: del（删除）, 4: move（移动） ,5: rep（替换） 
+ * 1：目标节点
+ * 2：相对节点（rep时有效）
+ * 3：目标节点的父节点
+ * 4：目标节点在父节点中的index
+ * 5：被移动前位置(move时有效)
+ * ```
  */
 export type ChangedDom = [number,RenderedDom,RenderedDom?,RenderedDom?,number?,number?];

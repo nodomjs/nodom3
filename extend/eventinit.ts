@@ -17,11 +17,11 @@ EventManager.regist('tap',{
             return;
         }
         let tch = e.touches[0];
-        let dx = tch.pageX - pos.sx;
-        let dy = tch.pageY - pos.sy;
+        let dx = tch.pageX - pos['sx'];
+        let dy = tch.pageY - pos['sy'];
         //判断是否移动
         if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-            pos.move = true;
+            pos['move'] = true;
         }
     },
     touchend(dom:RenderedDom,module:Module,evtObj:NEvent,e: TouchEvent) {
@@ -30,9 +30,9 @@ EventManager.regist('tap',{
             return;
         }
         evtObj.dependEvent.removeParam(module,dom,'pos');
-        let dt = Date.now() - pos.t;
+        let dt = Date.now() - pos['t'];
         //点下时间不超过200ms,触发事件
-        if (!pos.move && dt < 200) {
+        if (!pos['move'] && dt < 200) {
             let foo = evtObj.dependEvent.handler;
             if(typeof foo === 'string'){
                 module.invokeMethod(<string>evtObj.dependEvent.handler,dom.model,dom,evtObj.dependEvent,e);
@@ -61,23 +61,23 @@ EventManager.regist('tap',{
         let tch = e.touches[0];
         let mv = evtObj.dependEvent.getParam(module,dom,'swipe');
         //50ms记录一次
-        if (nt - mv.oldTime[1] > 50) {
-            mv.speedLoc[0] = { x: mv.speedLoc[1].x, y: mv.speedLoc[1].y };
-            mv.speedLoc[1] = { x: tch.pageX, y: tch.pageY };
-            mv.oldTime[0] = mv.oldTime[1];
-            mv.oldTime[1] = nt;
+        if (nt - mv['oldTime'][1] > 50) {
+            mv['speedLoc'][0] = { x: mv['speedLoc'][1].x, y: mv['speedLoc'][1].y };
+            mv['speedLoc'][1] = { x: tch.pageX, y: tch.pageY };
+            mv['oldTime'][0] = mv['oldTime'][1];
+            mv['oldTime'][1] = nt;
         }
-        mv.oldLoc = { x: tch.pageX, y: tch.pageY };
+        mv['oldLoc'] = { x: tch.pageX, y: tch.pageY };
     },
     touchend(dom:RenderedDom,module:Module,evtObj:NEvent,e: any){
         let mv = evtObj.dependEvent.getParam(module,dom,'swipe');
         let nt = Date.now();
         //取值序号 0 或 1，默认1，如果释放时间与上次事件太短，则取0
-        let ind = (nt - mv.oldTime[1] < 30) ? 0 : 1;
-        let dx = mv.oldLoc.x - mv.speedLoc[ind].x;
-        let dy = mv.oldLoc.y - mv.speedLoc[ind].y;
+        let ind = (nt - mv['oldTime'][1] < 30) ? 0 : 1;
+        let dx = mv['oldLoc'].x - mv['speedLoc'][ind].x;
+        let dy = mv['oldLoc'].y - mv['speedLoc'][ind].y;
         let s = Math.sqrt(dx * dx + dy * dy);
-        let dt = nt - mv.oldTime[ind];
+        let dt = nt - mv['oldTime'][ind];
         //超过300ms 不执行事件
         if (dt > 300 || s < 10) {
             return;
@@ -126,7 +126,7 @@ EventManager.regist('swipedown',EventManager.get('swipe'));
  */
 EventManager.regist('dblclick',{
     click(dom:RenderedDom,module:Module,evtObj:NEvent,e: MouseEvent) {
-        let firstClick = evtObj.dependEvent.getParam(module,dom,'firstClick');
+        let firstClick = <number>evtObj.dependEvent.getParam(module,dom,'firstClick');
         if(firstClick){
             let t = Date.now();
             //两次点击在300ms内，视为双击

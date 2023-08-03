@@ -2,8 +2,11 @@ import {Module} from "./module";
 import { RenderedDom } from "./types";
 /**
  * css 管理器
+ * @privateRemarks
  * 针对不同的rule，处理方式不同
- * CssStyleRule 进行保存和替换，同时 scopeInModule(模块作用域)有效
+ * 
+ * CssStyleRule 进行保存和替换，同时模块作用域scope有效
+ * 
  * CssImportRule 路径不重复添加，因为必须加在stylerule前面，所以需要记录最后的import索引号
  */
 export class CssManager{
@@ -30,10 +33,10 @@ export class CssManager{
     
     /**
      * 处理style 元素
-     * @param module -    模块
-     * @param dom -       虚拟dom
-     * @param root -      模块root dom
-     * @param add -       是否添加根模块类名
+     * @param module -  模块
+     * @param dom -     虚拟dom
+     * @param root -    模块root dom
+     * @param add -     是否添加根模块类名
      * @returns         如果是styledom，则返回true，否则返回false
      */
     public static handleStyleDom(module:Module,dom:RenderedDom,root:RenderedDom):void{
@@ -49,8 +52,8 @@ export class CssManager{
 
     /**
      * 处理 style 下的文本元素
-     * @param module -    模块
-     * @param dom -       style text element
+     * @param module -  模块
+     * @param dom -     style text element
      * @returns         如果是styleTextdom返回true，否则返回false
      */
     public static handleStyleTextDom(module:Module,dom:RenderedDom):boolean{
@@ -64,11 +67,11 @@ export class CssManager{
 
     /**
      * 添加多个css rule
-     * @param cssText -           rule集合 
-     * @param module -            模块
-     * @param scopeName -         作用域名(前置选择器)
+     * @param cssText -     rule集合 
+     * @param module -      模块
+     * @param scopeName -   作用域名(前置选择器)
      */
-    public static addRules(module:Module,cssText:string,scopeName?:string){
+    private static addRules(module:Module,cssText:string,scopeName?:string){
         //sheet 初始化
         if(!this.sheet){
             //safari不支持 cssstylesheet constructor，用 style代替
@@ -76,19 +79,15 @@ export class CssManager{
             document.head.appendChild(sheet);
             this.sheet = document.styleSheets[0];
         }
-
         //如果有作用域，则清除作用域下的rule
         if(scopeName){
             this.clearModuleRules(module);
         }
-
         //是否限定在模块内
         //cssRule 获取正则式  @import
         const reg = /(@[a-zA-Z]+\s+url\(.+?\))|([.#@a-zA-Z]\S*(\s*\S*\s*?)?{)|\}/g;
-
         //import support url正则式
         const regImp = /@[a-zA-Z]+\s+url/;
-        
         // keyframe font page support... 开始 位置
         let startIndex:number=-1;
         // { 个数，遇到 } -1 
@@ -120,9 +119,9 @@ export class CssManager{
         
         /**
          * 处理style rule
-         * @param module -         模块
-         * @param cssText -        css 文本
-         * @param scopeName -      作用域名(前置选择器)
+         * @param module -      模块
+         * @param cssText -     css 文本
+         * @param scopeName -   作用域名(前置选择器)
          */
         function handleStyle(module:Module,cssText:string,scopeName?:string){
             const reg = /.+(?=\{)/; //匹配字符"{"前出现的所有字符
@@ -147,7 +146,7 @@ export class CssManager{
 
         /**
          * 处理import rule
-         * @param cssText -   css文本
+         * @param cssText - css文本
          * @returns         如果cssText中"()"内有字符串且importMap中存在键值为"()"内字符串的第一个字符，则返回void
          */
         function handleImport(cssText:string){
@@ -164,13 +163,11 @@ export class CssManager{
             CssManager.sheet.insertRule(cssText,CssManager.importIndex++);
             CssManager.importMap.set(css,true);
         }
-        
     }
 
     /**
      * 清除模块css rules
      * @param module -  模块
-     * @returns       如果模块不存在css rules，则返回void 
      */
     public static clearModuleRules(module:Module){
         const rules = module.objectManager.get('$cssRules');
@@ -184,7 +181,6 @@ export class CssManager{
                 this.sheet.deleteRule(i--);
             }
         }
-
         //置空cache
         module.objectManager.set('$cssRules',[]);
     }
