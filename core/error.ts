@@ -5,7 +5,7 @@ import { Util } from "./util";
  * 异常处理类
  */
 export  class NError extends Error{
-    constructor(errorName:string,params?:string[]){
+    constructor(errorName:string,...params){
         super(errorName);
         const msg:string = NodomMessage.ErrorMsgs[errorName];
         if(msg === undefined){

@@ -47,7 +47,7 @@ export class Scheduler{
 	 */
 	public static addTask(foo:()=>void,thiser?:object){
 		if(!Util.isFunction(foo)){
-			throw new NError("invoke",["Scheduler.addTask","0","function"]);
+			throw new NError("invoke","Scheduler.addTask","0","function");
 		}
 		Scheduler.tasks.push({func:foo,thiser:thiser});
 	}
@@ -58,7 +58,7 @@ export class Scheduler{
 	 */
 	public static removeTask(foo){
 		if(!Util.isFunction(foo)){
-			throw new NError("invoke",["Scheduler.removeTask","0","function"]);
+			throw new NError("invoke","Scheduler.removeTask","0","function");
 		}
 		let ind = -1;
 		if((ind = Scheduler.tasks.indexOf(foo)) !== -1){

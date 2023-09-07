@@ -773,11 +773,11 @@ export class Module {
      * 参数个数可变，参数个数最多10个
      * 
      * @param methodName -  方法名
-     * @param pn -          参数
+     * @param args -        参数
      */
-    public invokeMethod(methodName:string,p1?,p2?,p3?,p4?,p5?,p6?,p7?,p8?,p9?,p10?){
+    public invokeMethod(methodName:string,...args){
         if(typeof this[methodName] === 'function'){
-            return this[methodName].call(this,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10);
+            return this[methodName](args);
         }
     }
 

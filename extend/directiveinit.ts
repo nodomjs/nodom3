@@ -9,15 +9,15 @@ import { Renderer } from "../core/renderer";
 import { RenderedDom } from "../core/types";
 import { Util } from "../core/util";
 
-(function () {
-    /**
+/**
      * 指令类型初始化
-     * 每个指令类型都有一个名字、处理函数和优先级，处理函数不能用箭头函数
+     * @remarks
+     * 每个指令类型都有一个名字、处理函数和优先级，处理函数`不能用箭头函数`
      * 处理函数在渲染时执行，包含两个参数 module(模块)、dom(目标虚拟dom)
-     * 处理函数的this指向指令
-     * 处理函数的返回值 true 表示继续，false 表示后续指令不再执行，同时该节点不加入渲染树 
+     * 处理函数的this指向指令对象
+     * 处理函数的返回值`true`表示继续，`false`表示后续指令不再执行，同时该节点不加入渲染树 
      */
-
+(function () {
     /**
      * module 指令
      * 用于指定该元素为模块容器，表示子模块
@@ -32,7 +32,7 @@ import { Util } from "../core/util";
             if (mid) {
                 m = ModuleFactory.get(mid);
             } else {
-                let cls = this.value;
+                const cls = this.value;
                 m = ModuleFactory.get(cls);
                 if (!m) {
                     return true;
@@ -48,15 +48,15 @@ import { Util } from "../core/util";
             //变成文本节点，作为子模块占位符，子模块渲染后替换占位符
             delete dom.tagName;
             //设置props，如果改变了props，启动渲染
-            let o: any = {};
+            const o = {};
             if (dom.props) {
-                for (let p of Object.keys(dom.props)) {
-                    let v = dom.props[p];
+                for (const p of Object.keys(dom.props)) {
+                    const v = dom.props[p];
                     if (p[0] === '$') { //数据
-                        if (!o.$data) {
-                            o.$data = {};
+                        if (!o['$data']) {
+                            o['$data'] = {};
                         }
-                        o.$data[p.substring(1)] = v;
+                        o['$data'][p.substring(1)] = v;
                         //删除属性
                         delete dom.props[p];
                     } else {
@@ -77,7 +77,7 @@ import { Util } from "../core/util";
     Nodom.createDirective(
         'model',
         function (module: Module, dom: RenderedDom) {
-            let model: Model = module.get(dom.model,this.value);
+            const model: Model = module.get(dom.model,this.value);
             if (model) {
                 dom.model = model;
             }
@@ -93,8 +93,8 @@ import { Util } from "../core/util";
     Nodom.createDirective(
         'repeat',
         function (module: Module, dom: RenderedDom) {
-            let rows = this.value;
-            // 无数据，不渲染
+            const rows = this.value;
+            // 无数据不渲染
             if (!Util.isArray(rows) || rows.length === 0) {
                 return false;
             }
@@ -112,7 +112,7 @@ import { Util } from "../core/util";
                 if (idxName && typeof rows[i] === 'object') {
                     rows[i][<string>idxName] = i;
                 }
-                let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].__key);
+                const d = Renderer.renderDom(module, src, rows[i], parent, rows[i].__key);
                 //删除index属性
                 if (idxName) {
                     delete d.props['index'];
@@ -149,30 +149,30 @@ import { Util } from "../core/util";
                 src.children = [];
                 //递归存储名
                 const name = '$recurs.' + (dom.props['ref'] || 'default');
-                let node = module.objectManager.get(name);
+                const node = module.objectManager.get(name);
                 if (!node) {
                     return true;
                 }
-                let model = dom.model;
-                let cond = node.getDirective('recur');
-                let m = model[cond.value];
+                const model = dom.model;
+                const cond = node.getDirective('recur');
+                const m = model[cond.value];
                 //不存在子层数组，不再递归
                 if (!m) {
                     return true;
                 }
                 //克隆，后续可以继续用
-                let node1 = node.clone();
+                const node1 = node.clone();
                 node1.removeDirective('recur');
                 dom.children ||= [];
                 if (!Array.isArray(m)) {  //非数组recur
                     Renderer.renderDom(module,node1,m,dom,m.__key);
                 }else{  //数组内recur，依赖repeat得到model，repeat会取一次数组元素，所以需要dom model
-                    Renderer.renderDom(module,node1,model,dom,(<any>m).__key);
+                    Renderer.renderDom(module,node1,model,dom,m['__key']);
                 }
                 //删除ref属性
                 delete dom.props['ref'];
             } else { //递归节点
-                let data = dom.model[this.value];
+                const data = dom.model[this.value];
                 if (!data) {
                     return true;
                 }
@@ -228,7 +228,7 @@ import { Util } from "../core/util";
             if(!dom.parent){
                 return;
             }
-            let v = module.objectManager.getDomParam(dom.parent.key, '$if');
+            const v = module.objectManager.getDomParam(dom.parent.key, '$if');
             if (v === true) {
                 return false;
             } else {
@@ -284,7 +284,7 @@ import { Util } from "../core/util";
                 regResult = reg.exec(style);
                 //保存第一个style display属性
                 if(regResult !== null){
-                    let ra = regResult[0].split(':');
+                    const ra = regResult[0].split(':');
                     display = ra[1].trim();
                     //保存第一个display属性
                     if(!showParam['origin'] && display !== 'none'){
@@ -339,7 +339,7 @@ import { Util } from "../core/util";
             if(dom.staticNum === 0){
                 dom.staticNum = 1;
             }
-            let dataValue = module.get(dom.model,this.value);
+            const dataValue = module.get(dom.model,this.value);
             if(dom.tagName === 'select'){
                 dom.props['value'] = dataValue;
                 //延迟设置value，避免option尚未渲染
@@ -352,7 +352,7 @@ import { Util } from "../core/util";
             }else if(dom.tagName === 'input'){
                 switch(dom.props['type']){
                     case 'radio':
-                        let value = dom.props['value'];
+                        const value = dom.props['value'];
                         dom.props['name'] = this.value;
                         if (dataValue == value) {
                             dom.props['checked'] = 'checked';
@@ -364,7 +364,7 @@ import { Util } from "../core/util";
                         break;
                     case 'checkbox':
                         //设置状态和value
-                        let yv = dom.props['yes-value'];
+                        const yv = dom.props['yes-value'];
                         //当前值为yes-value
                         if (dataValue == yv) {
                             dom.props['value'] = yv;
@@ -375,21 +375,21 @@ import { Util } from "../core/util";
                         }
                         break;
                     default:
-                        let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
+                        const v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
                         dom.props['value'] = v;
                         dom.assets['value'] = v;
                 }
             }else{
-                let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
+                const v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
                 dom.props['value'] = v;
                 dom.assets['value'] = v;
             }
-            
-            let event: NEvent = <NEvent>GlobalCache.get('$fieldChangeEvent');
-            if (!event) {
-                event = new NEvent(null, 'change',
+            //设置dom参数，避免二次添加事件
+            if (!module.objectManager.getDomParam(dom.key,'$addedFieldEvent')) {
+                module.objectManager.setDomParam(dom.key,'$addedFieldEvent',true);
+                const event = new NEvent(null, 'change',
                     function (model, dom) {
-                        const el = <any>this.getElement(dom.key);
+                        const el = this.getElement(dom.key);
                         if (!el) {
                             return;
                         }
@@ -410,7 +410,7 @@ import { Util } from "../core/util";
                             }
                         }
                         //修改字段值,需要处理.运算符
-                        let arr = field.split('.')
+                        const arr = field.split('.')
                         if (arr.length === 1) {
                             model[field] = v;
                         } else {
@@ -425,10 +425,8 @@ import { Util } from "../core/util";
                         }
                     }
                 );
-                //存储字段change事件钩子
-                GlobalCache.set('$fieldChangeEvent', event);
+                dom.vdom.addEvent(event,0);
             }
-            dom.vdom.addEvent(event,0);
             return true;
         },
         10
@@ -440,7 +438,7 @@ import { Util } from "../core/util";
     Nodom.createDirective('route',
         function (module: Module, dom: RenderedDom) {
             if(!Nodom['$Router']){
-                throw new NError('uninit',[NodomMessage.TipWords.route]);
+                throw new NError('uninit',NodomMessage.TipWords.route);
             }
             //a标签需要设置href
             if (dom.tagName === 'a') {
@@ -449,7 +447,7 @@ import { Util } from "../core/util";
             dom.props['path'] = this.value;
             //有激活属性
             if (dom.props['active']) {
-                let acName = dom.props['active'];
+                const acName = dom.props['active'];
                 delete dom.props['active'];
                 //active 转expression
                 const router = Nodom['$Router'];
@@ -464,8 +462,8 @@ import { Util } from "../core/util";
             let event: NEvent = <NEvent>GlobalCache.get('$routeClickEvent');
             if (!event) {
                 event = new NEvent(module, 'click',
-                    function (model, dom, evObj, e) {
-                        let path = dom.props['path'];
+                    function (model, dom) {
+                        const path = dom.props['path'];
                         if (Util.isEmpty(path)) {
                             return;
                         }
@@ -487,7 +485,7 @@ import { Util } from "../core/util";
     Nodom.createDirective('router',
         function (module: Module, dom: RenderedDom) {
             if(!Nodom['$Router']){
-                throw new NError('uninit',[NodomMessage.TipWords.route])
+                throw new NError('uninit',NodomMessage.TipWords.route)
             }
             //建立新子节点            
             dom.children = [{key:dom.key+'_r',model:dom.model}];
@@ -504,12 +502,12 @@ import { Util } from "../core/util";
     Nodom.createDirective('slot',
         function (module: Module, dom: RenderedDom) {
             this.value = this.value || 'default';
-            let mid = dom.parent.moduleId;
+            const mid = dom.parent.moduleId;
             const src = dom.vdom;
             const slotName = '$slots.' + this.value;
             //父dom有module指令，表示为替代节点，替换子模块中的对应的slot节点；否则为子模块定义slot节点
             if (mid) {
-                let m = ModuleFactory.get(mid);
+                const m = ModuleFactory.get(mid);
                 if (m) {
                     let cfg = m.objectManager.get(slotName);
                     if(!cfg){
@@ -529,7 +527,7 @@ import { Util } from "../core/util";
                     //1 innerrender(通过当前模块渲染），2outerrender(通过模板所属模块渲染)
                     cfg.type = src.hasProp('innerrender')?1:2;
                     //首次渲染，需要检测是否绑定父dom model
-                    for (let d of cfg.dom.children) {
+                    for (const d of cfg.dom.children) {
                         if(check(d)){
                             //设定bind标志
                             cfg.needBind = true;
@@ -538,7 +536,7 @@ import { Util } from "../core/util";
                     }
                     /**
                      * 检测是否存在节点的statickNum=-1
-                     * @param d     带检测节点
+                     * @param d -   带检测节点
                      * @returns     true/false
                      */
                     function check(d){
@@ -547,7 +545,7 @@ import { Util } from "../core/util";
                         }
                         //深度检测
                         if(d.children){
-                            for(let d1 of d.children){
+                            for(const d1 of d.children){
                                 if(check(d1)){
                                     return true;
                                 }
@@ -559,7 +557,7 @@ import { Util } from "../core/util";
                 if(cfg.dom && cfg.dom.children && cfg.dom.children.length>0){
                     //渲染时添加s作为后缀，避免与模块内dom key冲突（相同model情况下）
                     if (cfg.type === 1) { //inner render模式
-                        for (let d of cfg.dom.children) {
+                        for (const d of cfg.dom.children) {
                             Renderer.renderDom(module, d, dom.model, dom.parent, dom.model['__key']+'s');
                         }
                     }else { // 外部渲染模式
@@ -567,7 +565,7 @@ import { Util } from "../core/util";
                         if(cfg.needBind){
                             cfg.module.modelManager.bindModel(cfg.model, module);
                         }
-                        for (let d of cfg.dom.children) {
+                        for (const d of cfg.dom.children) {
                             Renderer.renderDom(cfg.module, d, cfg.model, dom.parent, cfg.model['__key']+'s');
                         }
                     }

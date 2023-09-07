@@ -155,7 +155,7 @@ export class RequestManager{
         }).catch((re) => {
             switch (re.type) {
                 case "error":
-                    throw new NError("notexist1",[NodomMessage.TipWords['resource'], re.url]);
+                    throw new NError("notexist1",NodomMessage.TipWords['resource'], re.url);
                 case "timeout":
                     throw new NError("timeout");
                 case "jsonparse":

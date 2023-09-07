@@ -134,7 +134,7 @@ export class Expression {
             v = this.execFunc.call(module,model);
         } catch (e) {
             if(Nodom.isDebug){
-                console.error(new NError("wrongExpression",[this.exprStr]).message);
+                console.error(new NError("wrongExpression",this.exprStr).message);
                 console.error(e);
             }
         }

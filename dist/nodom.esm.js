@@ -533,7 +533,7 @@ class Expression {
         }
         catch (e) {
             if (Nodom.isDebug) {
-                console.error(new NError("wrongExpression", [this.exprStr]).message);
+                console.error(new NError("wrongExpression", this.exprStr).message);
                 console.error(e);
             }
         }
@@ -851,8 +851,11 @@ class Renderer {
             }
             //非module dom，添加dst事件到事件工厂
             if (src.events && !src.hasDirective('module')) {
-                dst.events = [];
+                if (!dst.events) {
+                    dst.events = [];
+                }
                 // 可能存在事件变化，需要先移除
+                // TODO 全部移除性能较低，需优化
                 module.eventFactory.removeAllEvents(dst);
                 for (const ev of src.events) {
                     //当事件串为表达式时，需要处理
@@ -1340,7 +1343,7 @@ class RequestManager {
             }).catch((re) => {
                 switch (re.type) {
                     case "error":
-                        throw new NError("notexist1", [NodomMessage.TipWords['resource'], re.url]);
+                        throw new NError("notexist1", NodomMessage.TipWords['resource'], re.url);
                     case "timeout":
                         throw new NError("timeout");
                     case "jsonparse":
@@ -1534,7 +1537,7 @@ class Scheduler {
      */
     static addTask(foo, thiser) {
         if (!Util.isFunction(foo)) {
-            throw new NError("invoke", ["Scheduler.addTask", "0", "function"]);
+            throw new NError("invoke", "Scheduler.addTask", "0", "function");
         }
         Scheduler.tasks.push({ func: foo, thiser: thiser });
     }
@@ -1544,7 +1547,7 @@ class Scheduler {
      */
     static removeTask(foo) {
         if (!Util.isFunction(foo)) {
-            throw new NError("invoke", ["Scheduler.removeTask", "0", "function"]);
+            throw new NError("invoke", "Scheduler.removeTask", "0", "function");
         }
         let ind = -1;
         if ((ind = Scheduler.tasks.indexOf(foo)) !== -1) {
@@ -1611,7 +1614,7 @@ class Nodom {
      */
     static use(clazz, params) {
         if (!clazz['name']) {
-            new NError('notexist', [NodomMessage.TipWords.plugin]);
+            new NError('notexist', NodomMessage.TipWords.plugin);
         }
         if (!this['$' + clazz['name']]) {
             this['$' + clazz['name']] = Reflect.construct(clazz, params || []);
@@ -1654,7 +1657,7 @@ class Nodom {
      */
     static createRoute(config, parent) {
         if (!Nodom['$Router']) {
-            throw new NError('uninit', [NodomMessage.TipWords.route]);
+            throw new NError('uninit', NodomMessage.TipWords.route);
         }
         let route;
         parent = parent || Nodom['$Router'].getRoot();
@@ -1724,7 +1727,7 @@ class Nodom {
  * 异常处理类
  */
 class NError extends Error {
-    constructor(errorName, params) {
+    constructor(errorName, ...params) {
         super(errorName);
         const msg = NodomMessage.ErrorMsgs[errorName];
         if (msg === undefined) {
@@ -1966,14 +1969,14 @@ class Util {
                 timeStamp = Number(timeStamp);
             }
             else {
-                throw new NError('invoke', ['Util.formatDate', '0', 'date string', 'date']);
+                throw new NError('invoke', 'Util.formatDate', '0', 'date string', 'date');
             }
         }
         //得到日期
         const date = new Date(timeStamp);
         // invalid date
         if (isNaN(date.getDay())) {
-            throw new NError('invoke', ['Util.formatDate', '0', 'date string', 'date']);
+            throw new NError('invoke', 'Util.formatDate', '0', 'date string', 'date');
         }
         const o = {
             "M+": date.getMonth() + 1,
@@ -2006,17 +2009,18 @@ class Util {
      * @param params -  参数数组
      * @returns     转换后的消息
      */
-    static compileStr(src, params) {
+    static compileStr(src, ...params) {
+        if (!params || params.length === 0) {
+            return src;
+        }
         let reg;
-        if (params) {
-            for (let i = 0; i < params.length; i++) {
-                if (src.indexOf('\{' + i + '\}') !== -1) {
-                    reg = new RegExp('\\{' + i + '\\}', 'g');
-                    src = src.replace(reg, params[i]);
-                }
-                else {
-                    break;
-                }
+        for (let i = 0; i < params.length; i++) {
+            if (src.indexOf('\{' + i + '\}') !== -1) {
+                reg = new RegExp('\\{' + i + '\\}', 'g');
+                src = src.replace(reg, params[i]);
+            }
+            else {
+                break;
             }
         }
         return src;
@@ -2048,7 +2052,7 @@ class Directive {
         if (type) {
             this.type = DirectiveManager.getType(type);
             if (!this.type) {
-                throw new NError('notexist1', [NodomMessage.TipWords['directive'], type]);
+                throw new NError('notexist1', NodomMessage.TipWords['directive'], type);
             }
         }
         if (typeof value === 'string') {
@@ -2228,35 +2232,32 @@ class NEvent {
      * @param name -      参数名
      * @param value -     参数值
      */
-    setParam(module, dom, name, value) {
-        module.objectManager.setEventParam(this.id, dom.key, name, value);
+    setParam(dom, name, value) {
+        this.module.objectManager.setEventParam(this.id, dom.key, name, value);
     }
     /**
      * 获取附加参数值
-     * @param module -    模块
      * @param dom -       虚拟dom
      * @param name -      参数名
      * @returns         附加参数值
      */
-    getParam(module, dom, name) {
-        return module.objectManager.getEventParam(this.id, dom.key, name);
+    getParam(dom, name) {
+        return this.module.objectManager.getEventParam(this.id, dom.key, name);
     }
     /**
      * 移除参数
-     * @param module -    模块
      * @param dom -       虚拟dom
      * @param name -      参数名
      */
-    removeParam(module, dom, name) {
-        return module.objectManager.removeEventParam(this.id, dom.key, name);
+    removeParam(dom, name) {
+        return this.module.objectManager.removeEventParam(this.id, dom.key, name);
     }
     /**
      * 清参数cache
-     * @param module -    模块
      * @param dom -       虚拟dom
      */
-    clearParam(module, dom) {
-        module.objectManager.clearEventParams(this.id, dom.key);
+    clearParam(dom) {
+        this.module.objectManager.clearEventParams(this.id, dom.key);
     }
 }
 
@@ -2730,7 +2731,7 @@ class Compiler {
             }
             else {
                 if (this.current) {
-                    throw new NError('tagError', [this.current.tagName]);
+                    throw new NError('tagError', this.current.tagName);
                 }
                 throw new NError('wrongTemplate');
             }
@@ -3169,64 +3170,6 @@ class DefineElement {
 }
 
 /**
- * 事件管理器
- * @remarks
- * 用于管理自定义事件
- */
-class EventManager {
-    /**
-     * 处理外部事件
-     * @param dom -     dom节点
-     * @param event -   事件对象
-     * @returns         如果有是外部事件，则返回true，否则返回false
-     */
-    static handleExtendEvent(module, dom, event) {
-        const evts = this.get(event.name);
-        if (!evts) {
-            return false;
-        }
-        for (const key of Object.keys(evts)) {
-            const ev = new NEvent(module, key, evts[key]);
-            ev.capture = event.capture;
-            ev.nopopo = event.nopopo;
-            ev.delg = event.delg;
-            ev.once = event.once;
-            //设置依赖事件
-            ev.dependEvent = event;
-            module.eventFactory.addEvent(dom, ev);
-        }
-        return true;
-    }
-    /**
-     * 注册自定义事件
-     * @param eventName -  事件名
-     * @param handleObj -  事件处理集
-     */
-    static regist(eventName, handleObj) {
-        this.extendEventMap.set(eventName, handleObj);
-    }
-    /**
-     * 取消注册自定义事件
-     * @param eventName -   事件名
-     */
-    static unregist(eventName) {
-        return this.extendEventMap.delete(eventName);
-    }
-    /**
-     * 获取自定义事件
-     * @param eventName -   事件名
-     * @returns             事件处理集
-     */
-    static get(eventName) {
-        return this.extendEventMap.get(eventName);
-    }
-}
-/**
- * 外部事件集
- */
-EventManager.extendEventMap = new Map();
-
-/**
  * 事件工厂
  *
  * @remarks
@@ -3244,14 +3187,14 @@ class EventFactory {
     }
     /**
      * 保存事件
-     * @param key -       dom key
-     * @param event -     事件对象
+     * @param key -     dom key
+     * @param event -   事件对象
      */
     addEvent(dom, event) {
         const key = dom.key;
         //判断是否已添加，避免重复添加
         if (this.addedEvents.has(key) && this.addedEvents.get(key).includes(event)) {
-            return false;
+            return;
         }
         //代理事件，如果无父节点，则直接处理为自有事件
         if (event.delg) {
@@ -3273,7 +3216,6 @@ class EventFactory {
         else {
             this.addedEvents.get(key).push(event);
         }
-        return true;
     }
     /**
      * 添加到dom的own或delg事件队列
@@ -5164,11 +5106,11 @@ class Module {
      * 参数个数可变，参数个数最多10个
      *
      * @param methodName -  方法名
-     * @param pn -          参数
+     * @param args -        参数
      */
-    invokeMethod(methodName, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) {
+    invokeMethod(methodName, ...args) {
         if (typeof this[methodName] === 'function') {
-            return this[methodName].call(this, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
+            return this[methodName](args);
         }
     }
     /**
@@ -5703,14 +5645,16 @@ class Router {
 
 /**
  * module 元素
+ * @remarks
+ * module指令标签，用`<module name='class name' /> 代替 x-module='class name'`
  */
 class MODULE extends DefineElement {
     constructor(node, module) {
         super(node, module);
         //类名
-        let clazz = node.getProp('name');
+        const clazz = node.getProp('name');
         if (!clazz) {
-            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'MODULE', 'className']);
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'MODULE', 'className');
         }
         node.delProp('name');
         node.addDirective(new Directive('module', clazz, module.id));
@@ -5718,14 +5662,16 @@ class MODULE extends DefineElement {
 }
 /**
  * for 元素
+ * @remarks
+ * repeat指令标签，用`<for cond={{your expression}} /> 代替 x-repeat={{your expression}}`
  */
 class FOR extends DefineElement {
     constructor(node, module) {
         super(node, module);
         //条件
-        let cond = node.getProp('cond');
+        const cond = node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'FOR', 'cond']);
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'FOR', 'cond');
         }
         node.delProp('cond');
         node.addDirective(new Directive('repeat', cond, module.id));
@@ -5733,26 +5679,30 @@ class FOR extends DefineElement {
 }
 /**
  * 递归元素
+ * @remarks
+ * recur指令标签，用`<recur cond='recur field' /> 代替 x-recur='recur field'`
  */
 class RECUR extends DefineElement {
     constructor(node, module) {
         super(node, module);
         //条件
-        let cond = node.getProp('cond');
+        const cond = node.getProp('cond');
         node.delProp('cond');
         node.addDirective(new Directive('recur', cond, module.id));
     }
 }
 /**
  * IF 元素
+ * @remarks
+ * if指令标签，用`<if cond={{your expression}} /> 代替 x-if={{your expression}}`
  */
 class IF extends DefineElement {
     constructor(node, module) {
         super(node, module);
         //条件
-        let cond = node.getProp('cond');
+        const cond = node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'IF', 'cond']);
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'IF', 'cond');
         }
         node.delProp('cond');
         node.addDirective(new Directive('if', cond, module.id));
@@ -5760,6 +5710,8 @@ class IF extends DefineElement {
 }
 /**
  * ELSE 元素
+ * @remarks
+ * else指令标签，用`<else/> 代替 x-else`
  */
 class ELSE extends DefineElement {
     constructor(node, module) {
@@ -5769,14 +5721,16 @@ class ELSE extends DefineElement {
 }
 /**
  * ELSEIF 元素
+ * @remarks
+ * elseif指令标签，用`<elseif cond={{your expression}} /> 代替 x-elseif={{your expression}}`
  */
 class ELSEIF extends DefineElement {
     constructor(node, module) {
         super(node, module);
         //条件
-        let cond = node.getProp('cond');
+        const cond = node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'ELSEIF', 'cond']);
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ELSEIF', 'cond');
         }
         node.delProp('cond');
         node.addDirective(new Directive('elseif', cond, module.id));
@@ -5784,6 +5738,8 @@ class ELSEIF extends DefineElement {
 }
 /**
  * ENDIF 元素
+ * @remarks
+ * endif指令标签，用`<endif /> 代替 x-endif`
  */
 class ENDIF extends DefineElement {
     constructor(node, module) {
@@ -5793,14 +5749,16 @@ class ENDIF extends DefineElement {
 }
 /**
  * SHOW 元素
+ * @remarks
+ * show指令标签，用`<show cond={{your expression}} /> 代替 x-show={{your expression}}`
  */
 class SHOW extends DefineElement {
     constructor(node, module) {
         super(node, module);
         //条件
-        let cond = node.getProp('cond');
+        const cond = node.getProp('cond');
         if (!cond) {
-            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'SHOW', 'cond']);
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'SHOW', 'cond');
         }
         node.delProp('cond');
         node.addDirective(new Directive('show', cond, module.id));
@@ -5808,18 +5766,22 @@ class SHOW extends DefineElement {
 }
 /**
  * 插槽
+ * @remarks
+ * slot指令标签，用`<slot name='slotname' > 代替 x-slot='slotname'`
  */
 class SLOT extends DefineElement {
     constructor(node, module) {
         super(node, module);
         //条件
-        let cond = node.getProp('name') || 'default';
+        const cond = node.getProp('name') || 'default';
         node.delProp('name');
         node.addDirective(new Directive('slot', cond, module.id));
     }
 }
 /**
  * 路由
+ * @remarks
+ * route指令标签，用`<route path='routepath' > 代替 x-route='routepath'`
  */
 class ROUTE extends DefineElement {
     constructor(node, module) {
@@ -5829,15 +5791,17 @@ class ROUTE extends DefineElement {
         }
         super(node, module);
         //条件
-        let cond = node.getProp('path');
+        const cond = node.getProp('path');
         if (!cond) {
-            throw new NError('itemnotempty', [NodomMessage.TipWords['element'], 'ROUTE', 'path']);
+            throw new NError('itemnotempty', NodomMessage.TipWords['element'], 'ROUTE', 'path');
         }
         node.addDirective(new Directive('route', cond, module.id));
     }
 }
 /**
  * 路由容器
+ * @remarks
+ * router指令标签，用`<router /> 代替 x-router`
  */
 class ROUTER extends DefineElement {
     constructor(node, module) {
@@ -5848,14 +5812,15 @@ class ROUTER extends DefineElement {
 //添加到自定义元素管理器
 DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLOT, ROUTE, ROUTER]);
 
-(function () {
-    /**
+/**
      * 指令类型初始化
-     * 每个指令类型都有一个名字、处理函数和优先级，处理函数不能用箭头函数
+     * @remarks
+     * 每个指令类型都有一个名字、处理函数和优先级，处理函数`不能用箭头函数`
      * 处理函数在渲染时执行，包含两个参数 module(模块)、dom(目标虚拟dom)
-     * 处理函数的this指向指令
-     * 处理函数的返回值 true 表示继续，false 表示后续指令不再执行，同时该节点不加入渲染树
+     * 处理函数的this指向指令对象
+     * 处理函数的返回值`true`表示继续，`false`表示后续指令不再执行，同时该节点不加入渲染树
      */
+(function () {
     /**
      * module 指令
      * 用于指定该元素为模块容器，表示子模块
@@ -5869,7 +5834,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
             m = ModuleFactory.get(mid);
         }
         else {
-            let cls = this.value;
+            const cls = this.value;
             m = ModuleFactory.get(cls);
             if (!m) {
                 return true;
@@ -5885,15 +5850,15 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
         //变成文本节点，作为子模块占位符，子模块渲染后替换占位符
         delete dom.tagName;
         //设置props，如果改变了props，启动渲染
-        let o = {};
+        const o = {};
         if (dom.props) {
-            for (let p of Object.keys(dom.props)) {
-                let v = dom.props[p];
+            for (const p of Object.keys(dom.props)) {
+                const v = dom.props[p];
                 if (p[0] === '$') { //数据
-                    if (!o.$data) {
-                        o.$data = {};
+                    if (!o['$data']) {
+                        o['$data'] = {};
                     }
-                    o.$data[p.substring(1)] = v;
+                    o['$data'][p.substring(1)] = v;
                     //删除属性
                     delete dom.props[p];
                 }
@@ -5910,7 +5875,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
      *  model指令
      */
     Nodom.createDirective('model', function (module, dom) {
-        let model = module.get(dom.model, this.value);
+        const model = module.get(dom.model, this.value);
         if (model) {
             dom.model = model;
         }
@@ -5921,8 +5886,8 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
      * 描述：重复指令
      */
     Nodom.createDirective('repeat', function (module, dom) {
-        let rows = this.value;
-        // 无数据，不渲染
+        const rows = this.value;
+        // 无数据不渲染
         if (!Util.isArray(rows) || rows.length === 0) {
             return false;
         }
@@ -5940,7 +5905,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
             if (idxName && typeof rows[i] === 'object') {
                 rows[i][idxName] = i;
             }
-            let d = Renderer.renderDom(module, src, rows[i], parent, rows[i].__key);
+            const d = Renderer.renderDom(module, src, rows[i], parent, rows[i].__key);
             //删除index属性
             if (idxName) {
                 delete d.props['index'];
@@ -5972,32 +5937,32 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
             src.children = [];
             //递归存储名
             const name = '$recurs.' + (dom.props['ref'] || 'default');
-            let node = module.objectManager.get(name);
+            const node = module.objectManager.get(name);
             if (!node) {
                 return true;
             }
-            let model = dom.model;
-            let cond = node.getDirective('recur');
-            let m = model[cond.value];
+            const model = dom.model;
+            const cond = node.getDirective('recur');
+            const m = model[cond.value];
             //不存在子层数组，不再递归
             if (!m) {
                 return true;
             }
             //克隆，后续可以继续用
-            let node1 = node.clone();
+            const node1 = node.clone();
             node1.removeDirective('recur');
             dom.children || (dom.children = []);
             if (!Array.isArray(m)) { //非数组recur
                 Renderer.renderDom(module, node1, m, dom, m.__key);
             }
             else { //数组内recur，依赖repeat得到model，repeat会取一次数组元素，所以需要dom model
-                Renderer.renderDom(module, node1, model, dom, m.__key);
+                Renderer.renderDom(module, node1, model, dom, m['__key']);
             }
             //删除ref属性
             delete dom.props['ref'];
         }
         else { //递归节点
-            let data = dom.model[this.value];
+            const data = dom.model[this.value];
             if (!data) {
                 return true;
             }
@@ -6040,7 +6005,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
         if (!dom.parent) {
             return;
         }
-        let v = module.objectManager.getDomParam(dom.parent.key, '$if');
+        const v = module.objectManager.getDomParam(dom.parent.key, '$if');
         if (v === true) {
             return false;
         }
@@ -6088,7 +6053,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
             regResult = reg.exec(style);
             //保存第一个style display属性
             if (regResult !== null) {
-                let ra = regResult[0].split(':');
+                const ra = regResult[0].split(':');
                 display = ra[1].trim();
                 //保存第一个display属性
                 if (!showParam['origin'] && display !== 'none') {
@@ -6142,7 +6107,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
         if (dom.staticNum === 0) {
             dom.staticNum = 1;
         }
-        let dataValue = module.get(dom.model, this.value);
+        const dataValue = module.get(dom.model, this.value);
         if (dom.tagName === 'select') {
             dom.props['value'] = dataValue;
             //延迟设置value，避免option尚未渲染
@@ -6156,7 +6121,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
         else if (dom.tagName === 'input') {
             switch (dom.props['type']) {
                 case 'radio':
-                    let value = dom.props['value'];
+                    const value = dom.props['value'];
                     dom.props['name'] = this.value;
                     if (dataValue == value) {
                         dom.props['checked'] = 'checked';
@@ -6169,7 +6134,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
                     break;
                 case 'checkbox':
                     //设置状态和value
-                    let yv = dom.props['yes-value'];
+                    const yv = dom.props['yes-value'];
                     //当前值为yes-value
                     if (dataValue == yv) {
                         dom.props['value'] = yv;
@@ -6181,19 +6146,20 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
                     }
                     break;
                 default:
-                    let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
+                    const v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
                     dom.props['value'] = v;
                     dom.assets['value'] = v;
             }
         }
         else {
-            let v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
+            const v = (dataValue !== undefined && dataValue !== null) ? dataValue : '';
             dom.props['value'] = v;
             dom.assets['value'] = v;
         }
-        let event = GlobalCache.get('$fieldChangeEvent');
-        if (!event) {
-            event = new NEvent(null, 'change', function (model, dom) {
+        //设置dom参数，避免二次添加事件
+        if (!module.objectManager.getDomParam(dom.key, '$addedFieldEvent')) {
+            module.objectManager.setDomParam(dom.key, '$addedFieldEvent', true);
+            const event = new NEvent(null, 'change', function (model, dom) {
                 const el = this.getElement(dom.key);
                 if (!el) {
                     return;
@@ -6217,7 +6183,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
                     }
                 }
                 //修改字段值,需要处理.运算符
-                let arr = field.split('.');
+                const arr = field.split('.');
                 if (arr.length === 1) {
                     model[field] = v;
                 }
@@ -6232,10 +6198,8 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
                     }
                 }
             });
-            //存储字段change事件钩子
-            GlobalCache.set('$fieldChangeEvent', event);
+            dom.vdom.addEvent(event, 0);
         }
-        dom.vdom.addEvent(event, 0);
         return true;
     }, 10);
     /**
@@ -6243,7 +6207,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
      */
     Nodom.createDirective('route', function (module, dom) {
         if (!Nodom['$Router']) {
-            throw new NError('uninit', [NodomMessage.TipWords.route]);
+            throw new NError('uninit', NodomMessage.TipWords.route);
         }
         //a标签需要设置href
         if (dom.tagName === 'a') {
@@ -6252,7 +6216,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
         dom.props['path'] = this.value;
         //有激活属性
         if (dom.props['active']) {
-            let acName = dom.props['active'];
+            const acName = dom.props['active'];
             delete dom.props['active'];
             //active 转expression
             const router = Nodom['$Router'];
@@ -6266,8 +6230,8 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
         //添加click事件,避免重复创建事件对象，创建后缓存
         let event = GlobalCache.get('$routeClickEvent');
         if (!event) {
-            event = new NEvent(module, 'click', function (model, dom, evObj, e) {
-                let path = dom.props['path'];
+            event = new NEvent(module, 'click', function (model, dom) {
+                const path = dom.props['path'];
                 if (Util.isEmpty(path)) {
                     return;
                 }
@@ -6284,7 +6248,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
      */
     Nodom.createDirective('router', function (module, dom) {
         if (!Nodom['$Router']) {
-            throw new NError('uninit', [NodomMessage.TipWords.route]);
+            throw new NError('uninit', NodomMessage.TipWords.route);
         }
         //建立新子节点            
         dom.children = [{ key: dom.key + '_r', model: dom.model }];
@@ -6297,12 +6261,12 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
      */
     Nodom.createDirective('slot', function (module, dom) {
         this.value = this.value || 'default';
-        let mid = dom.parent.moduleId;
+        const mid = dom.parent.moduleId;
         const src = dom.vdom;
         const slotName = '$slots.' + this.value;
         //父dom有module指令，表示为替代节点，替换子模块中的对应的slot节点；否则为子模块定义slot节点
         if (mid) {
-            let m = ModuleFactory.get(mid);
+            const m = ModuleFactory.get(mid);
             if (m) {
                 let cfg = m.objectManager.get(slotName);
                 if (!cfg) {
@@ -6324,7 +6288,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
                 //1 innerrender(通过当前模块渲染），2outerrender(通过模板所属模块渲染)
                 cfg.type = src.hasProp('innerrender') ? 1 : 2;
                 //首次渲染，需要检测是否绑定父dom model
-                for (let d of cfg.dom.children) {
+                for (const d of cfg.dom.children) {
                     if (check(d)) {
                         //设定bind标志
                         cfg.needBind = true;
@@ -6333,7 +6297,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
                 }
                 /**
                  * 检测是否存在节点的statickNum=-1
-                 * @param d     带检测节点
+                 * @param d -   带检测节点
                  * @returns     true/false
                  */
                 function check(d) {
@@ -6342,7 +6306,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
                     }
                     //深度检测
                     if (d.children) {
-                        for (let d1 of d.children) {
+                        for (const d1 of d.children) {
                             if (check(d1)) {
                                 return true;
                             }
@@ -6354,7 +6318,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
             if (cfg.dom && cfg.dom.children && cfg.dom.children.length > 0) {
                 //渲染时添加s作为后缀，避免与模块内dom key冲突（相同model情况下）
                 if (cfg.type === 1) { //inner render模式
-                    for (let d of cfg.dom.children) {
+                    for (const d of cfg.dom.children) {
                         Renderer.renderDom(module, d, dom.model, dom.parent, dom.model['__key'] + 's');
                     }
                 }
@@ -6363,7 +6327,7 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
                     if (cfg.needBind) {
                         cfg.module.modelManager.bindModel(cfg.model, module);
                     }
-                    for (let d of cfg.dom.children) {
+                    for (const d of cfg.dom.children) {
                         Renderer.renderDom(cfg.module, d, cfg.model, dom.parent, cfg.model['__key'] + 's');
                     }
                 }
@@ -6376,151 +6340,5 @@ DefineElementManager.add([MODULE, FOR, RECUR, IF, ELSE, ELSEIF, ENDIF, SHOW, SLO
     }, 5);
 }());
 
-/**
- * tap事件
- */
-EventManager.regist('tap', {
-    touchstart(dom, module, evtObj, e) {
-        let tch = e.touches[0];
-        evtObj.dependEvent.setParam(module, dom, 'pos', { sx: tch.pageX, sy: tch.pageY, t: Date.now() });
-    },
-    touchmove(dom, module, evtObj, e) {
-        let pos = evtObj.dependEvent.getParam(module, dom, 'pos');
-        if (!pos) {
-            return;
-        }
-        let tch = e.touches[0];
-        let dx = tch.pageX - pos['sx'];
-        let dy = tch.pageY - pos['sy'];
-        //判断是否移动
-        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-            pos['move'] = true;
-        }
-    },
-    touchend(dom, module, evtObj, e) {
-        let pos = evtObj.dependEvent.getParam(module, dom, 'pos');
-        if (!pos) {
-            return;
-        }
-        evtObj.dependEvent.removeParam(module, dom, 'pos');
-        let dt = Date.now() - pos['t'];
-        //点下时间不超过200ms,触发事件
-        if (!pos['move'] && dt < 200) {
-            let foo = evtObj.dependEvent.handler;
-            if (typeof foo === 'string') {
-                module.invokeMethod(evtObj.dependEvent.handler, dom.model, dom, evtObj.dependEvent, e);
-            }
-            else {
-                foo.apply(module, [dom.model, dom, evtObj.dependEvent, e]);
-            }
-        }
-    }
-});
-/**
- * swipe事件
- */
-EventManager.regist('swipe', {
-    touchstart(dom, module, evtObj, e) {
-        let tch = e.touches[0];
-        let t = Date.now();
-        evtObj.dependEvent.setParam(module, dom, 'swipe', {
-            oldTime: [t, t],
-            speedLoc: [{ x: tch.pageX, y: tch.pageY }, { x: tch.pageX, y: tch.pageY }],
-            oldLoc: { x: tch.pageX, y: tch.pageY }
-        });
-    },
-    touchmove(dom, module, evtObj, e) {
-        let nt = Date.now();
-        let tch = e.touches[0];
-        let mv = evtObj.dependEvent.getParam(module, dom, 'swipe');
-        //50ms记录一次
-        if (nt - mv['oldTime'][1] > 50) {
-            mv['speedLoc'][0] = { x: mv['speedLoc'][1].x, y: mv['speedLoc'][1].y };
-            mv['speedLoc'][1] = { x: tch.pageX, y: tch.pageY };
-            mv['oldTime'][0] = mv['oldTime'][1];
-            mv['oldTime'][1] = nt;
-        }
-        mv['oldLoc'] = { x: tch.pageX, y: tch.pageY };
-    },
-    touchend(dom, module, evtObj, e) {
-        let mv = evtObj.dependEvent.getParam(module, dom, 'swipe');
-        let nt = Date.now();
-        //取值序号 0 或 1，默认1，如果释放时间与上次事件太短，则取0
-        let ind = (nt - mv['oldTime'][1] < 30) ? 0 : 1;
-        let dx = mv['oldLoc'].x - mv['speedLoc'][ind].x;
-        let dy = mv['oldLoc'].y - mv['speedLoc'][ind].y;
-        let s = Math.sqrt(dx * dx + dy * dy);
-        let dt = nt - mv['oldTime'][ind];
-        //超过300ms 不执行事件
-        if (dt > 300 || s < 10) {
-            return;
-        }
-        let v0 = s / dt;
-        //速度>0.1,触发swipe事件
-        if (v0 > 0.05) {
-            let sname = '';
-            if (dx < 0 && Math.abs(dy / dx) < 1) {
-                e.v0 = v0; //添加附加参数到e
-                sname = 'swipeleft';
-            }
-            if (dx > 0 && Math.abs(dy / dx) < 1) {
-                e.v0 = v0;
-                sname = 'swiperight';
-            }
-            if (dy > 0 && Math.abs(dx / dy) < 1) {
-                e.v0 = v0;
-                sname = 'swipedown';
-            }
-            if (dy < 0 && Math.abs(dx / dy) < 1) {
-                e.v0 = v0;
-                sname = 'swipeup';
-            }
-            //处理swipe
-            if (evtObj.dependEvent.name === sname) {
-                let foo = evtObj.dependEvent.handler;
-                if (typeof foo === 'string') {
-                    module.invokeMethod(foo, dom.model, dom, evtObj.dependEvent, e);
-                }
-                else if (typeof foo === 'function') {
-                    foo.apply(module, [dom.model, dom, evtObj.dependEvent, e]);
-                }
-            }
-        }
-    }
-});
-//把swpie注册到4个方向
-EventManager.regist('swipeleft', EventManager.get('swipe'));
-EventManager.regist('swiperight', EventManager.get('swipe'));
-EventManager.regist('swipeup', EventManager.get('swipe'));
-EventManager.regist('swipedown', EventManager.get('swipe'));
-/**
- * double click
- */
-EventManager.regist('dblclick', {
-    click(dom, module, evtObj, e) {
-        let firstClick = evtObj.dependEvent.getParam(module, dom, 'firstClick');
-        if (firstClick) {
-            let t = Date.now();
-            //两次点击在300ms内，视为双击
-            if (t - firstClick < 300) {
-                let foo = evtObj.dependEvent.handler;
-                if (typeof foo === 'string') {
-                    module.invokeMethod(evtObj.dependEvent.handler, dom.model, dom, evtObj.dependEvent, e);
-                }
-                else {
-                    foo.apply(module, [dom.model, dom, evtObj.dependEvent, e]);
-                }
-            }
-        }
-        else {
-            evtObj.dependEvent.setParam(module, dom, 'firstClick', Date.now());
-        }
-        //延迟清理firstClick
-        setTimeout(() => {
-            evtObj.dependEvent.removeParam(module, dom, 'firstClick');
-        }, 500);
-    },
-});
-
-export { Compiler, CssManager, DefineElement, DefineElementManager, DiffTool, Directive, DirectiveManager, DirectiveType, EModuleState, EventFactory, EventManager, Expression, GlobalCache, Model, ModelManager, Module, ModuleFactory, NCache, NError, NEvent, Nodom, NodomMessage, NodomMessage_en, NodomMessage_zh, Renderer, Route, Router, Scheduler, Util, VirtualDom };
+export { Compiler, CssManager, DefineElement, DefineElementManager, DiffTool, Directive, DirectiveManager, DirectiveType, EModuleState, EventFactory, Expression, GlobalCache, Model, ModelManager, Module, ModuleFactory, NCache, NError, NEvent, Nodom, NodomMessage, NodomMessage_en, NodomMessage_zh, Renderer, Route, Router, Scheduler, Util, VirtualDom };
 //# sourceMappingURL=nodom.esm.js.map

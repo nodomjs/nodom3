@@ -51,10 +51,10 @@ export declare class EventFactory {
     constructor(module: Module);
     /**
      * 保存事件
-     * @param key -       dom key
-     * @param event -     事件对象
+     * @param key -     dom key
+     * @param event -   事件对象
      */
-    addEvent(dom: RenderedDom, event: NEvent): boolean;
+    addEvent(dom: RenderedDom, event: NEvent): void;
     /**
      * 添加到dom的own或delg事件队列
      * @param key -       dom key

@@ -249,14 +249,14 @@ export class Util {
             if (/^\d+$/.test(<string>timeStamp)) {
                 timeStamp = Number(<string>timeStamp);
             } else {
-                throw new NError('invoke', ['Util.formatDate','0', 'date string', 'date']);
+                throw new NError('invoke', 'Util.formatDate','0', 'date string', 'date');
             }
         } 
         //得到日期
         const date: Date = new Date(timeStamp);
         // invalid date
         if (isNaN(date.getDay())) {
-            throw new NError('invoke', ['Util.formatDate','0', 'date string', 'date']);
+            throw new NError('invoke', 'Util.formatDate','0', 'date string', 'date');
         }
 
         const o = {
@@ -293,16 +293,17 @@ export class Util {
      * @param params -  参数数组
      * @returns     转换后的消息
      */
-    public static compileStr(src: string, params?: string[]): string {
+    public static compileStr(src: string, ...params): string {
+        if(!params || params.length === 0){
+            return src;
+        }
         let reg: RegExp;
-        if(params){
-            for (let i=0;i<params.length;i++) {
-                if (src.indexOf('\{' + i + '\}') !== -1) {
-                    reg = new RegExp('\\{' + i + '\\}', 'g');
-                    src = src.replace(reg, params[i]);
-                } else {
-                    break;
-                }
+        for (let i=0;i<params.length;i++) {
+            if (src.indexOf('\{' + i + '\}') !== -1) {
+                reg = new RegExp('\\{' + i + '\\}', 'g');
+                src = src.replace(reg, params[i]);
+            } else {
+                break;
             }
         }
         return src;

@@ -95,26 +95,23 @@ export declare class NEvent {
      * @param name -      参数名
      * @param value -     参数值
      */
-    setParam(module: Module, dom: RenderedDom, name: string, value: unknown): void;
+    setParam(dom: RenderedDom, name: string, value: unknown): void;
     /**
      * 获取附加参数值
-     * @param module -    模块
      * @param dom -       虚拟dom
      * @param name -      参数名
      * @returns         附加参数值
      */
-    getParam(module: Module, dom: RenderedDom, name: string): unknown;
+    getParam(dom: RenderedDom, name: string): unknown;
     /**
      * 移除参数
-     * @param module -    模块
      * @param dom -       虚拟dom
      * @param name -      参数名
      */
-    removeParam(module: Module, dom: RenderedDom, name: string): void;
+    removeParam(dom: RenderedDom, name: string): void;
     /**
      * 清参数cache
-     * @param module -    模块
      * @param dom -       虚拟dom
      */
-    clearParam(module: Module, dom: RenderedDom): void;
+    clearParam(dom: RenderedDom): void;
 }

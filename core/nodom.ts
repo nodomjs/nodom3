@@ -73,7 +73,7 @@ export class Nodom{
      */
     public static use(clazz:unknown,params?:unknown[]):unknown{
         if(!clazz['name']){
-            new NError('notexist',[NodomMessage.TipWords.plugin]);
+            new NError('notexist',NodomMessage.TipWords.plugin);
         }
         if(!this['$'+clazz['name']]){
             this['$'+clazz['name']] = Reflect.construct(<UnknownClass>clazz,params||[]); 
@@ -117,7 +117,7 @@ export class Nodom{
      */
     public static createRoute(config: RouteCfg | Array<RouteCfg>,parent?:Route): Route {
         if(!Nodom['$Router']){
-            throw new NError('uninit',[NodomMessage.TipWords.route])
+            throw new NError('uninit',NodomMessage.TipWords.route)
         }
         
         let route:Route;

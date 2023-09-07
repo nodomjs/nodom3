@@ -217,7 +217,7 @@ export class Compiler {
 				srcStr = srcStr.substring(match.index + match[0].length).trimStart()
 			} else {
 				if (this.current) {
-					throw new NError('tagError', [this.current.tagName])
+					throw new NError('tagError', this.current.tagName)
 				}
 				throw new NError('wrongTemplate')
 			}

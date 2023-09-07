@@ -170,8 +170,11 @@ export class Renderer {
             }
             //非module dom，添加dst事件到事件工厂
             if(src.events && !src.hasDirective('module')){
-                dst.events = [];
+                if(!dst.events){
+                    dst.events = [];
+                }
                 // 可能存在事件变化，需要先移除
+                // TODO 全部移除性能较低，需优化
                 module.eventFactory.removeAllEvents(dst);
                 for(const ev of src.events){
                     //当事件串为表达式时，需要处理

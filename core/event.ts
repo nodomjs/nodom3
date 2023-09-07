@@ -70,7 +70,6 @@ export class NEvent {
      * 当事件为扩展事件时，用于存储原始事件
      */
     public dependEvent:NEvent;
-    
 
     /**
      * @param eventName -   事件名
@@ -194,36 +193,33 @@ export class NEvent {
      * @param name -      参数名
      * @param value -     参数值
      */
-    public setParam(module:Module,dom:RenderedDom,name: string, value: unknown) {
-        module.objectManager.setEventParam(this.id,dom.key,name,value);
+    public setParam(dom:RenderedDom,name: string, value: unknown) {
+        this.module.objectManager.setEventParam(this.id,dom.key,name,value);
     }
 
     /**
      * 获取附加参数值
-     * @param module -    模块
      * @param dom -       虚拟dom
      * @param name -      参数名
      * @returns         附加参数值
      */
-    public getParam(module:Module,dom:RenderedDom,name: string):unknown {
-        return module.objectManager.getEventParam(this.id,dom.key,name);
+    public getParam(dom:RenderedDom,name: string):unknown {
+        return this.module.objectManager.getEventParam(this.id,dom.key,name);
     }
 
     /**
      * 移除参数
-     * @param module -    模块 
      * @param dom -       虚拟dom
      * @param name -      参数名
      */
-    public removeParam(module:Module,dom:RenderedDom,name: string) {
-        return module.objectManager.removeEventParam(this.id,dom.key,name);
+    public removeParam(dom:RenderedDom,name: string) {
+        return this.module.objectManager.removeEventParam(this.id,dom.key,name);
     }
     /**
      * 清参数cache
-     * @param module -    模块
      * @param dom -       虚拟dom
      */
-    public clearParam(module:Module,dom:RenderedDom){
-        module.objectManager.clearEventParams(this.id,dom.key);
+    public clearParam(dom:RenderedDom){
+        this.module.objectManager.clearEventParams(this.id,dom.key);
     }
 }

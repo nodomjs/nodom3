@@ -341,9 +341,9 @@ export declare class Module {
      * 参数个数可变，参数个数最多10个
      *
      * @param methodName -  方法名
-     * @param pn -          参数
+     * @param args -        参数
      */
-    invokeMethod(methodName: string, p1?: any, p2?: any, p3?: any, p4?: any, p5?: any, p6?: any, p7?: any, p8?: any, p9?: any, p10?: any): any;
+    invokeMethod(methodName: string, ...args: any[]): any;
     /**
      * 调用模块外方法
      * @remarks

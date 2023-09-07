@@ -59,14 +59,14 @@ export class EventFactory{
 
     /**
      * 保存事件
-     * @param key -       dom key 
-     * @param event -     事件对象
+     * @param key -     dom key 
+     * @param event -   事件对象
      */
-    public addEvent(dom:RenderedDom,event: NEvent):boolean{
+    public addEvent(dom:RenderedDom,event: NEvent){
         const key = dom.key;
         //判断是否已添加，避免重复添加
         if(this.addedEvents.has(key) && this.addedEvents.get(key).includes(event)){
-            return false;
+            return;
         }
         //代理事件，如果无父节点，则直接处理为自有事件
         if(event.delg){
@@ -86,7 +86,6 @@ export class EventFactory{
         }else{
             this.addedEvents.get(key).push(event);
         }
-        return true;
     }
 
     /**

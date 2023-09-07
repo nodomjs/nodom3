@@ -70,7 +70,7 @@ export  class Directive {
         if(type){
             this.type = DirectiveManager.getType(type);
             if(!this.type){
-                throw new NError('notexist1',[NodomMessage.TipWords['directive'],type]);
+                throw new NError('notexist1',NodomMessage.TipWords['directive'],type);
             }
         }
         if (typeof value === 'string') {

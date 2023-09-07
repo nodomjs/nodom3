@@ -91,5 +91,5 @@ export declare class Util {
      * @param params -  参数数组
      * @returns     转换后的消息
      */
-    static compileStr(src: string, params?: string[]): string;
+    static compileStr(src: string, ...params: any[]): string;
 }
