@@ -165,6 +165,7 @@ export class DomManager{
                 m.unmount();
             }
         }else{      //普通节点
+            const el = this.module.getElement(dom.key);
             //从map移除
             this.clearElementMap(dom);
             //解绑所有事件
@@ -174,6 +175,10 @@ export class DomManager{
                 for(const d of dom.children){
                     this.freeNode(d);
                 }
+            }
+            //从html移除
+            if(el && el.parentElement){
+                el.parentElement.removeChild(el);
             }
         }
     }

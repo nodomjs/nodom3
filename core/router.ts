@@ -363,6 +363,8 @@ export class Router {
                 //得到router实际所在module
                 pm = ModuleFactory.get(mobj['mid']);
                 module.srcDom = mobj['dom'].children[0];
+
+                mobj['']
                 pm.addChild(module);
                 //激活
                 module.active();

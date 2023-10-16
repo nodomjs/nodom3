@@ -719,6 +719,29 @@ CssManager.importIndex = 0;
 CssManager.cssPreName = '___nodommodule___';
 
 /**
+ * 模块状态类型
+ */
+var EModuleState;
+(function (EModuleState) {
+    /**
+     * 已初始化
+     */
+    EModuleState[EModuleState["INIT"] = 1] = "INIT";
+    /**
+     * 未挂载到html dom
+     */
+    EModuleState[EModuleState["UNMOUNTED"] = 2] = "UNMOUNTED";
+    /**
+     * 已挂载到dom树
+     */
+    EModuleState[EModuleState["MOUNTED"] = 3] = "MOUNTED";
+    /**
+     * 准备渲染
+     */
+    EModuleState[EModuleState["READY"] = 4] = "READY";
+})(EModuleState || (EModuleState = {}));
+
+/**
  * 渲染器
  * @remarks
  * nodom渲染操作在渲染器中实现
@@ -750,8 +773,11 @@ class Renderer {
      * @param module - 模块
      */
     static add(module) {
+        if (!module) {
+            return;
+        }
         //如果已经在列表中，不再添加
-        if (!this.waitList.includes(module.id)) {
+        if ((module.state === EModuleState.READY || module.state === EModuleState.MOUNTED) && !this.waitList.includes(module.id)) {
             //计算优先级
             this.waitList.push(module.id);
         }
@@ -798,15 +824,26 @@ class Renderer {
      * @returns             渲染后节点
      */
     static renderDom(module, src, model, parent, key) {
-        //构建key，如果带key，则需要重新构建唯一key
-        const key1 = key ? src.key + '_' + key : src.key;
         //初始化渲染节点
         const dst = {
-            key: key1,
+            key: key ? src.key + '_' + key : src.key,
             model: model,
             vdom: src,
             staticNum: src.staticNum
         };
+        // 从父继承附加key和rmid
+        if (parent) {
+            // if(parent.postKey){
+            //     dst.postKey = parent.postKey;
+            // }
+            // if(dst.postKey){
+            //     dst.key += dst.postKey;
+            // }
+            if (parent.rmid) {
+                dst.rmid = parent.rmid;
+                dst.key += '_' + dst.rmid + 's';
+            }
+        }
         //静态节点只渲染1次
         if (src.staticNum > 0) {
             src.staticNum--;
@@ -874,7 +911,7 @@ class Renderer {
             if (src.children && src.children.length > 0) {
                 dst.children = [];
                 for (const c of src.children) {
-                    this.renderDom(module, c, dst.model, dst, key ? key : null);
+                    this.renderDom(module, c, dst.model, dst, key);
                 }
             }
         }
@@ -898,6 +935,9 @@ class Renderer {
         }
         //添加到dom tree，必须放在handleDirectives后，因为有可能directive执行后返回false
         if (parent) {
+            if (!parent.children) {
+                parent.children = [];
+            }
             parent.children.push(dst);
         }
         return dst;
@@ -939,7 +979,13 @@ class Renderer {
             return;
         }
         for (const k of src.props) {
-            dst.props[k[0]] = k[1] instanceof Expression ? k[1].val(module, dst.model) : k[1];
+            let v = k[1];
+            if (v instanceof Expression) {
+                src.staticNum = -1;
+                v = v.val(module, dst.model);
+                dst.staticNum = -1;
+            }
+            dst.props[k[0]] = v;
         }
     }
     /**
@@ -948,10 +994,10 @@ class Renderer {
      * @param src -     渲染节点
      * @returns         渲染后的节点
      */
-    static updateToHtml(module, dom) {
+    static updateToHtml(module, dom, pEl) {
         const el = module.getElement(dom.key);
         if (!el) {
-            return this.renderToHtml(module, dom, null);
+            return this.renderToHtml(module, dom, pEl, true);
         }
         else if (dom.tagName) { //html dom节点已存在
             //设置element key属性
@@ -1009,8 +1055,8 @@ class Renderer {
         else {
             el = newText(src);
         }
-        //先创建子节点，再添加到html dom树，避免频繁添加
-        if (el && src.tagName && isRenderChild) {
+        // element、渲染子节点且不为子模块，处理子节点
+        if (el && src.tagName && isRenderChild && !src.moduleId) {
             genSub(el, src);
         }
         if (el && parentEl) {
@@ -1019,15 +1065,35 @@ class Renderer {
         return el;
         /**
          * 新建element节点
-         * @param dom - 		虚拟dom
+         * @param dom - 	虚拟dom
          * @returns 		新的html element
          */
         function newEl(dom) {
-            //style不处理
-            if (dom.tagName === 'style') {
+            let el;
+            //rmid !== moduleid，则不渲染
+            if (dom.rmid && dom.rmid !== module.id) {
                 return;
             }
-            let el;
+            // 子模块不渲染
+            if (dom.moduleId) {
+                const m = ModuleFactory.get(dom.moduleId);
+                //创建替代节点
+                if (m) {
+                    el = document.createTextNode('');
+                    m.srcDom = dom;
+                    m.srcElement = el;
+                    module.addChild(m);
+                    module.saveElement(dom.key, el);
+                    m.active();
+                    return el;
+                }
+                return;
+            }
+            //style，只处理文本节点
+            if (dom.tagName === 'style') {
+                genSub(el, dom);
+                return;
+            }
             if (dom.isSvg) { //是svg节点
                 el = document.createElementNS("http://www.w3.org/2000/svg", dom.tagName);
                 if (dom.tagName === 'svg') {
@@ -1041,6 +1107,7 @@ class Renderer {
             module.saveElement(dom.key, el);
             //设置element key属性
             el['key'] = dom.key;
+            // el.setAttribute('key',dom.key)
             //设置属性
             for (const p of Object.keys(dom.props)) {
                 if (dom.props[p] !== undefined && dom.props[p] !== null && dom.props[p] !== '') {
@@ -1071,16 +1138,19 @@ class Renderer {
         }
         /**
          * 生成子节点
-         * @param pEl - 	父节点
-         * @param vdom -  虚拟dom节点
+         * @param pEl -     父节点
+         * @param dom -     dom节点
          */
-        function genSub(pEl, vdom) {
-            if (vdom.children && vdom.children.length > 0) {
-                vdom.children.forEach(item => {
+        function genSub(pEl, dom) {
+            if (dom.children && dom.children.length > 0) {
+                dom.children.forEach(item => {
                     let el1;
                     if (item.tagName) {
                         el1 = newEl(item);
-                        genSub(el1, item);
+                        //element节点，产生子节点
+                        if (el1 instanceof Element) {
+                            genSub(el1, item);
+                        }
                     }
                     else {
                         el1 = newText(item);
@@ -1098,6 +1168,7 @@ class Renderer {
      * @param changeDoms -    修改后的dom节点数组
      */
     static handleChangedDoms(module, changeDoms) {
+        let slotDoms = {};
         //替换数组
         const repArr = [];
         //添加数组
@@ -1106,20 +1177,39 @@ class Renderer {
         const moveArr = [];
         //保留原有html节点
         for (const item of changeDoms) {
+            //如果为slot节点，则记录，单独处理
+            if (item[1].rmid && item[1].rmid !== module.id) {
+                if (slotDoms[item[1].rmid]) {
+                    slotDoms[item[1].rmid].push(item);
+                }
+                else {
+                    slotDoms[item[1].rmid] = [item];
+                }
+                continue;
+            }
+            let pEl;
             switch (item[0]) {
                 case 1: //添加
                     addArr.push(item);
                     break;
                 case 2: //修改
-                    Renderer.updateToHtml(module, item[1]);
+                    //子模块不处理，由setProps处理
+                    if (item[1].moduleId) {
+                        Renderer.add(ModuleFactory.get(item[1].moduleId));
+                        continue;
+                    }
+                    if (item[1].parent) {
+                        pEl = module.getElement(item[1].parent.key);
+                    }
+                    Renderer.updateToHtml(module, item[1], pEl);
                     break;
                 case 3: //删除
-                    const pEl = module.getElement(item[3].key);
-                    const n1 = module.getElement(item[1].key);
-                    if (pEl && n1 && n1.parentElement === pEl) {
-                        pEl.removeChild(n1);
-                    }
                     module.domManager.freeNode(item[1]);
+                    // const n1 = module.getElement(item[1].key);
+                    // pEl = module.getElement(item[3].key);
+                    // if (pEl && n1 && n1.parentElement === pEl) {
+                    //     pEl.removeChild(n1);
+                    // }
                     break;
                 case 4: //移动
                     moveArr.push(item);
@@ -1131,21 +1221,7 @@ class Renderer {
         //替换
         if (repArr.length > 0) {
             for (const item of repArr) {
-                const pEl = module.getElement(item[3].key);
-                let n2;
-                if (item[2].moduleId) { //子模块先free再获取，先还原为空文本，再实现新的子模块mount
-                    module.domManager.freeNode(item[2]);
-                    n2 = module.getElement(item[2].key);
-                }
-                else { //先获取，再free，避免getElement为null
-                    n2 = module.getElement(item[2].key);
-                    module.domManager.freeNode(item[2]);
-                }
-                //替换n2在element map中的值
-                const n1 = Renderer.renderToHtml(module, item[1], null, true);
-                if (pEl && n2) {
-                    pEl.replaceChild(n1, n2);
-                }
+                this.replace(module, item[1], item[2]);
             }
         }
         //addArr 按index排序
@@ -1157,21 +1233,29 @@ class Renderer {
         //处理添加元素
         for (const item of addArr) {
             const pEl = module.getElement(item[3].key);
+            if (!pEl) {
+                continue;
+            }
             const n1 = Renderer.renderToHtml(module, item[1], null, true);
-            if (pEl.childNodes && pEl.childNodes.length > item[4]) {
-                pEl.insertBefore(n1, pEl.childNodes[item[4]]);
-            }
-            else {
-                pEl.appendChild(n1);
-            }
-            //记录操作位置
-            if (opMap) {
-                opMap[item[3].key + '_' + item[4]] = true;
+            if (n1) {
+                if (pEl.childNodes && pEl.childNodes.length > item[4]) {
+                    pEl.insertBefore(n1, pEl.childNodes[item[4]]);
+                }
+                else {
+                    pEl.appendChild(n1);
+                }
+                //记录操作位置
+                if (opMap) {
+                    opMap[item[3].key + '_' + item[4]] = true;
+                }
             }
         }
         //处理move元素
         for (const item of moveArr) {
             const pEl = module.getElement(item[3].key);
+            if (!pEl) {
+                continue;
+            }
             const n1 = module.getElement(item[1].key);
             if (!n1 || n1 === pEl.childNodes[item[4]]) {
                 continue;
@@ -1192,6 +1276,44 @@ class Renderer {
             //记录操作的位置
             opMap[item[3].key + '_' + item[4]] = true;
         }
+        //处理改变的子模块
+        const keys = Object.keys(slotDoms);
+        if (keys && keys.length > 0) {
+            for (let k of keys) {
+                const m = ModuleFactory.get(parseInt(k));
+                if (m) {
+                    Renderer.add(m);
+                }
+            }
+        }
+    }
+    /**
+     * 替换解ID那
+     * @param module -  模块
+     * @param src -     待替换节点
+     * @param dst -     被替换节点
+     */
+    static replace(module, src, dst) {
+        if (!dst.parent) {
+            return;
+        }
+        const pEl = module.getElement(dst.parent.key);
+        if (!pEl) {
+            return;
+        }
+        const el = Renderer.renderToHtml(module, src, null);
+        let oldEl;
+        if (dst.moduleId) {
+            const m1 = ModuleFactory.get(dst.moduleId);
+            oldEl = m1.getElement(1);
+        }
+        else {
+            oldEl = module.getElement(dst.key);
+        }
+        if (pEl && oldEl && oldEl.parentElement === pEl) {
+            pEl.replaceChild(el, oldEl);
+        }
+        module.domManager.freeNode(dst);
     }
 }
 /**
@@ -2955,7 +3077,7 @@ class DiffTool {
             if (!src.tagName) { //文本节点
                 if (!dst.tagName) {
                     if ((src.staticNum || dst.staticNum) && src.textContent !== dst.textContent) {
-                        addChange(2, src, null, dst.parent);
+                        addChange(2, src, dst, dst.parent);
                     }
                     else if (src.moduleId !== dst.moduleId) {
                         addChange(5, src, dst, dst.parent);
@@ -2967,16 +3089,17 @@ class DiffTool {
             }
             else {
                 //节点类型不同或对应的子模块不同，替换
-                if (src.tagName !== dst.tagName) {
+                if ((src.moduleId || dst.moduleId) && src.moduleId !== dst.moduleId || src.tagName !== dst.tagName) {
                     addChange(5, src, dst, dst.parent);
                 }
                 else { //节点类型相同，但有一个不是静态节点，进行属性比较
                     if ((src.staticNum || dst.staticNum) && isChanged(src, dst)) {
-                        addChange(2, src, null, dst.parent);
+                        addChange(2, src, dst, dst.parent);
                     }
-                    if (!src.moduleId) { //子模块不比较子节点
-                        compareChildren(src, dst);
-                    }
+                    // 非子模块不比较子节点或者作为slot的子模块
+                    // if(!src.moduleId || src.rmid){
+                    compareChildren(src, dst);
+                    // }
                 }
             }
         }
@@ -3723,34 +3846,19 @@ class Model {
     constructor(data, module, parent, name) {
         //数据不存在或已经代理，无需再创建
         if (!data || data['__source']) {
-            return;
+            return data;
         }
         // 创建模型
         const proxy = new Proxy(data, {
             set(src, key, value, receiver) {
-                let value1 = value;
-                //proxy转换为源对象，否则比较会出错
-                if (value && value['__source']) {
-                    const source = value['__source'];
-                    // 已经被代理，但是可能没添加当前module
-                    if (source) {
-                        //可能父传子，需要添加引用
-                        if (value['__module'] !== module) {
-                            module.modelManager.add(source, value);
-                            value['__module'].modelManager.bindModel(value, module);
-                            //保存value在本模块中的属性名
-                            module.modelManager.setModelName(value, key);
-                        }
-                        value1 = source;
-                    }
-                }
+                const value1 = preHandle(value, module, receiver, key, false);
                 //值未变,proxy 不处理
                 if (src[key] === value1) {
                     return true;
                 }
                 const ov = src[key];
                 const r = Reflect.set(src, key, value1, receiver);
-                module.modelManager.update(receiver, key, ov, value);
+                module.modelManager.update(receiver, key, ov, value1);
                 return r;
             },
             get(src, key, receiver) {
@@ -3774,15 +3882,7 @@ class Model {
                     return name;
                 }
                 let res = Reflect.get(src, key, receiver);
-                //只处理object和array
-                if (res && (res.constructor === Object || res.constructor === Array)) {
-                    let m = module.modelManager.getModel(res);
-                    if (!m) {
-                        m = new Model(res, module, receiver, key);
-                    }
-                    res = m;
-                }
-                return res;
+                return preHandle(res, module, receiver, key, true);
             },
             deleteProperty(src, key) {
                 const oldValue = src[key];
@@ -3793,6 +3893,38 @@ class Model {
         });
         module.modelManager.add(data, proxy);
         return proxy;
+        /**
+         * 预处理
+         * 当data为model且源module与当前module不一致时，需要绑定到新module
+         * @param data -    数据对象或model
+         * @param module-   新模块
+         * @param parent -  父对象
+         * @param key-      父对象中的名字
+         * @param force-    如果data不为model，是否转为model
+         * @returns         数据对象
+         */
+        function preHandle(data, module, parent, key, force) {
+            if (!data || (data.constructor !== Object && data.constructor !== Array)) {
+                return data;
+            }
+            const oldMdl = data['__module'];
+            //未代理
+            if (!oldMdl) {
+                if (!force) {
+                    return data;
+                }
+                return new Model(data, module, parent, key);
+            }
+            if (oldMdl !== module) { //目标模块不一致，需要处理绑定和model.__name
+                module.modelManager.add(data['__source'], data);
+                oldMdl.modelManager.bindModel(data, module);
+                //名字不一致，需要在module中保存
+                if (key && key !== data['__name']) {
+                    module.modelManager.setModelName(data, key);
+                }
+            }
+            return data;
+        }
     }
 }
 
@@ -3926,28 +4058,28 @@ class ModelManager {
         bind(this.bindMap, model, module);
         /**
          * 绑定
-         * @param bindMap -
-         * @param model -
-         * @param module -
+         * @param bindMap -     model factory 的bindmap
+         * @param model -       model
+         * @param module -      待绑定module
          */
         function bind(bindMap, model, module) {
             if (model.__module === module) {
                 return;
             }
-            let mids;
             if (!bindMap.has(model)) {
-                mids = [];
-                bindMap.set(model, mids);
+                bindMap.set(model, [module.id]);
             }
             else {
-                mids = bindMap.get(model);
-            }
-            if (!mids.includes(module.id)) {
+                const mids = bindMap.get(model);
+                //已经绑定，不再处理子model
+                if (mids.includes(module.id)) {
+                    return;
+                }
                 mids.push(module.id);
             }
             //级联绑定
             for (const key of Object.keys(model)) {
-                if (model[key] && typeof model[key] === 'object') {
+                if (model[key] && (model[key].constructor === Object || model[key].constructor === Array)) {
                     bind(bindMap, model[key], module);
                 }
             }
@@ -3980,31 +4112,31 @@ class ModelManager {
         }
         /**
          * 处理watcher
-         * @param mdl -   模块
-         * @param model - 模型
+         * @param module -  模块
+         * @param model -   模型
          */
-        function handleWatcher(mdl, model) {
-            const map = mdl.modelManager.watchMap;
+        function handleWatcher(module, model) {
+            const map = module.modelManager.watchMap;
             const watcher = map.get(model);
             //当前model存在watcher
             if (watcher && watcher[key]) {
                 //查找对应key是否存在watch
-                watcher[key].f.call(mdl, model, key, oldValue, newValue);
+                watcher[key].f.call(module, model, key, oldValue, newValue);
             }
-            else if (mdl.modelManager.hasDeepWatch) { //进行deep查找
+            else if (module.modelManager.hasDeepWatch) { //进行deep查找
                 for (let m = model; m && m.__parent; m = m.__parent) {
                     //如果已经跨模块，则表示为父传子，父模块指向当前模块
-                    const pm = m.__parent.__module === mdl ? m.__parent : mdl.model;
+                    const pm = m.__parent.__module === module ? m.__parent : module.model;
                     if (!map.has(pm)) {
                         continue;
                     }
                     const watcher = map.get(pm);
-                    const name = mdl.modelManager.getModelName(m) || m.__name;
+                    const name = module.modelManager.getModelName(m) || m.__name;
                     if (watcher && watcher[name]) {
                         const cfg = watcher[name];
                         // 当前model或父model deep watch
                         if (cfg.deep) {
-                            cfg.f.call(mdl, model, key, oldValue, newValue);
+                            cfg.f.call(module, model, key, oldValue, newValue);
                             //找到即跳出循环
                             break;
                         }
@@ -4065,7 +4197,6 @@ class ModelManager {
          * @param model -     当前model
          * @param key -       监听属性，可以支持多级属性，如果为多级属性，倒数第二级对应数据项必须为对象
          * @param operate -   操作方法
-         * @returns
          */
         function watchOne(model, key, operate) {
             if (!model || typeof model !== 'object') {
@@ -4263,25 +4394,6 @@ class ObjectManager {
 }
 
 /**
- * 模块状态类型
- */
-var EModuleState;
-(function (EModuleState) {
-    /**
-     * 已初始化
-     */
-    EModuleState[EModuleState["INIT"] = 1] = "INIT";
-    /**
-     * 未挂载到html dom
-     */
-    EModuleState[EModuleState["UNMOUNTED"] = 2] = "UNMOUNTED";
-    /**
-     * 已挂载到dom树
-     */
-    EModuleState[EModuleState["MOUNTED"] = 3] = "MOUNTED";
-})(EModuleState || (EModuleState = {}));
-
-/**
  * dom管理器
  * @remarks
  * 用于管理module的虚拟dom树，渲染树，html节点
@@ -4427,6 +4539,7 @@ class DomManager {
             }
         }
         else { //普通节点
+            const el = this.module.getElement(dom.key);
             //从map移除
             this.clearElementMap(dom);
             //解绑所有事件
@@ -4436,6 +4549,10 @@ class DomManager {
                 for (const d of dom.children) {
                     this.freeNode(d);
                 }
+            }
+            //从html移除
+            if (el && el.parentElement) {
+                el.parentElement.removeChild(el);
             }
         }
     }
@@ -4511,6 +4628,15 @@ class Module {
          * 子模块id数组
          */
         this.children = [];
+        /**
+         * slot map
+         *
+         * key: slot name
+         *
+         * value: {type:0(外部渲染)/1(内部渲染innerrender),dom:渲染节点,vdom:虚拟节点,start:在父节点中的开始位置}
+         *
+         */
+        this.slots = new Map();
         this.id = Util.genId();
         this.modelManager = new ModelManager(this);
         this.domManager = new DomManager(this);
@@ -4582,9 +4708,6 @@ class Module {
      * 16. 执行onUpdate事件，结束
      */
     render() {
-        if (this.state === EModuleState.UNMOUNTED) {
-            return;
-        }
         //获取首次渲染标志
         const firstRender = this.oldTemplate === undefined;
         //检测模板并编译
@@ -4669,8 +4792,8 @@ class Module {
      */
     active() {
         //如果为unmounted，则设置为准备好状态
-        if (this.state === EModuleState.UNMOUNTED) {
-            this.state = EModuleState.INIT;
+        if (this.state === EModuleState.UNMOUNTED || this.state === EModuleState.INIT) {
+            this.state = EModuleState.READY;
         }
         Renderer.add(this);
     }
@@ -4685,20 +4808,15 @@ class Module {
         const el = Renderer.renderToHtml(this, this.domManager.renderedTree, rootEl, true);
         //主模块，直接添加到根模块
         if (this === ModuleFactory.getMain()) {
-            Renderer.getRootEl().append(el);
+            Renderer.getRootEl().appendChild(el);
         }
         else if (this.srcDom) { //挂载到父模块中
             const pm = this.getParent();
-            if (!pm) {
-                return;
-            }
-            //替换占位符
             this.srcElement = pm.getElement(this.srcDom.key);
-            if (this.srcElement) {
+            if (this.srcElement && this.srcElement.parentElement) {
                 this.srcElement.parentElement.replaceChild(el, this.srcElement);
+                pm.saveElement(this.srcDom.key, el);
             }
-            //保存对应key
-            pm.saveElement(this.srcDom.key, el);
         }
         //执行挂载后事件
         this.doModuleEvent('onMount');
@@ -4723,11 +4841,8 @@ class Module {
         if (el) {
             if (this.srcDom) {
                 const pm = this.getParent();
-                if (pm) {
-                    //设置模块占位符
-                    if (el.parentElement) {
-                        el.parentElement.replaceChild(this.srcElement, el);
-                    }
+                if (el.parentElement) {
+                    el.parentElement.replaceChild(this.srcElement, el);
                     pm.saveElement(this.srcDom.key, this.srcElement);
                 }
             }
@@ -4807,7 +4922,8 @@ class Module {
         //保存事件数组
         this.events = dom.vdom.events;
         //props发生改变或unmounted，激活模块
-        if (change || this.state === EModuleState.UNMOUNTED) {
+        //如果属于slot，则由所属slot触发渲染
+        if ((change || this.state === EModuleState.UNMOUNTED) && !dom.rmid) {
             this.active();
         }
         //保存props
@@ -5055,6 +5171,7 @@ class Module {
      * @returns           回收监听器函数，执行后取消监听
      */
     watch(model, key, operate, deep) {
+        //是model才能watch，否则watch根model
         if (model['__key']) {
             return this.modelManager.watch(model, key, operate, deep);
         }
@@ -5065,16 +5182,14 @@ class Module {
     /**
      * 设置模型属性值
      * @remarks
-     * 参数个数可变，如果第一个参数为属性名，则第二个参数为属性值，默认model为根模型
-     *
-     * 否则按照参数说明
+     * 参数个数可变，如果第一个参数为属性名，则第二个参数为属性值，默认model为根模型，否则按照参数说明
      *
      * @param model -     模型
      * @param key -       子属性，可以分级，如 name.firstName
      * @param value -     属性值
      */
     set(model, key, value) {
-        if (model['__key']) {
+        if (typeof key === 'string') {
             this.modelManager.set(model, key, value);
         }
         else {
@@ -5084,16 +5199,14 @@ class Module {
     /**
      * 获取模型属性值
      * @remarks
-     * 参数个数可变，如果第一个参数为属性名，默认model为根模型
-     *
-     * 否则按照参数说明
+     * 参数个数可变，如果第一个参数为属性名，默认model为根模型，否则按照参数说明
      *
      * @param model -   模型
      * @param key -     属性名，可以分级，如 name.firstName，如果为null，则返回自己
      * @returns         属性值
      */
     get(model, key) {
-        if (model['__key']) {
+        if (typeof key === 'string') {
             return this.modelManager.get(model, key);
         }
         else {
@@ -5110,7 +5223,7 @@ class Module {
      */
     invokeMethod(methodName, ...args) {
         if (typeof this[methodName] === 'function') {
-            return this[methodName](args);
+            return this[methodName](...args);
         }
     }
     /**
@@ -5143,10 +5256,10 @@ class Module {
      *
      * ```
      * @param methodName -  方法名
-     * @param pn -          参数，最多10个参数
+     * @param args -        参数
      * @returns             方法返回值
      */
-    invokeOuterMethod(methodName, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) {
+    invokeOuterMethod(methodName, ...args) {
         if (!this.templateModuleId) {
             return;
         }
@@ -5154,7 +5267,7 @@ class Module {
         if (!m) {
             return;
         }
-        return m.invokeMethod(methodName, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
+        return m.invokeMethod(methodName, ...args);
     }
     /**
      * 获取模块当前dom key编号
@@ -5502,6 +5615,7 @@ class Router {
                 //得到router实际所在module
                 pm = ModuleFactory.get(mobj['mid']);
                 module.srcDom = mobj['dom'].children[0];
+                mobj[''];
                 pm.addChild(module);
                 //激活
                 module.active();

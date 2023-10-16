@@ -60,7 +60,12 @@ export enum EModuleState {
     /**
      * 已挂载到dom树
      */
-    MOUNTED = 3
+    MOUNTED = 3,
+    
+    /**
+     * 准备渲染
+     */
+    READY = 4
 }
 
 /**
@@ -134,6 +139,21 @@ export type RenderedDom = {
 	 * 是否为svg节点
 	 */
 	isSvg?:boolean;
+
+    /**
+     * 所属模块id
+     */
+    mid?:number;
+
+    /**
+     * 渲染到的模块id，当作为slot时有效
+     */
+    rmid?:number;
+
+    /**
+     * 添加到domkey 后面形成实际domkey
+     */
+    postKey?:string;
 }
 
 /**

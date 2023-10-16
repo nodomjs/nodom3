@@ -37,22 +37,22 @@
 					
 					<h3>useCapture</h3>
 					<ul e-click='clickP:capture'>
-						<li x-repeat={{edus}} e-click='clickItem' e-dblclick='dblClick'><span>{{eduName}}</span></li>
+						<li x-repeat={{edus}} e-click='clickItem'><span>{{eduName}}</span></li>
 					</ul>
 
 					<h3>禁止冒泡（向上） nopopo</h3>
 					<ul e-click='clickP'>
-						<li x-repeat={{edus}} e-click='clickItem:nopopo' e-dblclick='dblClick'><span>{{eduName}}</span></li>
+						<li x-repeat={{edus}} e-click='clickItem:nopopo'><span>{{eduName}}</span></li>
 					</ul>
 
 					<h3>禁止冒泡（向下）capture + nopopo</h3>
 					<ul e-click='clickP:capture:nopopo'>
-						<li x-repeat={{edus}} e-click='clickItem' e-dblclick='dblClick'><span>{{eduName}}</span></li>
+						<li x-repeat={{edus}} e-click='clickItem'><span>{{eduName}}</span></li>
 					</ul>
 
 					<h3>执行一次-once</h3>
 					<ul e-click='clickP:once'>
-						<li x-repeat={{edus}} e-click='clickItem' e-dblclick='dblClick'><span>{{eduName}}</span></li>
+						<li x-repeat={{edus}} e-click='clickItem'><span>{{eduName}}</span></li>
 					</ul>
 
 					<h3>事件代理</h3>
@@ -60,12 +60,6 @@
 						<li x-repeat={{edus}} e-click='clickItem:delg' ><span>{{eduName}}</span></li>
 					</ul>
 				
-					<h3>自定义事件</h3>
-					<p>使用了自定义的double click事件</p>
-					<ul>
-						<li x-repeat={{edus}} e-dblclick='dblClick'><span>{{eduName}}</span></li>
-					</ul>
-					
 					<h3>使用表达式动态修改事件串</h3>
 					<ul>
 						<li x-repeat={{edus}} index='idx' e-click={{genClick(idx)}}><span>{{eduName + ':' + idx}}</span></li>
@@ -114,6 +108,10 @@
 
 			click4(){
 				console.log('博士后被点击');
+			}
+
+			swipeLeft(model){
+				console.log(model);
 			}
 
 			genClick(index){

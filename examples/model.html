@@ -21,6 +21,7 @@
                 <button e-click='delProp'>delProp</button>
                 <button e-click='unwatch'>cancel watch</button>
                 <div>{{name}}</div>
+                <div>lastName:{{getName(name1,'lastName')}}</div>
                 <for cond={{rows}}>{{name}}</for>
                 <div>x.y.z is :{{x.y.z}}</div>
                 <div class="tip">多层model</div>
@@ -73,6 +74,10 @@
                 }],
                 show:true,
                 name:'nodom',
+                name1: {
+                    firstName: 'San',
+                    lastName: 'Zhang'
+                },
                 user: {
                     name: {
                         firstName: 'San',
@@ -101,10 +106,15 @@
                 }
             }
         }
+
+        getName(data,name){
+            return data[name]
+        }
         
         change(model) {
             // model.name1 = {first:'yang'};
             // model.name='yang';
+            model.name1.lastName = 'Yang'
             // // model.datas = [{a:3,b:3}];
             //model.datas.splice(1,1,{a:3,b:3});
             model.datas.push({a:555,b:555});

@@ -25,7 +25,7 @@ export class DiffTool{
             if (!src.tagName) { //文本节点
                 if (!dst.tagName) {
                     if ((src.staticNum || dst.staticNum) && src.textContent !== dst.textContent) {
-                        addChange(2,src,null,dst.parent);
+                        addChange(2,src,dst,dst.parent);
                     }else if(src.moduleId !== dst.moduleId){
                         addChange(5,src,dst, dst.parent);
                     }
@@ -34,15 +34,16 @@ export class DiffTool{
                 }
             } else {
                 //节点类型不同或对应的子模块不同，替换
-                if (src.tagName !== dst.tagName) { 
+                if((src.moduleId || dst.moduleId) && src.moduleId !== dst.moduleId || src.tagName !== dst.tagName){
                     addChange(5,src,dst, dst.parent);
                 }else{//节点类型相同，但有一个不是静态节点，进行属性比较
                     if((src.staticNum || dst.staticNum) && isChanged(src,dst)){
-                        addChange(2,src,null,dst.parent);
+                        addChange(2,src,dst,dst.parent);
                     }
-                    if(!src.moduleId){  //子模块不比较子节点
+                    // 非子模块不比较子节点或者作为slot的子模块
+                    // if(!src.moduleId || src.rmid){
                         compareChildren(src,dst);
-                    }
+                    // }
                 }
             }
         }

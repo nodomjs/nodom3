@@ -150,27 +150,27 @@ export class ModelManager {
         bind(this.bindMap,model,module);
         /**
          * 绑定
-         * @param bindMap - 
-         * @param model - 
-         * @param module - 
+         * @param bindMap -     model factory 的bindmap
+         * @param model -       model
+         * @param module -      待绑定module
          */
         function bind(bindMap,model,module){
             if(model.__module === module){
                 return;
             }
-            let mids;
             if(!bindMap.has(model)){
-                mids = [];
-                bindMap.set(model,mids);
+                bindMap.set(model,[module.id]);
             }else{
-                mids = bindMap.get(model);
-            }
-            if(!mids.includes(module.id)){
+                const mids = bindMap.get(model);
+                //已经绑定，不再处理子model
+                if(mids.includes(module.id)){
+                    return;
+                }
                 mids.push(module.id);
             }
             //级联绑定
             for(const key of Object.keys(model)){
-                if(model[key] && typeof model[key] === 'object'){
+                if(model[key] && (model[key].constructor === Object || model[key].constructor === Array)){
                     bind(bindMap,model[key],module);
                 }
             }
@@ -205,30 +205,30 @@ export class ModelManager {
         
         /**
          * 处理watcher
-         * @param mdl -   模块
-         * @param model - 模型
+         * @param module -  模块
+         * @param model -   模型
          */  
-        function handleWatcher(mdl,model){
-            const map = mdl.modelManager.watchMap;
+        function handleWatcher(module,model){
+            const map = module.modelManager.watchMap;
             const watcher = map.get(model);
             //当前model存在watcher
             if(watcher && watcher[key]){
                 //查找对应key是否存在watch
-                watcher[key].f.call(mdl,model,key,oldValue,newValue);
-            }else if(mdl.modelManager.hasDeepWatch){   //进行deep查找
+                watcher[key].f.call(module,model,key,oldValue,newValue);
+            }else if(module.modelManager.hasDeepWatch){   //进行deep查找
                 for(let m = model;m && m.__parent;m=m.__parent){
                     //如果已经跨模块，则表示为父传子，父模块指向当前模块
-                    const pm = m.__parent.__module === mdl?m.__parent:mdl.model;
+                    const pm = m.__parent.__module === module?m.__parent:module.model;
                     if(!map.has(pm)){
                         continue;
                     }
                     const watcher = map.get(pm);
-                    const name = mdl.modelManager.getModelName(m)||m.__name;
+                    const name = module.modelManager.getModelName(m)||m.__name;
                     if(watcher && watcher[name]){
                         const cfg = watcher[name];
                         // 当前model或父model deep watch
                         if(cfg.deep){
-                            cfg.f.call(mdl,model,key,oldValue,newValue);
+                            cfg.f.call(module,model,key,oldValue,newValue);
                             //找到即跳出循环
                             break;
                         }
@@ -291,7 +291,6 @@ export class ModelManager {
          * @param model -     当前model  
          * @param key -       监听属性，可以支持多级属性，如果为多级属性，倒数第二级对应数据项必须为对象
          * @param operate -   操作方法
-         * @returns 
          */
         function watchOne(model:Model,key:string,operate:(m,k,ov,nv)=>void){
             if (!model || typeof model !== 'object') {

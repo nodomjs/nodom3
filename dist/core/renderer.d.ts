@@ -91,7 +91,7 @@ export declare class Renderer {
      * @param src -     渲染节点
      * @returns         渲染后的节点
      */
-    static updateToHtml(module: Module, dom: RenderedDom): Node;
+    static updateToHtml(module: Module, dom: RenderedDom, pEl?: any): Node;
     /**
      * 渲染到html树
      * @param module - 	        模块
@@ -107,4 +107,11 @@ export declare class Renderer {
      * @param changeDoms -    修改后的dom节点数组
      */
     static handleChangedDoms(module: Module, changeDoms: ChangedDom[]): void;
+    /**
+     * 替换解ID那
+     * @param module -  模块
+     * @param src -     待替换节点
+     * @param dst -     被替换节点
+     */
+    private static replace;
 }

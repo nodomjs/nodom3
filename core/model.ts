@@ -29,34 +29,19 @@ export class Model {
     constructor(data: object, module: Module, parent?:Model, name?:string) {
         //数据不存在或已经代理，无需再创建
         if(!data || data['__source']){
-            return;
+            return data;
         }
         // 创建模型
         const proxy = new Proxy(data, {
             set(src: object, key: string, value: unknown, receiver: Model){
-                let value1 = value;
-                //proxy转换为源对象，否则比较会出错
-                if(value && value['__source']){
-                    const source = value['__source'];
-                    // 已经被代理，但是可能没添加当前module
-                    if(source){
-                        //可能父传子，需要添加引用
-                        if(value['__module'] !== module){
-                            module.modelManager.add(source,value);
-                            value['__module'].modelManager.bindModel(value,module);
-                            //保存value在本模块中的属性名
-                            module.modelManager.setModelName(value,key);
-                        }
-                        value1 = source;
-                    }
-                }
+                const value1 = preHandle(value,module,receiver,key,false);
                 //值未变,proxy 不处理
                 if (src[key] === value1) {
                     return true;
                 }
                 const ov = src[key];
                 const r = Reflect.set(src, key, value1, receiver);
-                module.modelManager.update(receiver, key, ov, value);
+                module.modelManager.update(receiver, key, ov, value1);
                 return r;
             },
             get(src: object, key: string, receiver){
@@ -82,15 +67,7 @@ export class Model {
                 }
 
                 let res = Reflect.get(src, key, receiver);
-                //只处理object和array
-                if(res && (res.constructor === Object || res.constructor === Array)){
-                    let m = module.modelManager.getModel(res);
-                    if(!m){
-                        m = new Model(res,module,receiver,key);
-                    }
-                    res = m;
-                }
-                return res;
+                return preHandle(res,module,receiver,key,true);
             },
             deleteProperty(src: object, key: string){
                 const oldValue = src[key];
@@ -101,5 +78,38 @@ export class Model {
         });
         module.modelManager.add(data,proxy);
         return proxy;
+
+        /**
+         * 预处理
+         * 当data为model且源module与当前module不一致时，需要绑定到新module
+         * @param data -    数据对象或model
+         * @param module-   新模块
+         * @param parent -  父对象
+         * @param key-      父对象中的名字
+         * @param force-    如果data不为model，是否转为model
+         * @returns         数据对象
+         */
+        function preHandle(data,module:Module,parent,key,force?:boolean){
+            if(!data || (data.constructor !== Object && data.constructor !== Array)){
+                return data;
+            }
+            const oldMdl = data['__module'];
+            //未代理
+            if(!oldMdl){
+                if(!force){
+                    return data;
+                }
+                return new Model(data,module,parent,key);
+            }
+            if(oldMdl !== module){  //目标模块不一致，需要处理绑定和model.__name
+                module.modelManager.add(data['__source'],data);
+                oldMdl.modelManager.bindModel(data,module);
+                //名字不一致，需要在module中保存
+                if(key && key !== data['__name']){
+                    module.modelManager.setModelName(data,key);
+                }
+            }
+            return data;
+        }
     }
 }

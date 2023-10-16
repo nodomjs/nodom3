@@ -12,6 +12,7 @@ import { DomManager } from "./dommanager";
 import { ModelManager } from "./modelmanager";
 import { NEvent } from "./event";
 import { Expression } from "./expression";
+import { VirtualDom } from "./virtualdom";
 
 /**
  * 模块类
@@ -147,7 +148,7 @@ export class Module {
     /**
      * 源element
      */
-    private srcElement:Node;
+    public srcElement:Node;
 
     /**
      * 生成dom时的keyid，每次编译置0
@@ -158,6 +159,17 @@ export class Module {
      * 旧模板串
      */
     private oldTemplate:string;
+
+    
+    /**
+     * slot map
+     * 
+     * key: slot name
+     * 
+     * value: {type:0(外部渲染)/1(内部渲染innerrender),dom:渲染节点,vdom:虚拟节点,start:在父节点中的开始位置}
+     * 
+     */
+    public slots:Map<string,{type?:number,dom?:RenderedDom,vdom?:VirtualDom,start?:number}> = new Map();
 
     /**
      * 构造器
@@ -238,9 +250,6 @@ export class Module {
      * 16. 执行onUpdate事件，结束
      */
     public render(): boolean {
-        if(this.state === EModuleState.UNMOUNTED){
-            return;
-        }
         //获取首次渲染标志
         const firstRender = this.oldTemplate===undefined;
         //检测模板并编译
@@ -327,8 +336,8 @@ export class Module {
      */
     public active() {
         //如果为unmounted，则设置为准备好状态
-        if(this.state === EModuleState.UNMOUNTED){
-            this.state = EModuleState.INIT;
+        if(this.state === EModuleState.UNMOUNTED || this.state === EModuleState.INIT){
+            this.state = EModuleState.READY;
         }
         Renderer.add(this);
     }
@@ -344,19 +353,14 @@ export class Module {
         const el = Renderer.renderToHtml(this,this.domManager.renderedTree,rootEl,true);
         //主模块，直接添加到根模块
         if(this === ModuleFactory.getMain()){
-            Renderer.getRootEl().append(el);
+            Renderer.getRootEl().appendChild(el);
         }else if(this.srcDom){ //挂载到父模块中
             const pm = this.getParent();
-            if(!pm){
-                return;
-            }
-            //替换占位符
             this.srcElement = pm.getElement(this.srcDom.key);
-            if (this.srcElement) {
-                this.srcElement.parentElement.replaceChild(el, this.srcElement);
+            if(this.srcElement && this.srcElement.parentElement){
+                this.srcElement.parentElement.replaceChild(el,this.srcElement);
+                pm.saveElement(this.srcDom.key,el);
             }
-            //保存对应key
-            pm.saveElement(this.srcDom.key, el);
         }
         //执行挂载后事件
         this.doModuleEvent('onMount');
@@ -382,14 +386,11 @@ export class Module {
         if (el) {
             if (this.srcDom) {
                 const pm = this.getParent();
-                if (pm) {
-                    //设置模块占位符
-                    if (el.parentElement) {
-                        el.parentElement.replaceChild(this.srcElement, el);
-                    }
-                    pm.saveElement(this.srcDom.key, this.srcElement);    
+                if(el.parentElement){
+                    el.parentElement.replaceChild(this.srcElement,el);
+                    pm.saveElement(this.srcDom.key,this.srcElement);
                 }
-            }    
+            }
         }
         this.domManager.reset();
         //设置状态
@@ -422,7 +423,7 @@ export class Module {
      * @param eventName -   事件名
      * @returns             执行结果
      */
-    private doModuleEvent(eventName: string):boolean{
+    public doModuleEvent(eventName: string):boolean{
         const foo = this[eventName];
         if(foo && typeof foo==='function'){
             return foo.apply(this,[this.model]);
@@ -452,6 +453,7 @@ export class Module {
                 this.model[d] = dataObj[d];
             }
         }
+        
         //保留src dom
         this.srcDom = dom;
         //如果不存在旧的props，则change为true，否则初始化为false
@@ -469,7 +471,8 @@ export class Module {
         //保存事件数组
         this.events = dom.vdom.events;
         //props发生改变或unmounted，激活模块
-        if(change || this.state === EModuleState.UNMOUNTED){
+        //如果属于slot，则由所属slot触发渲染
+        if((change || this.state === EModuleState.UNMOUNTED) && !dom.rmid){
             this.active();
         }
         //保存props
@@ -722,7 +725,8 @@ export class Module {
      * @returns           回收监听器函数，执行后取消监听
      */
     public watch(model:Model|string|string[],key:string|string[]|((m,k,ov,nv)=>void),operate?:boolean| ((m,k,ov,nv)=>void),deep?:boolean){
-        if(model['__key']){
+        //是model才能watch，否则watch根model
+        if (model['__key']) {
             return this.modelManager.watch(model,<string>key,<()=>void>operate,deep);
         }else{
             return this.modelManager.watch(this.model,<string>model,<()=>void>key,<boolean>operate);
@@ -732,16 +736,14 @@ export class Module {
     /**
      * 设置模型属性值
      * @remarks
-     * 参数个数可变，如果第一个参数为属性名，则第二个参数为属性值，默认model为根模型
-     * 
-     * 否则按照参数说明
+     * 参数个数可变，如果第一个参数为属性名，则第二个参数为属性值，默认model为根模型，否则按照参数说明
      * 
      * @param model -     模型
      * @param key -       子属性，可以分级，如 name.firstName
      * @param value -     属性值
      */
     public set(model:Model|string,key:unknown,value?:unknown){
-        if(model['__key']){
+        if (typeof key === 'string') {
             this.modelManager.set(model,<string>key,value);
         }else{
             this.modelManager.set(this.model,<string>model,key);
@@ -751,16 +753,14 @@ export class Module {
     /**
      * 获取模型属性值
      * @remarks
-     * 参数个数可变，如果第一个参数为属性名，默认model为根模型
-     * 
-     * 否则按照参数说明
+     * 参数个数可变，如果第一个参数为属性名，默认model为根模型，否则按照参数说明
      * 
      * @param model -   模型
      * @param key -     属性名，可以分级，如 name.firstName，如果为null，则返回自己
      * @returns         属性值
      */
     public get(model:Model|string, key?:string):unknown {
-        if(model['__key']){
+        if (typeof key === 'string') {
             return this.modelManager.get(model,key);
         }else{
             return this.modelManager.get(this.model,<string>model);
@@ -777,7 +777,7 @@ export class Module {
      */
     public invokeMethod(methodName:string,...args){
         if(typeof this[methodName] === 'function'){
-            return this[methodName](args);
+            return this[methodName](...args);
         }
     }
 
@@ -811,10 +811,10 @@ export class Module {
      *  
      * ```
      * @param methodName -  方法名
-     * @param pn -          参数，最多10个参数
+     * @param args -        参数
      * @returns             方法返回值
      */
-    public invokeOuterMethod(methodName:string,p1?,p2?,p3?,p4?,p5?,p6?,p7?,p8?,p9?,p10?):unknown{
+    public invokeOuterMethod(methodName:string,...args):unknown{
         if(!this.templateModuleId){
             return;
         }
@@ -822,7 +822,7 @@ export class Module {
         if(!m){
             return;
         }
-        return m.invokeMethod(methodName,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10);
+        return m.invokeMethod(methodName,...args);
     }
     
     /**

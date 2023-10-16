@@ -5,6 +5,7 @@ import { EventFactory } from "./eventfactory";
 import { DomManager } from "./dommanager";
 import { ModelManager } from "./modelmanager";
 import { NEvent } from "./event";
+import { VirtualDom } from "./virtualdom";
 /**
  * 模块类
  *
@@ -124,7 +125,7 @@ export declare class Module {
     /**
      * 源element
      */
-    private srcElement;
+    srcElement: Node;
     /**
      * 生成dom时的keyid，每次编译置0
      */
@@ -133,6 +134,20 @@ export declare class Module {
      * 旧模板串
      */
     private oldTemplate;
+    /**
+     * slot map
+     *
+     * key: slot name
+     *
+     * value: {type:0(外部渲染)/1(内部渲染innerrender),dom:渲染节点,vdom:虚拟节点,start:在父节点中的开始位置}
+     *
+     */
+    slots: Map<string, {
+        type?: number;
+        dom?: RenderedDom;
+        vdom?: VirtualDom;
+        start?: number;
+    }>;
     /**
      * 构造器
      */
@@ -223,7 +238,7 @@ export declare class Module {
      * @param eventName -   事件名
      * @returns             执行结果
      */
-    private doModuleEvent;
+    doModuleEvent(eventName: string): boolean;
     /**
      * 获取模块方法
      * @param name -    方法名
@@ -314,9 +329,7 @@ export declare class Module {
     /**
      * 设置模型属性值
      * @remarks
-     * 参数个数可变，如果第一个参数为属性名，则第二个参数为属性值，默认model为根模型
-     *
-     * 否则按照参数说明
+     * 参数个数可变，如果第一个参数为属性名，则第二个参数为属性值，默认model为根模型，否则按照参数说明
      *
      * @param model -     模型
      * @param key -       子属性，可以分级，如 name.firstName
@@ -326,9 +339,7 @@ export declare class Module {
     /**
      * 获取模型属性值
      * @remarks
-     * 参数个数可变，如果第一个参数为属性名，默认model为根模型
-     *
-     * 否则按照参数说明
+     * 参数个数可变，如果第一个参数为属性名，默认model为根模型，否则按照参数说明
      *
      * @param model -   模型
      * @param key -     属性名，可以分级，如 name.firstName，如果为null，则返回自己
@@ -374,10 +385,10 @@ export declare class Module {
      *
      * ```
      * @param methodName -  方法名
-     * @param pn -          参数，最多10个参数
+     * @param args -        参数
      * @returns             方法返回值
      */
-    invokeOuterMethod(methodName: string, p1?: any, p2?: any, p3?: any, p4?: any, p5?: any, p6?: any, p7?: any, p8?: any, p9?: any, p10?: any): unknown;
+    invokeOuterMethod(methodName: string, ...args: any[]): unknown;
     /**
      * 获取模块当前dom key编号
      * @remarks
