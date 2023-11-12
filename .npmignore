@@ -2,8 +2,8 @@ tsconfig.json
 .vscode/
 examples/
 node_modules/
-#index.ts
-#/core/
-#/extend/
 rollup.config.js
+temp/
+api-extractor.json
+api/
 

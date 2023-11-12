@@ -61,7 +61,7 @@ export declare class DomManager {
      * @param key -   dom key
      * @param node -  html node
      */
-    saveElement(key: number | string, node: Node): void;
+    saveElement(dom: RenderedDom, node: Node): void;
     /**
      * 释放节点
      * @remarks

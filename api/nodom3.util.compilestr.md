@@ -9,7 +9,7 @@
 **Signature:**
 
 ```typescript
-static compileStr(src: string, params?: string[]): string;
+static compileStr(src: string, ...params: any[]): string;
 ```
 
 ## Parameters
@@ -17,7 +17,7 @@ static compileStr(src: string, params?: string[]): string;
 |  Parameter | Type | Description |
 |  --- | --- | --- |
 |  src | string | 待编译的字符串 |
-|  params | string\[\] | _(Optional)_ 参数数组 |
+|  params | any\[\] | 参数数组 |
 
 **Returns:**
 

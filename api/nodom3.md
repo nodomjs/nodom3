@@ -16,9 +16,7 @@
 |  [Directive](./nodom3.directive.md) | 指令类 |
 |  [DirectiveManager](./nodom3.directivemanager.md) | 指令管理器 |
 |  [DirectiveType](./nodom3.directivetype.md) | 指令类型 |
-|  [DomManager](./nodom3.dommanager.md) | dom管理器 |
 |  [EventFactory](./nodom3.eventfactory.md) | 事件工厂 |
-|  [EventManager](./nodom3.eventmanager.md) | 事件管理器 |
 |  [Expression](./nodom3.expression.md) | 表达式类 |
 |  [GlobalCache](./nodom3.globalcache.md) | 全局缓存 |
 |  [Model](./nodom3.model.md) | 模型类 |

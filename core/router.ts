@@ -113,7 +113,7 @@ export class Router {
         if (this.waitList.indexOf(path) === -1) {
             this.waitList.push(path);
         }
-        //延迟加载，避免同一个路径多次加入
+        //延迟加载，避免同一个路径多次加载
         setTimeout(() => {
             this.load();
         }, 0);
@@ -363,8 +363,6 @@ export class Router {
                 //得到router实际所在module
                 pm = ModuleFactory.get(mobj['mid']);
                 module.srcDom = mobj['dom'].children[0];
-
-                mobj['']
                 pm.addChild(module);
                 //激活
                 module.active();

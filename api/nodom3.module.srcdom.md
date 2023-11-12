@@ -4,7 +4,7 @@
 
 ## Module.srcDom property
 
-来源dom，子模块对应dom
+源dom，子模块对应dom
 
 **Signature:**
 

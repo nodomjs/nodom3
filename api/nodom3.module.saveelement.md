@@ -9,14 +9,14 @@
 **Signature:**
 
 ```typescript
-saveElement(key: number | string, node: Node): void;
+saveElement(dom: RenderedDom, node: Node): void;
 ```
 
 ## Parameters
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  key | number \| string | dom key |
+|  dom | [RenderedDom](./nodom3.rendereddom.md) |  |
 |  node | Node | html节点 |
 
 **Returns:**

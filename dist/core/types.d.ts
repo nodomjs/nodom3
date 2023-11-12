@@ -125,10 +125,6 @@ export declare type RenderedDom = {
      * 渲染到的模块id，当作为slot时有效
      */
     rmid?: number;
-    /**
-     * 添加到domkey 后面形成实际domkey
-     */
-    postKey?: string;
 };
 /**
  * 未知类

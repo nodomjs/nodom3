@@ -76,7 +76,7 @@ onUpdate 更新到document后
 |  Property | Modifiers | Type | Description |
 |  --- | --- | --- | --- |
 |  [children](./nodom3.module.children.md) |  | Array&lt;number&gt; | 子模块id数组 |
-|  [domManager](./nodom3.module.dommanager.md) |  | [DomManager](./nodom3.dommanager.md) | dom 管理器，管理虚拟dom、渲染dom和html node |
+|  [domManager](./nodom3.module.dommanager.md) |  | DomManager | dom 管理器，管理虚拟dom、渲染dom和html node |
 |  [eventFactory](./nodom3.module.eventfactory.md) |  | [EventFactory](./nodom3.eventfactory.md) | 事件工厂 |
 |  [events](./nodom3.module.events.md) |  | [NEvent](./nodom3.nevent.md)<!-- -->\[\] | 源节点传递的事件，需要追加到模块根节点上 |
 |  [id](./nodom3.module.id.md) |  | number | 模块id(全局唯一) |
@@ -85,7 +85,9 @@ onUpdate 更新到document后
 |  [modules](./nodom3.module.modules.md) |  | unknown\[\] | 子模块类集合，模板中引用的模块类需要声明 如果类已经通过registModule注册过，这里不再需要定义，只需import即可 |
 |  [objectManager](./nodom3.module.objectmanager.md) |  | ObjectManager | 对象管理器，用于管理虚拟dom节点、指令、表达式、事件对象及其运行时参数 |
 |  [props](./nodom3.module.props.md) |  | object | 父模块通过dom节点传递的属性 |
-|  [srcDom](./nodom3.module.srcdom.md) |  | [RenderedDom](./nodom3.rendereddom.md) | 来源dom，子模块对应dom |
+|  [slots](./nodom3.module.slots.md) |  | Map&lt;string, { type?: number; dom?: [RenderedDom](./nodom3.rendereddom.md)<!-- -->; vdom?: [VirtualDom](./nodom3.virtualdom.md)<!-- -->; }&gt; | <p>slot map</p><p>key: slot name</p><p>value: {<!-- -->type:0(外部渲染)/1(内部渲染innerrender),dom:渲染节点,vdom:虚拟节点<!-- -->}</p> |
+|  [srcDom](./nodom3.module.srcdom.md) |  | [RenderedDom](./nodom3.rendereddom.md) | 源dom，子模块对应dom |
+|  [srcElement](./nodom3.module.srcelement.md) |  | Node | 源element |
 |  [state](./nodom3.module.state.md) |  | [EModuleState](./nodom3.emodulestate.md) | 模块状态 |
 |  [templateModuleId](./nodom3.module.templatemoduleid.md) |  | number | 模板对应模块id，作为子模块时有效 |
 
@@ -97,6 +99,7 @@ onUpdate 更新到document后
 |  [addChild(module)](./nodom3.module.addchild.md) |  | 添加子模块 |
 |  [compile()](./nodom3.module.compile.md) |  | 编译 |
 |  [data()](./nodom3.module.data.md) |  | 数据方法，使用时需重载 |
+|  [doModuleEvent(eventName)](./nodom3.module.domoduleevent.md) |  | 执行模块事件 |
 |  [get(model, key)](./nodom3.module.get.md) |  | 获取模型属性值 |
 |  [getDomKeyId()](./nodom3.module.getdomkeyid.md) |  | 获取模块当前dom key编号 |
 |  [getElement(key)](./nodom3.module.getelement.md) |  | 获取html节点 |
@@ -106,12 +109,12 @@ onUpdate 更新到document后
 |  [getParent()](./nodom3.module.getparent.md) |  | 获取父模块 |
 |  [handleRootProps(src, dst)](./nodom3.module.handlerootprops.md) |  | 处理根节点属性 |
 |  [init()](./nodom3.module.init.md) |  | 初始化操作 |
-|  [invokeMethod(methodName, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)](./nodom3.module.invokemethod.md) |  | 调用模块内方法 |
-|  [invokeOuterMethod(methodName, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10)](./nodom3.module.invokeoutermethod.md) |  | 调用模块外方法 |
+|  [invokeMethod(methodName, args)](./nodom3.module.invokemethod.md) |  | 调用模块内方法 |
+|  [invokeOuterMethod(methodName, args)](./nodom3.module.invokeoutermethod.md) |  | 调用模块外方法 |
 |  [mount()](./nodom3.module.mount.md) |  | 挂载到document |
 |  [removeChild(module)](./nodom3.module.removechild.md) |  | 移除子模块 |
 |  [render()](./nodom3.module.render.md) |  | 模型渲染 |
-|  [saveElement(key, node)](./nodom3.module.saveelement.md) |  | 保存html节点 |
+|  [saveElement(dom, node)](./nodom3.module.saveelement.md) |  | 保存html节点 |
 |  [set(model, key, value)](./nodom3.module.set.md) |  | 设置模型属性值 |
 |  [setExcludeProps(props)](./nodom3.module.setexcludeprops.md) |  | 设置不渲染到根dom的属性集合 |
 |  [setProps(props, dom)](./nodom3.module.setprops.md) |  | 设置props |

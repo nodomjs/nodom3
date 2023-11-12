@@ -9,14 +9,13 @@
 **Signature:**
 
 ```typescript
-removeParam(module: Module, dom: RenderedDom, name: string): void;
+removeParam(dom: RenderedDom, name: string): void;
 ```
 
 ## Parameters
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  module | [Module](./nodom3.module.md) | 模块 |
 |  dom | [RenderedDom](./nodom3.rendereddom.md) | 虚拟dom |
 |  name | string | 参数名 |
 

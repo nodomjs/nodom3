@@ -9,14 +9,13 @@
 **Signature:**
 
 ```typescript
-setParam(module: Module, dom: RenderedDom, name: string, value: unknown): void;
+setParam(dom: RenderedDom, name: string, value: unknown): void;
 ```
 
 ## Parameters
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  module | [Module](./nodom3.module.md) | 模块 |
 |  dom | [RenderedDom](./nodom3.rendereddom.md) | 虚拟dom |
 |  name | string | 参数名 |
 |  value | unknown | 参数值 |

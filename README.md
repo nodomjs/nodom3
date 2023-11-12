@@ -13,10 +13,10 @@ nodom是一款基于数据驱动的web mvvm框架。用于搭建单页应用(SPA
 更多使用细节参考[API](./api/nodom3.md)。
 
 ### 目录结构
-1. 核心库目录./core：核心框架源码
-2. 扩展目录./extend：预定义指令、自定义element和事件
-3. 示例目录./examples：示例
-4. 发布目录./dist：发布包，所有示例从该目录引入编译后的nodom文件 
+1. 核心库目录./core：核心框架源码。
+2. 扩展目录./extend：预定义指令、自定义element和事件。
+3. 示例目录./examples：示例。
+4. 发布目录./dist：发布包，所有示例从该目录引入编译后的nodom文件。 
 
 #### dist目录文件说明
 1. nodom.esm.js：es module模式的开发包

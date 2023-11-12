@@ -35,5 +35,5 @@ nodom渲染操作在渲染器中实现
 |  [renderDom(module, src, model, parent, key)](./nodom3.renderer.renderdom.md) | <code>static</code> | 渲染dom |
 |  [renderToHtml(module, src, parentEl, isRenderChild)](./nodom3.renderer.rendertohtml.md) | <code>static</code> | 渲染到html树 |
 |  [setRootEl(rootEl)](./nodom3.renderer.setrootel.md) | <code>static</code> | 设置根容器 |
-|  [updateToHtml(module, dom)](./nodom3.renderer.updatetohtml.md) | <code>static</code> | 更新到html树 |
+|  [updateToHtml(module, dom, pEl)](./nodom3.renderer.updatetohtml.md) | <code>static</code> | 更新到html树 |
 

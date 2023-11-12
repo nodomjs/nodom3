@@ -18,5 +18,6 @@ export declare enum EModuleState
 |  --- | --- | --- |
 |  INIT | <code>1</code> | 已初始化 |
 |  MOUNTED | <code>3</code> | 已挂载到dom树 |
+|  READY | <code>4</code> | 准备渲染 |
 |  UNMOUNTED | <code>2</code> | 未挂载到html dom |
 

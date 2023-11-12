@@ -9,14 +9,13 @@
 **Signature:**
 
 ```typescript
-clearParam(module: Module, dom: RenderedDom): void;
+clearParam(dom: RenderedDom): void;
 ```
 
 ## Parameters
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  module | [Module](./nodom3.module.md) | 模块 |
 |  dom | [RenderedDom](./nodom3.rendereddom.md) | 虚拟dom |
 
 **Returns:**

@@ -9,7 +9,7 @@ Constructs a new instance of the `NError` class
 **Signature:**
 
 ```typescript
-constructor(errorName: string, params?: string[]);
+constructor(errorName: string, ...params: any[]);
 ```
 
 ## Parameters
@@ -17,5 +17,5 @@ constructor(errorName: string, params?: string[]);
 |  Parameter | Type | Description |
 |  --- | --- | --- |
 |  errorName | string |  |
-|  params | string\[\] | _(Optional)_ |
+|  params | any\[\] |  |
 

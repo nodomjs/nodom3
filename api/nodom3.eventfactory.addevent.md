@@ -9,7 +9,7 @@
 **Signature:**
 
 ```typescript
-addEvent(dom: RenderedDom, event: NEvent): boolean;
+addEvent(dom: RenderedDom, event: NEvent): void;
 ```
 
 ## Parameters
@@ -21,5 +21,5 @@ addEvent(dom: RenderedDom, event: NEvent): boolean;
 
 **Returns:**
 
-boolean
+void
 

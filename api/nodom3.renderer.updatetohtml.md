@@ -9,7 +9,7 @@
 **Signature:**
 
 ```typescript
-static updateToHtml(module: Module, dom: RenderedDom): Node;
+static updateToHtml(module: Module, dom: RenderedDom, pEl?: any): Node;
 ```
 
 ## Parameters
@@ -18,6 +18,7 @@ static updateToHtml(module: Module, dom: RenderedDom): Node;
 |  --- | --- | --- |
 |  module | [Module](./nodom3.module.md) | 模块 |
 |  dom | [RenderedDom](./nodom3.rendereddom.md) |  |
+|  pEl | any | _(Optional)_ |
 
 **Returns:**
 

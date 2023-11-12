@@ -8,6 +8,7 @@ import { Nodom, NodomMessage} from "../core/nodom";
 import { Renderer } from "../core/renderer";
 import { RenderedDom } from "../core/types";
 import { Util } from "../core/util";
+import { VirtualDom } from "../core/virtualdom";
 
 /**
      * 指令类型初始化
@@ -45,8 +46,8 @@ import { Util } from "../core/util";
             }
             //保存到dom上，提升渲染性能
             dom.moduleId = <number>mid;
-            //变成文本节点，作为子模块占位符，子模块渲染后替换占位符
-            delete dom.tagName;
+            //记录位置
+
             //设置props，如果改变了props，启动渲染
             const o = {};
             if (dom.props) {
@@ -488,7 +489,11 @@ import { Util } from "../core/util";
                 throw new NError('uninit',NodomMessage.TipWords.route)
             }
             //建立新子节点            
-            dom.children = [{key:dom.key+'_r',model:dom.model}];
+            dom.children = [{
+                key:dom.key+'_r',
+                model:dom.model,
+                props:{role:'router',belong:module.id}
+            }];
             Nodom['$Router'].registRouter(module.id, Renderer.getCurrentModule(),dom);
             return true;
         },
@@ -501,79 +506,65 @@ import { Util } from "../core/util";
      */
     Nodom.createDirective('slot',
         function (module: Module, dom: RenderedDom) {
-            this.value = this.value || 'default';
+            this.value ||= 'default';
             const mid = dom.parent.moduleId;
             const src = dom.vdom;
-            const slotName = '$slots.' + this.value;
             //父dom有module指令，表示为替代节点，替换子模块中的对应的slot节点；否则为子模块定义slot节点
             if (mid) {
                 const m = ModuleFactory.get(mid);
-                if (m) {
-                    let cfg = m.objectManager.get(slotName);
-                    if(!cfg){
-                        cfg = {};
-                        m.objectManager.set(slotName,cfg);
-                    }
-                    cfg.dom = src;
-                    cfg.model = dom.model;
-                    cfg.module = module;
+                //子模块不存在或子模块没有此名字的slot，则不处理
+                if(!m){
+                    return false;
                 }
-            } else { //源slot节点
-                let cfg = module.objectManager.get(slotName);
-                //内部有slot，但是使用时并未设置slot
-                if(!cfg){
-                    cfg = {type:1};
-                }else if(!cfg.type){
-                    //1 innerrender(通过当前模块渲染），2outerrender(通过模板所属模块渲染)
-                    cfg.type = src.hasProp('innerrender')?1:2;
-                    //首次渲染，需要检测是否绑定父dom model
-                    for (const d of cfg.dom.children) {
-                        if(check(d)){
-                            //设定bind标志
-                            cfg.needBind = true;
-                            break;
+
+                let sl = m.slots.get(this.value);
+                // 子模块尚未渲染
+                if(!sl){
+                    if(!sl){
+                        sl = {
+                            dom:dom,
+                            vdom:src
                         }
                     }
-                    /**
-                     * 检测是否存在节点的statickNum=-1
-                     * @param d -   带检测节点
-                     * @returns     true/false
-                     */
-                    function check(d){
-                        if(d.staticNum === -1){
-                            return true;
+                    dom.rmid = mid;
+                    m.slots.set(this.value,sl);
+                    return true;
+                }else if(sl.type === 0){
+                    sl.dom = dom;
+                    dom.rmid = mid;
+                    return true;
+                }else{
+                    sl.vdom = src;
+                }
+                return false;
+            } else { //源slot节点
+                const cfg = module.slots.get(this.value);
+                const type = src.hasProp('innerrender')?1:0;
+                if(cfg){
+                    cfg.type = type;
+                    if(type === 1){//内部渲染
+                        if(cfg.dom){
+                            for (const d of cfg.vdom.children) {
+                                Renderer.renderDom(module, <VirtualDom>d, dom.model, dom.parent, dom.model['__key']+'s');
+                            }
+                            return false;
                         }
-                        //深度检测
-                        if(d.children){
-                            for(const d1 of d.children){
-                                if(check(d1)){
-                                    return true;
-                                }
+                    }else if(cfg.dom&&cfg.dom.children){ //有祖先模块渲染后的节点，直接替换
+                        if(dom.parent){
+                            for(let c of cfg.dom.children){
+                                dom.parent.children.push(c);
+                                c.parent  = dom.parent;
                             }
                         }
+                        return false;
                     }
                 }
-                //渲染时添加s作为后缀，避免与模块内dom key冲突（相同model情况下）
-                if(cfg.dom && cfg.dom.children && cfg.dom.children.length>0){
-                    //渲染时添加s作为后缀，避免与模块内dom key冲突（相同model情况下）
-                    if (cfg.type === 1) { //inner render模式
-                        for (const d of cfg.dom.children) {
-                            Renderer.renderDom(module, d, dom.model, dom.parent, dom.model['__key']+'s');
-                        }
-                    }else { // 外部渲染模式
-                        //绑定数据
-                        if(cfg.needBind){
-                            cfg.module.modelManager.bindModel(cfg.model, module);
-                        }
-                        for (const d of cfg.dom.children) {
-                            Renderer.renderDom(cfg.module, d, cfg.model, dom.parent, cfg.model['__key']+'s');
-                        }
-                    }
-                }else{  //未在父模块配置slot，则直接渲染
-                    return true;
-                }
-            }
-            return false;
+                module.slots.set(this.value,{
+                    type:type
+                });
+                //无替代节点，直接渲染
+                return true;
+           }
         },
         5
     );

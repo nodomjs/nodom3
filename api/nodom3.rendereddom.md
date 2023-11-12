@@ -23,6 +23,8 @@ export declare type RenderedDom = {
     moduleId?: number;
     vdom?: VirtualDom;
     isSvg?: boolean;
+    mid?: number;
+    rmid?: number;
 };
 ```
 **References:** [Model](./nodom3.model.md)<!-- -->, [NEvent](./nodom3.nevent.md)<!-- -->, [RenderedDom](./nodom3.rendereddom.md)<!-- -->, [VirtualDom](./nodom3.virtualdom.md)

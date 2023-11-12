@@ -1,6 +1,6 @@
 {
   "name": "nodom3",
-  "version": "0.2.1-beta25",
+  "version": "0.2.2",
   "private": false,
   "main": "index.ts",
   "scripts": {
@@ -10,7 +10,7 @@
   "author": "weblabsw",
   "license": "MIT",
   "unpkg": "dist/nodom.esm.min.js",
-  "module": "dist/nodom.esm.js",
+  "module": "dist/nodom.esm.min.js",
   "types": "dist/types/index.d.ts",
   "browser": "dist/nodom.global.js",
   "repository": {

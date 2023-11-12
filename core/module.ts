@@ -110,9 +110,14 @@ export class Module {
     public eventFactory:EventFactory;
 
     /**
-     * 来源dom，子模块对应dom
+     * 源dom，子模块对应dom
      */
     public srcDom:RenderedDom;
+
+    /**
+     * 源element
+     */
+    public srcElement:Node;
 
     /**
      * 源节点传递的事件，需要追加到模块根节点上
@@ -146,11 +151,6 @@ export class Module {
     private parentId: number;
 
     /**
-     * 源element
-     */
-    public srcElement:Node;
-
-    /**
      * 生成dom时的keyid，每次编译置0
      */
     private domKeyId:number;
@@ -166,10 +166,10 @@ export class Module {
      * 
      * key: slot name
      * 
-     * value: {type:0(外部渲染)/1(内部渲染innerrender),dom:渲染节点,vdom:虚拟节点,start:在父节点中的开始位置}
+     * value: {type:0(外部渲染)/1(内部渲染innerrender),dom:渲染节点,vdom:虚拟节点}
      * 
      */
-    public slots:Map<string,{type?:number,dom?:RenderedDom,vdom?:VirtualDom,start?:number}> = new Map();
+    public slots:Map<string,{type?:number,dom?:RenderedDom,vdom?:VirtualDom}> = new Map();
 
     /**
      * 构造器
@@ -359,7 +359,7 @@ export class Module {
             this.srcElement = pm.getElement(this.srcDom.key);
             if(this.srcElement && this.srcElement.parentElement){
                 this.srcElement.parentElement.replaceChild(el,this.srcElement);
-                pm.saveElement(this.srcDom.key,el);
+                pm.saveElement(this.srcDom,el);
             }
         }
         //执行挂载后事件
@@ -388,7 +388,7 @@ export class Module {
                 const pm = this.getParent();
                 if(el.parentElement){
                     el.parentElement.replaceChild(this.srcElement,el);
-                    pm.saveElement(this.srcDom.key,this.srcElement);
+                    pm.saveElement(this.srcDom,this.srcElement);
                 }
             }
         }
@@ -600,8 +600,15 @@ export class Module {
      * @param key -   dom key
      * @param node -  html节点
      */
-    public saveElement(key:number|string,node:Node){
-        this.domManager.saveElement(key,node);
+    public saveElement(dom:RenderedDom,node:Node){
+        this.domManager.saveElement(dom,node);
+        //当路由dom所属moduleid与当前moduleid不一致时，需要在路由dom所属模块进行存储
+        if(dom.props && dom.props['role'] === 'router' && dom.props['belong'] && dom.props['belong'] !== this.id){
+            const m = ModuleFactory.get(dom.props['belong']);
+            if(m){
+                m.saveElement(dom,node);
+            }
+        }
     }
 
     /**

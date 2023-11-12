@@ -94,9 +94,13 @@ export declare class Module {
      */
     eventFactory: EventFactory;
     /**
-     * 来源dom，子模块对应dom
+     * 源dom，子模块对应dom
      */
     srcDom: RenderedDom;
+    /**
+     * 源element
+     */
+    srcElement: Node;
     /**
      * 源节点传递的事件，需要追加到模块根节点上
      */
@@ -123,10 +127,6 @@ export declare class Module {
      */
     private parentId;
     /**
-     * 源element
-     */
-    srcElement: Node;
-    /**
      * 生成dom时的keyid，每次编译置0
      */
     private domKeyId;
@@ -139,14 +139,13 @@ export declare class Module {
      *
      * key: slot name
      *
-     * value: {type:0(外部渲染)/1(内部渲染innerrender),dom:渲染节点,vdom:虚拟节点,start:在父节点中的开始位置}
+     * value: {type:0(外部渲染)/1(内部渲染innerrender),dom:渲染节点,vdom:虚拟节点}
      *
      */
     slots: Map<string, {
         type?: number;
         dom?: RenderedDom;
         vdom?: VirtualDom;
-        start?: number;
     }>;
     /**
      * 构造器
@@ -280,7 +279,7 @@ export declare class Module {
      * @param key -   dom key
      * @param node -  html节点
      */
-    saveElement(key: number | string, node: Node): void;
+    saveElement(dom: RenderedDom, node: Node): void;
     /**
      * 按模块类名获取子模块
      * @remarks

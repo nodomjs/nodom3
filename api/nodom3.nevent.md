@@ -48,9 +48,9 @@ export declare class NEvent
 
 |  Method | Modifiers | Description |
 |  --- | --- | --- |
-|  [clearParam(module, dom)](./nodom3.nevent.clearparam.md) |  | 清参数cache |
-|  [getParam(module, dom, name)](./nodom3.nevent.getparam.md) |  | 获取附加参数值 |
+|  [clearParam(dom)](./nodom3.nevent.clearparam.md) |  | 清参数cache |
+|  [getParam(dom, name)](./nodom3.nevent.getparam.md) |  | 获取附加参数值 |
 |  [handleExpr(module, model)](./nodom3.nevent.handleexpr.md) |  | 表达式处理 |
-|  [removeParam(module, dom, name)](./nodom3.nevent.removeparam.md) |  | 移除参数 |
-|  [setParam(module, dom, name, value)](./nodom3.nevent.setparam.md) |  | 设置附加参数值 |
+|  [removeParam(dom, name)](./nodom3.nevent.removeparam.md) |  | 移除参数 |
+|  [setParam(dom, name, value)](./nodom3.nevent.setparam.md) |  | 设置附加参数值 |
 

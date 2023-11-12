@@ -9,14 +9,13 @@
 **Signature:**
 
 ```typescript
-getParam(module: Module, dom: RenderedDom, name: string): unknown;
+getParam(dom: RenderedDom, name: string): unknown;
 ```
 
 ## Parameters
 
 |  Parameter | Type | Description |
 |  --- | --- | --- |
-|  module | [Module](./nodom3.module.md) | 模块 |
 |  dom | [RenderedDom](./nodom3.rendereddom.md) | 虚拟dom |
 |  name | string | 参数名 |
 

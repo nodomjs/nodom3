@@ -126,12 +126,6 @@ export class Renderer {
         }
         // 从父继承附加key和rmid
         if(parent){
-            // if(parent.postKey){
-            //     dst.postKey = parent.postKey;
-            // }
-            // if(dst.postKey){
-            //     dst.key += dst.postKey;
-            // }
             if(parent.rmid){
                 dst.rmid = parent.rmid;
                 dst.key += '_' + dst.rmid + 's';
@@ -376,7 +370,7 @@ export class Renderer {
                     m.srcDom = dom;
                     m.srcElement = el;
                     module.addChild(m);
-                    module.saveElement(dom.key,el);
+                    module.saveElement(dom,el);
                     
                     m.active();
                     return el;
@@ -398,7 +392,7 @@ export class Renderer {
                 el = document.createElement(dom.tagName);
             }
             //把el引用与key关系存放到cache中
-            module.saveElement(dom.key,el);
+            module.saveElement(dom,el);
             //设置element key属性
             (<object>el)['key'] = dom.key;
             // el.setAttribute('key',dom.key)
@@ -429,7 +423,7 @@ export class Renderer {
                 return;
             }
             const node = document.createTextNode(<string>dom.textContent || '');
-            module.saveElement(dom.key,node);
+            module.saveElement(dom,node);
             return node;
         }
 

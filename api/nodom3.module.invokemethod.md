@@ -9,7 +9,7 @@
 **Signature:**
 
 ```typescript
-invokeMethod(methodName: string, p1?: any, p2?: any, p3?: any, p4?: any, p5?: any, p6?: any, p7?: any, p8?: any, p9?: any, p10?: any): any;
+invokeMethod(methodName: string, ...args: any[]): any;
 ```
 
 ## Parameters
@@ -17,16 +17,7 @@ invokeMethod(methodName: string, p1?: any, p2?: any, p3?: any, p4?: any, p5?: an
 |  Parameter | Type | Description |
 |  --- | --- | --- |
 |  methodName | string | 方法名 |
-|  p1 | any | _(Optional)_ |
-|  p2 | any | _(Optional)_ |
-|  p3 | any | _(Optional)_ |
-|  p4 | any | _(Optional)_ |
-|  p5 | any | _(Optional)_ |
-|  p6 | any | _(Optional)_ |
-|  p7 | any | _(Optional)_ |
-|  p8 | any | _(Optional)_ |
-|  p9 | any | _(Optional)_ |
-|  p10 | any | _(Optional)_ |
+|  args | any\[\] | 参数 |
 
 **Returns:**
 

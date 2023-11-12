@@ -148,8 +148,8 @@ export class DomManager{
      * @param key -   dom key
      * @param node -  html node
      */
-    public saveElement(key:number|string,node:Node){
-        this.elementMap.set(key,node);
+    public saveElement(dom:RenderedDom,node:Node){
+        this.elementMap.set(dom.key,node);
     }
 
     /**
